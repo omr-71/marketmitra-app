@@ -26,7 +26,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
-  const { profile, signOut, refresh, loading } = useSession();
+  const { profile, email, signOut, refresh, loading } = useSession();
   const navigate = useNavigate();
   const [savingCrops, setSavingCrops] = useState(false);
 
