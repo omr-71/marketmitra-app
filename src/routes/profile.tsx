@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
 import { langNames, useLang } from "@/lib/i18n";
+import { useSession } from "@/lib/session";
 import { crops, farmer, inr, type Lang } from "@/lib/data";
 import { ChevronRight, LogOut, MapPin, Phone, Settings2, Sprout, Wallet } from "lucide-react";
 
