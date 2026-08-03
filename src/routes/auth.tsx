@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
 import { langNames, useLang } from "@/lib/i18n";
-import type { Lang } from "@/lib/data";
+import type { Lang } from "@/lib/crops";
 import { supabase } from "@/integrations/supabase/client";
 import { requestPhoneOtp, verifyPhoneOtp } from "@/lib/auth.functions";
 import { useSession } from "@/lib/session";

@@ -7,7 +7,6 @@ import { langNames, useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { crops, type Lang } from "@/lib/crops";
 import { updateFarmerProfile } from "@/lib/profile.functions";
-import { formatIstDate } from "@/lib/format";
 import { Check, Loader2, LogOut, MapPin, Phone, Sprout } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
@@ -118,7 +117,7 @@ function ProfilePage() {
             </div>
           </div>
           <p className="mt-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
-            Verified member since {formatIstDate(profile.id ? (profile as unknown as { created_at?: string }).created_at ?? Date.now() : Date.now())}
+            Phone number verified · data encrypted at rest
           </p>
         </div>
 
