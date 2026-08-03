@@ -5,9 +5,8 @@ import logo from "@/assets/logo.png";
 import { langNames, useLang } from "@/lib/i18n";
 import type { Lang } from "@/lib/crops";
 import { supabase } from "@/integrations/supabase/client";
-import { requestPhoneOtp, verifyPhoneOtp } from "@/lib/auth.functions";
 import { useSession } from "@/lib/session";
-import { ArrowLeft, Loader2, MapPin, Phone, ShieldCheck, User2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, MapPin, Phone, ShieldCheck, User2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -16,7 +15,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Sign in to MarketMitra with your mobile number and a 6-digit one-time password. Available in English, Marathi and Hindi.",
+          "Sign in to MarketMitra with your email address and a 6-digit one-time password. Available in English, Marathi and Hindi.",
       },
       { property: "og:title", content: "Login with OTP — MarketMitra" },
       {
@@ -28,18 +27,33 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
+const CODE_TTL_SECONDS = 3600;
+
+function friendlyError(message: string) {
+  const m = message.toLowerCase();
+  if (m.includes("expired")) return "That code has expired. Please request a new one.";
+  if (m.includes("invalid") || m.includes("token")) return "Incorrect code. Please check and try again.";
+  if (m.includes("rate") || m.includes("limit") || m.includes("too many"))
+    return "Too many requests. Please wait a minute and try again.";
+  if (m.includes("signups not allowed") || m.includes("not found"))
+    return "No account found for this email. Please sign up first.";
+  if (m.includes("failed to fetch") || m.includes("network"))
+    return "Network problem. Check your connection and try again.";
+  return message;
+}
+
 function Auth() {
   const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const { refresh } = useSession();
 
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"details" | "otp">("details");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [village, setVillage] = useState("");
   const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [busy, setBusy] = useState(false);
   const otpRef = useRef<HTMLInputElement>(null);
@@ -54,29 +68,32 @@ function Auth() {
     if (step === "otp") otpRef.current?.focus();
   }, [step]);
 
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
   const phoneValid = /^[6-9]\d{9}$/.test(phone);
-  const canSend = phoneValid && (mode === "login" || name.trim().length > 1) && !busy;
+  const canSend =
+    emailValid && (mode === "login" || (name.trim().length > 1 && phoneValid)) && !busy;
 
   const sendCode = async () => {
     if (!canSend) return;
     setBusy(true);
     try {
-      const res = await requestPhoneOtp({
-        data: { phone, mode, ...(mode === "signup" ? { fullName: name.trim() } : {}) },
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: {
+          shouldCreateUser: mode === "signup",
+          ...(mode === "signup"
+            ? { data: { full_name: name.trim(), phone, village: village.trim() || null } }
+            : {}),
+        },
       });
-      if (!res.ok) {
-        toast.error(res.error);
+      if (error) {
+        toast.error(friendlyError(error.message));
         return;
       }
-      setDevCode(res.code ?? null);
-      setSecondsLeft(res.expiresInSeconds);
+      setSecondsLeft(CODE_TTL_SECONDS);
       setCode("");
       setStep("otp");
-      toast.success(
-        res.delivered
-          ? `Code sent by SMS to +91 ${phone}`
-          : `Verification code generated for +91 ${phone}`,
-      );
+      toast.success(`Code sent to ${email.trim().toLowerCase()}`);
     } catch {
       toast.error("Could not send the code. Please try again.");
     } finally {
@@ -88,31 +105,51 @@ function Auth() {
     if (code.length !== 6 || busy) return;
     setBusy(true);
     try {
-      const res = await verifyPhoneOtp({
-        data: {
-          phone,
-          code,
-          language: lang,
-          ...(mode === "signup"
-            ? { fullName: name.trim(), ...(village.trim() ? { village: village.trim() } : {}) }
-            : {}),
-        },
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: code,
+        type: "email",
       });
-      if (!res.ok) {
-        toast.error(res.error);
+      if (error || !data.user) {
+        toast.error(friendlyError(error?.message ?? "Verification failed."));
         setCode("");
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({
-        email: res.email,
-        password: res.password,
-      });
-      if (error) {
-        toast.error("Verified, but sign-in failed. Please try again.");
-        return;
+
+      const userId = data.user.id;
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      let fullName = existing?.full_name ?? name.trim();
+
+      if (!existing) {
+        const meta = data.user.user_metadata as Record<string, unknown>;
+        fullName = name.trim() || String(meta["full_name"] ?? "").trim();
+        const metaPhone = phone || String(meta["phone"] ?? "");
+        if (!fullName || !metaPhone) {
+          toast.error("Please sign up first so we can save your details.");
+          return;
+        }
+        const { error: insertError } = await supabase.from("profiles").insert({
+          id: userId,
+          phone: metaPhone,
+          full_name: fullName,
+          village: village.trim() || (meta["village"] as string | null) || null,
+          language: lang,
+        });
+        if (insertError) {
+          toast.error("Signed in, but saving your profile failed. Please try again.");
+          return;
+        }
+      } else {
+        await supabase.from("profiles").update({ language: lang }).eq("id", userId);
       }
+
       await refresh();
-      toast.success(`Welcome, ${res.fullName}`);
+      toast.success(`Welcome, ${fullName}`);
       void navigate({ to: "/home" });
     } catch {
       toast.error("Verification failed. Please try again.");
@@ -134,7 +171,7 @@ function Auth() {
           </div>
         </div>
 
-        {step === "phone" ? (
+        {step === "details" ? (
           <>
             <div className="mt-9 flex rounded-2xl bg-muted p-1">
               {(["login", "signup"] as const).map((m) => (
@@ -167,6 +204,20 @@ function Auth() {
                     </div>
                   </label>
                   <label className="block animate-rise">
+                    <span className="text-xs font-semibold text-muted-foreground">{t("phone")}</span>
+                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-input bg-card px-4 focus-within:border-primary">
+                      <Phone className="size-5 shrink-0 text-muted-foreground" />
+                      <span className="text-base font-bold text-muted-foreground">+91</span>
+                      <input
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        className="h-14 min-w-0 flex-1 bg-transparent text-base font-semibold tracking-wide outline-none"
+                      />
+                    </div>
+                  </label>
+                  <label className="block animate-rise">
                     <span className="text-xs font-semibold text-muted-foreground">{t("village")}</span>
                     <div className="mt-2 flex items-center gap-3 rounded-2xl border border-input bg-card px-4 focus-within:border-primary">
                       <MapPin className="size-5 shrink-0 text-muted-foreground" />
@@ -182,16 +233,16 @@ function Auth() {
               )}
 
               <label className="block">
-                <span className="text-xs font-semibold text-muted-foreground">{t("phone")}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{t("email")}</span>
                 <div className="mt-2 flex items-center gap-3 rounded-2xl border border-input bg-card px-4 focus-within:border-primary">
-                  <Phone className="size-5 shrink-0 text-muted-foreground" />
-                  <span className="text-base font-bold text-muted-foreground">+91</span>
+                  <Mail className="size-5 shrink-0 text-muted-foreground" />
                   <input
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    className="h-14 min-w-0 flex-1 bg-transparent text-base font-semibold tracking-wide outline-none"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.slice(0, 120))}
+                    className="h-14 min-w-0 flex-1 bg-transparent text-base font-semibold outline-none"
                   />
                 </div>
                 <span className="mt-2 block text-xs text-muted-foreground">{t("otpHint")}</span>
@@ -229,7 +280,7 @@ function Auth() {
         ) : (
           <div className="animate-rise">
             <button
-              onClick={() => setStep("phone")}
+              onClick={() => setStep("details")}
               className="press mt-9 inline-flex items-center gap-2 text-sm font-bold text-muted-foreground"
             >
               <ArrowLeft className="size-4" /> {t("changeNumber")}
@@ -237,7 +288,8 @@ function Auth() {
 
             <h2 className="mt-5 text-2xl font-extrabold">{t("verifyNumber")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t("otpSentTo")} <span className="font-bold text-foreground">+91 {phone}</span>
+              {t("otpSentTo")}{" "}
+              <span className="font-bold text-foreground">{email.trim().toLowerCase()}</span>
             </p>
 
             <input
@@ -253,15 +305,9 @@ function Auth() {
               className="mt-7 h-16 w-full rounded-2xl border border-input bg-card text-center text-2xl font-extrabold tracking-[0.6em] outline-none focus:border-primary"
             />
 
-            {devCode && (
-              <div className="mt-4 rounded-2xl border border-dashed border-primary/45 bg-primary/5 p-4">
-                <p className="text-xs font-bold text-primary">{t("demoCode")}</p>
-                <p className="mt-1 text-lg font-extrabold tracking-[0.35em]">{devCode}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{t("smsPending")}</p>
-              </div>
-            )}
+            <p className="mt-4 text-xs text-muted-foreground">{t("checkInbox")}</p>
 
-            <p className="mt-4 text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               {secondsLeft > 0
                 ? `${t("codeExpires")} ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`
                 : t("codeExpired")}
@@ -277,7 +323,7 @@ function Auth() {
             </button>
 
             <button
-              disabled={busy || secondsLeft > 240}
+              disabled={busy || secondsLeft > CODE_TTL_SECONDS - 60}
               onClick={sendCode}
               className="press mt-3 h-12 w-full rounded-2xl border border-border text-sm font-bold text-muted-foreground disabled:opacity-40"
             >
