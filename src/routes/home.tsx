@@ -8,7 +8,7 @@ import { useLocationContext } from "@/lib/location";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices } from "@/lib/market.functions";
 import { fetchWeather } from "@/lib/weather.functions";
-import { formatIstDateTime, inr } from "@/lib/format";
+import { formatIstDateTime, inr, useIstNow } from "@/lib/format";
 import {
   ArrowRight,
   BarChart3,
@@ -46,6 +46,7 @@ function HomePage() {
   const { t, lang } = useLang();
   const { profile } = useSession();
   const { location } = useLocationContext();
+  const now = useIstNow();
 
   const savedIds = profile?.saved_crops?.length ? profile.saved_crops : ["onion"];
   const primary = findCrop(savedIds[0]!) ?? crops[0]!;

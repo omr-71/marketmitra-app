@@ -69,12 +69,6 @@ function Splash() {
             {t("getStarted")}
             <ArrowRight className="size-5" />
           </Link>
-          <Link
-            to="/home"
-            className="press flex h-14 w-full items-center justify-center rounded-2xl border border-[oklch(1_0_0/0.18)] bg-[oklch(1_0_0/0.06)] text-base font-semibold text-[oklch(0.94_0.01_140)] backdrop-blur-xl"
-          >
-            Explore demo
-          </Link>
         </div>
 
         <p className="mt-10 text-xs text-[oklch(0.75_0.02_145)]">
