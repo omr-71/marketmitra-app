@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Screen } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
 import { crops, farmer, inr, weather } from "@/lib/data";
+import { useSession } from "@/lib/session";
 import {
   ArrowUpRight,
   Bell,
