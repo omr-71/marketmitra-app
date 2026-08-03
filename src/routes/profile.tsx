@@ -24,10 +24,26 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
+  const { profile, signOut } = useSession();
+  const navigate = useNavigate();
   const total = farmer.history.reduce((s, h) => s + h.amount, 0);
   const saved = farmer.savedCrops
     .map((id) => crops.find((c) => c.id === id))
     .filter((c): c is (typeof crops)[number] => Boolean(c));
+
+  const displayName = profile?.full_name ?? "—";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "—";
+
+  const handleLogout = async () => {
+    await signOut();
+    void navigate({ to: "/auth" });
+  };
 
   return (
     <Screen>
@@ -45,15 +61,15 @@ function ProfilePage() {
         <div className="card-surface p-5">
           <div className="flex items-center gap-4">
             <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground">
-              RP
+              {initials}
             </span>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-extrabold">{farmer.name}</h2>
+              <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <Phone className="size-3.5" /> {farmer.phone}
+                <Phone className="size-3.5" /> {profile ? `+91 ${profile.phone}` : "—"}
               </p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <MapPin className="size-3.5" /> {farmer.village}
+                <MapPin className="size-3.5" /> {profile?.village || "—"}
               </p>
             </div>
           </div>
