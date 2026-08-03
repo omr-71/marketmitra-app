@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -144,6 +145,20 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     },
     [persist],
   );
+
+  // Ask for device GPS once on first load when nothing is known yet.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (autoTried.current || location || status !== "idle") return;
+    if (!("geolocation" in navigator) || !("permissions" in navigator)) return;
+    autoTried.current = true;
+    void navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((result) => {
+        if (result.state !== "denied") void detect();
+      })
+      .catch(() => {});
+  }, [location, status, detect]);
 
   const value = useMemo(
     () => ({ location, status, error, detect, setManual }),
