@@ -68,11 +68,15 @@ function Auth() {
         toast.error(res.error);
         return;
       }
-      setDevCode(res.code);
+      setDevCode(res.code ?? null);
       setSecondsLeft(res.expiresInSeconds);
       setCode("");
       setStep("otp");
-      toast.success(`Verification code generated for +91 ${phone}`);
+      toast.success(
+        res.delivered
+          ? `Code sent by SMS to +91 ${phone}`
+          : `Verification code generated for +91 ${phone}`,
+      );
     } catch {
       toast.error("Could not send the code. Please try again.");
     } finally {
