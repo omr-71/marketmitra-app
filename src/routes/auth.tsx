@@ -6,7 +6,7 @@ import { langNames, useLang } from "@/lib/i18n";
 import type { Lang } from "@/lib/crops";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/session";
-import { ArrowLeft, Loader2, Mail, MapPin, Phone, ShieldCheck, User2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, MapPin, ShieldCheck, User2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -50,7 +50,6 @@ function Auth() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [step, setStep] = useState<"details" | "otp">("details");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [village, setVillage] = useState("");
   const [code, setCode] = useState("");
@@ -69,9 +68,8 @@ function Auth() {
   }, [step]);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
-  const phoneValid = /^[6-9]\d{9}$/.test(phone);
   const canSend =
-    emailValid && (mode === "login" || (name.trim().length > 1 && phoneValid)) && !busy;
+    emailValid && (mode === "login" || name.trim().length > 1) && !busy;
 
   const sendCode = async () => {
     if (!canSend) return;
@@ -82,7 +80,7 @@ function Auth() {
         options: {
           shouldCreateUser: mode === "signup",
           ...(mode === "signup"
-            ? { data: { full_name: name.trim(), phone, village: village.trim() || null } }
+            ? { data: { full_name: name.trim(), village: village.trim() || null } }
             : {}),
         },
       });
@@ -128,14 +126,12 @@ function Auth() {
       if (!existing) {
         const meta = data.user.user_metadata as Record<string, unknown>;
         fullName = name.trim() || String(meta["full_name"] ?? "").trim();
-        const metaPhone = phone || String(meta["phone"] ?? "");
-        if (!fullName || !metaPhone) {
+        if (!fullName) {
           toast.error("Please sign up first so we can save your details.");
           return;
         }
         const { error: insertError } = await supabase.from("profiles").insert({
           id: userId,
-          phone: metaPhone,
           full_name: fullName,
           village: village.trim() || (meta["village"] as string | null) || null,
           language: lang,
@@ -200,20 +196,6 @@ function Auth() {
                         maxLength={80}
                         autoComplete="name"
                         className="h-14 min-w-0 flex-1 bg-transparent text-base font-semibold outline-none"
-                      />
-                    </div>
-                  </label>
-                  <label className="block animate-rise">
-                    <span className="text-xs font-semibold text-muted-foreground">{t("phone")}</span>
-                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-input bg-card px-4 focus-within:border-primary">
-                      <Phone className="size-5 shrink-0 text-muted-foreground" />
-                      <span className="text-base font-bold text-muted-foreground">+91</span>
-                      <input
-                        inputMode="numeric"
-                        autoComplete="tel-national"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                        className="h-14 min-w-0 flex-1 bg-transparent text-base font-semibold tracking-wide outline-none"
                       />
                     </div>
                   </label>

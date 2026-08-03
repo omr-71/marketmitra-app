@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type FarmerProfile = {
   id: string;
-  phone: string;
+  phone: string | null;
   full_name: string;
   village: string | null;
   language: string;
