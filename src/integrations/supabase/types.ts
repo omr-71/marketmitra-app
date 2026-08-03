@@ -98,7 +98,7 @@ export type Database = {
           language: string
           latitude: number | null
           longitude: number | null
-          phone: string
+          phone: string | null
           saved_crops: string[]
           state: string | null
           updated_at: string
@@ -112,7 +112,7 @@ export type Database = {
           language?: string
           latitude?: number | null
           longitude?: number | null
-          phone: string
+          phone?: string | null
           saved_crops?: string[]
           state?: string | null
           updated_at?: string
@@ -126,7 +126,7 @@ export type Database = {
           language?: string
           latitude?: number | null
           longitude?: number | null
-          phone?: string
+          phone?: string | null
           saved_crops?: string[]
           state?: string | null
           updated_at?: string
