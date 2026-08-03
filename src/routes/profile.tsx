@@ -15,7 +15,7 @@ export const Route = createFileRoute("/profile")({
       { title: "Farmer profile — MarketMitra" },
       {
         name: "description",
-        content: "Your verified phone number, farm location, saved crops and language preference.",
+        content: "Your verified email, farm location, saved crops and language preference.",
       },
       { property: "og:title", content: "Farmer profile — MarketMitra" },
       { property: "og:description", content: "Manage your MarketMitra account and preferences." },
@@ -82,7 +82,7 @@ function ProfilePage() {
         <TopBar title={t("profile")} back="/home" />
         <div className="px-5 pt-5">
           <p className="card-surface p-5 text-sm text-muted-foreground">
-            Sign in with your phone number to view your profile.
+            Sign in with your email to view your profile.
           </p>
           <Link
             to="/auth"
@@ -108,7 +108,7 @@ function ProfilePage() {
             <div className="min-w-0">
               <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <Phone className="size-3.5" /> +91 {profile.phone}
+                <Mail className="size-3.5" /> {email ?? "—"}
               </p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
                 <MapPin className="size-3.5" />
@@ -117,7 +117,7 @@ function ProfilePage() {
             </div>
           </div>
           <p className="mt-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
-            Phone number verified · data encrypted at rest
+            Email verified · data encrypted at rest
           </p>
         </div>
 
