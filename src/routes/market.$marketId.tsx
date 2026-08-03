@@ -85,7 +85,7 @@ function MarketDetail() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold">{t("priceHistory")}</h2>
             <span
-              className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase ${demandTone[market.demand]}`}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase ${demandTone[market.demand as keyof typeof demandTone]}`}
             >
               {t("demand")}: {market.demand}
             </span>
