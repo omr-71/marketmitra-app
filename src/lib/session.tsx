@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type FarmerProfile = {
   id: string;
-  phone: string;
+  phone: string | null;
   full_name: string;
   village: string | null;
   language: string;
@@ -16,6 +16,7 @@ export type FarmerProfile = {
 
 type SessionCtx = {
   userId: string | null;
+  email: string | null;
   profile: FarmerProfile | null;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -24,6 +25,7 @@ type SessionCtx = {
 
 const SessionContext = createContext<SessionCtx>({
   userId: null,
+  email: null,
   profile: null,
   loading: true,
   refresh: async () => {},
@@ -32,6 +34,7 @@ const SessionContext = createContext<SessionCtx>({
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<FarmerProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +42,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase.auth.getUser();
     const id = data.user?.id ?? null;
     setUserId(id);
+    setEmail(data.user?.email ?? null);
     if (!id) {
       setProfile(null);
       setLoading(false);
@@ -65,11 +69,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUserId(null);
+    setEmail(null);
     setProfile(null);
   };
 
   return (
-    <SessionContext.Provider value={{ userId, profile, loading, refresh: load, signOut }}>
+    <SessionContext.Provider value={{ userId, email, profile, loading, refresh: load, signOut }}>
       {children}
     </SessionContext.Provider>
   );
