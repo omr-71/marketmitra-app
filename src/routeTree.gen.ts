@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CropsRouteImport } from './routes/crops'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as PredictRouteImport } from './routes/predict'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +36,32 @@ const HomeRoute = HomeRouteImport.update({
   path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketsRoute = MarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PredictRoute = PredictRouteImport.update({
+  id: '/predict',
+  path: '/predict',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +69,15 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/crops' | '/home'
+  fullPaths: '/' | '/auth' | '/crops' | '/home' | '/markets' | '/predict'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/crops' | '/home'
-  id: '__root__' | '/' | '/auth' | '/crops' | '/home'
+  to: '/' | '/auth' | '/crops' | '/home' | '/markets' | '/predict'
+  id: '__root__' | '/' | '/auth' | '/crops' | '/home' | '/markets' | '/predict'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +85,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CropsRoute: typeof CropsRoute
   HomeRoute: typeof HomeRoute
+  MarketsRoute: typeof MarketsRoute
+  PredictRoute: typeof PredictRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +119,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/markets': {
+      id: '/markets'
+      path: '/markets'
+      fullPath: '/markets'
+      preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/predict': {
+      id: '/predict'
+      path: '/predict'
+      fullPath: '/predict'
+      preLoaderRoute: typeof PredictRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +141,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CropsRoute: CropsRoute,
   HomeRoute: HomeRoute,
+  MarketsRoute: MarketsRoute,
+  PredictRoute: PredictRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

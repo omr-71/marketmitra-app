@@ -42,7 +42,7 @@ function PredictPage() {
           </div>
 
           <div className="mt-4 flex items-end gap-3">
-            <p className="text-3xl font-extrabold">{inr(forecast[0].price)}</p>
+            <p className="text-3xl font-extrabold">{inr(forecast[0]!.price)}</p>
             <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-primary/12 px-2.5 py-1 text-xs font-bold text-primary">
               <TrendingUp className="size-3.5" />
               +8.0%

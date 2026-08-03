@@ -8,8 +8,8 @@ type Search = { crop: string; qty: number };
 
 export const Route = createFileRoute("/markets")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    crop: typeof search.crop === "string" ? search.crop : "onion",
-    qty: Number(search.qty) > 0 ? Number(search.qty) : 30,
+    crop: typeof search["crop"] === "string" ? (search["crop"] as string) : "onion",
+    qty: Number(search["qty"]) > 0 ? Number(search["qty"]) : 30,
   }),
   head: () => ({
     meta: [
@@ -32,9 +32,10 @@ export const Route = createFileRoute("/markets")({
 function MarketsPage() {
   const { t, lang } = useLang();
   const { crop: cropId, qty } = Route.useSearch();
-  const crop = crops.find((c) => c.id === cropId) ?? crops[0];
+  const crop = crops.find((c) => c.id === cropId) ?? crops[0]!;
   const ranked = rankedMarkets(qty);
-  const best = ranked[0];
+  const best = ranked[0]!;
+  const lowest = ranked[ranked.length - 1]!;
 
   return (
     <Screen>
@@ -64,7 +65,7 @@ function MarketsPage() {
         <div className="mt-5 space-y-3">
           {ranked.map(({ market, net, transport }, i) => {
             const isBest = i === 0;
-            const delta = net - ranked[ranked.length - 1].net;
+            const delta = net - lowest.net;
             return (
               <Link
                 key={market.id}
