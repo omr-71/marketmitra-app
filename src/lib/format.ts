@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export const IST_TIME_ZONE = "Asia/Kolkata";
 
 export const inr = (n: number) =>
@@ -49,4 +51,30 @@ export function formatIstWeekday(value: string | number | Date) {
     timeZone: IST_TIME_ZONE,
     weekday: "short",
   }).format(date);
+}
+
+/** dd MMM yyyy, weekday + live clock in IST, refreshed every second */
+export function useIstNow() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return {
+    date: now,
+    dateLabel: new Intl.DateTimeFormat("en-IN", {
+      timeZone: IST_TIME_ZONE,
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(now),
+    timeLabel: new Intl.DateTimeFormat("en-IN", {
+      timeZone: IST_TIME_ZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    }).format(now),
+  };
 }
