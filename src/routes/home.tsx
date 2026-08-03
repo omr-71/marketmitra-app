@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Screen } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
 import { crops, farmer, inr, weather } from "@/lib/data";
+import { useSession } from "@/lib/session";
 import {
   ArrowUpRight,
   Bell,
@@ -45,6 +46,7 @@ const actions = [
 
 function HomePage() {
   const { t, lang } = useLang();
+  const { profile } = useSession();
 
   return (
     <Screen>
@@ -55,7 +57,7 @@ function HomePage() {
           </div>
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-muted-foreground">{t("welcome")}</p>
-            <h1 className="truncate text-lg font-extrabold">{farmer.name}</h1>
+            <h1 className="truncate text-lg font-extrabold">{profile?.full_name ?? "MarketMitra"}</h1>
           </div>
         </div>
         <button className="press relative grid size-11 shrink-0 place-items-center rounded-2xl border border-border bg-card">

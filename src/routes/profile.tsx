@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
 import { langNames, useLang } from "@/lib/i18n";
+import { useSession } from "@/lib/session";
 import { crops, farmer, inr, type Lang } from "@/lib/data";
 import { ChevronRight, LogOut, MapPin, Phone, Settings2, Sprout, Wallet } from "lucide-react";
 
@@ -24,10 +25,26 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
+  const { profile, signOut } = useSession();
+  const navigate = useNavigate();
   const total = farmer.history.reduce((s, h) => s + h.amount, 0);
   const saved = farmer.savedCrops
     .map((id) => crops.find((c) => c.id === id))
     .filter((c): c is (typeof crops)[number] => Boolean(c));
+
+  const displayName = profile?.full_name ?? "—";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "—";
+
+  const handleLogout = async () => {
+    await signOut();
+    void navigate({ to: "/auth" });
+  };
 
   return (
     <Screen>
@@ -45,15 +62,15 @@ function ProfilePage() {
         <div className="card-surface p-5">
           <div className="flex items-center gap-4">
             <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground">
-              RP
+              {initials}
             </span>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-extrabold">{farmer.name}</h2>
+              <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <Phone className="size-3.5" /> {farmer.phone}
+                <Phone className="size-3.5" /> {profile ? `+91 ${profile.phone}` : "—"}
               </p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <MapPin className="size-3.5" /> {farmer.village}
+                <MapPin className="size-3.5" /> {profile?.village || "—"}
               </p>
             </div>
           </div>
@@ -149,12 +166,12 @@ function ProfilePage() {
               <ChevronRight className="size-4 text-muted-foreground" />
             </button>
           ))}
-          <Link
-            to="/"
+          <button
+            onClick={handleLogout}
             className="press flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 py-4 text-sm font-bold text-destructive"
           >
-            <LogOut className="size-4" /> Log out
-          </Link>
+            <LogOut className="size-4" /> {t("logout")}
+          </button>
         </div>
       </div>
     </Screen>

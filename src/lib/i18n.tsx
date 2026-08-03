@@ -49,7 +49,29 @@ const dict = {
   sellingHistory: { en: "Selling history", mr: "विक्री इतिहास", hi: "बिक्री इतिहास" },
   viewAll: { en: "View all", mr: "सर्व पहा", hi: "सभी देखें" },
   perQuintal: { en: "per quintal", mr: "प्रति क्विंटल", hi: "प्रति क्विंटल" },
+  village: { en: "Village", mr: "गाव", hi: "गाँव" },
+  verifyNumber: { en: "Verify your number", mr: "नंबर पडताळा", hi: "नंबर सत्यापित करें" },
+  otpSentTo: { en: "We sent a 6-digit code to", mr: "६ अंकी कोड पाठवला", hi: "6 अंकों का कोड भेजा" },
+  enterOtp: { en: "Enter the 6-digit code", mr: "६ अंकी कोड टाका", hi: "6 अंकों का कोड डालें" },
+  verifyOtp: { en: "Verify & Continue", mr: "पडताळा आणि पुढे", hi: "सत्यापित करें" },
+  resendOtp: { en: "Resend code", mr: "कोड पुन्हा पाठवा", hi: "कोड फिर भेजें" },
+  changeNumber: { en: "Change number", mr: "नंबर बदला", hi: "नंबर बदलें" },
+  codeExpires: { en: "Code expires in", mr: "कोड संपेल", hi: "कोड समाप्त होगा" },
+  codeExpired: { en: "Code expired. Request a new one.", mr: "कोड संपला. नवीन मागवा.", hi: "कोड समाप्त. नया लें." },
+  demoCode: { en: "Your verification code", mr: "तुमचा पडताळणी कोड", hi: "आपका सत्यापन कोड" },
+  smsPending: {
+    en: "SMS delivery activates once an SMS gateway is connected.",
+    mr: "SMS गेटवे जोडल्यावर संदेश पाठवला जाईल.",
+    hi: "SMS गेटवे जुड़ने पर संदेश भेजा जाएगा.",
+  },
+  privacyNote: {
+    en: "Your data stays private and encrypted",
+    mr: "तुमची माहिती सुरक्षित आणि एनक्रिप्टेड राहते",
+    hi: "आपका डेटा निजी और एन्क्रिप्टेड रहता है",
+  },
+  logout: { en: "Log out", mr: "बाहेर पडा", hi: "लॉग आउट" },
 } as const;
+
 
 export type DictKey = keyof typeof dict;
 
