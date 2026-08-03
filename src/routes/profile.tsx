@@ -1,9 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Screen, TopBar } from "@/components/app-shell";
+import { LocationCard } from "@/components/location-card";
 import { langNames, useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
-import { crops, farmer, inr, type Lang } from "@/lib/data";
-import { ChevronRight, LogOut, MapPin, Phone, Settings2, Sprout, Wallet } from "lucide-react";
+import { crops, type Lang } from "@/lib/crops";
+import { updateFarmerProfile } from "@/lib/profile.functions";
+import { Check, Loader2, LogOut, MapPin, Phone, Sprout } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -11,13 +15,10 @@ export const Route = createFileRoute("/profile")({
       { title: "Farmer profile — MarketMitra" },
       {
         name: "description",
-        content: "Your farm details, saved crops, selling history and language preferences.",
+        content: "Your verified phone number, farm location, saved crops and language preference.",
       },
       { property: "og:title", content: "Farmer profile — MarketMitra" },
-      {
-        property: "og:description",
-        content: "Track every sale and manage your MarketMitra preferences.",
-      },
+      { property: "og:description", content: "Manage your MarketMitra account and preferences." },
     ],
   }),
   component: ProfilePage,
@@ -25,13 +26,11 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
-  const { profile, signOut } = useSession();
+  const { profile, signOut, refresh, loading } = useSession();
   const navigate = useNavigate();
-  const total = farmer.history.reduce((s, h) => s + h.amount, 0);
-  const saved = farmer.savedCrops
-    .map((id) => crops.find((c) => c.id === id))
-    .filter((c): c is (typeof crops)[number] => Boolean(c));
+  const [savingCrops, setSavingCrops] = useState(false);
 
+  const saved = profile?.saved_crops ?? [];
   const displayName = profile?.full_name ?? "—";
   const initials =
     displayName
@@ -41,24 +40,66 @@ function ProfilePage() {
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("") || "—";
 
+  const toggleCrop = async (id: string) => {
+    if (!profile) return;
+    const next = saved.includes(id) ? saved.filter((c) => c !== id) : [...saved, id];
+    setSavingCrops(true);
+    const result = await updateFarmerProfile({ data: { saved_crops: next } });
+    setSavingCrops(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    await refresh();
+  };
+
+  const changeLanguage = async (next: Lang) => {
+    setLang(next);
+    if (!profile) return;
+    await updateFarmerProfile({ data: { language: next } });
+    await refresh();
+  };
+
   const handleLogout = async () => {
     await signOut();
     void navigate({ to: "/auth" });
   };
 
+  if (loading) {
+    return (
+      <Screen>
+        <TopBar title={t("profile")} back="/home" />
+        <div className="flex items-center justify-center gap-2 px-5 pt-10 text-xs text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> {t("loading")}
+        </div>
+      </Screen>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Screen>
+        <TopBar title={t("profile")} back="/home" />
+        <div className="px-5 pt-5">
+          <p className="card-surface p-5 text-sm text-muted-foreground">
+            Sign in with your phone number to view your profile.
+          </p>
+          <Link
+            to="/auth"
+            className="press grad-primary mt-4 flex h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground"
+          >
+            {t("login")}
+          </Link>
+        </div>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
-      <TopBar
-        title={t("profile")}
-        back="/home"
-        action={
-          <button className="press grid size-9 place-items-center rounded-full bg-muted" aria-label="Settings">
-            <Settings2 className="size-4.5" />
-          </button>
-        }
-      />
+      <TopBar title={t("profile")} back="/home" />
 
-      <div className="px-5 pt-5">
+      <div className="space-y-5 px-5 pt-5">
         <div className="card-surface p-5">
           <div className="flex items-center gap-4">
             <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground">
@@ -67,83 +108,55 @@ function ProfilePage() {
             <div className="min-w-0">
               <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <Phone className="size-3.5" /> {profile ? `+91 ${profile.phone}` : "—"}
+                <Phone className="size-3.5" /> +91 {profile.phone}
               </p>
               <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <MapPin className="size-3.5" /> {profile?.village || "—"}
+                <MapPin className="size-3.5" />
+                {[profile.village, profile.district, profile.state].filter(Boolean).join(", ") || "—"}
               </p>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2.5 border-t border-border pt-4">
-            {[
-              { l: "Land", v: `${farmer.landAcres} acre` },
-              { l: "Sales", v: `${farmer.history.length}` },
-              { l: "Earned", v: inr(total) },
-            ].map((s) => (
-              <div key={s.l} className="text-center">
-                <p className="truncate text-sm font-extrabold">{s.v}</p>
-                <p className="text-[10px] text-muted-foreground">{s.l}</p>
-              </div>
-            ))}
-          </div>
+          <p className="mt-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
+            Phone number verified · data encrypted at rest
+          </p>
         </div>
 
-        <section className="mt-5">
-          <h3 className="text-sm font-bold">{t("savedCrops")}</h3>
+        <LocationCard />
+
+        <section>
+          <h3 className="text-sm font-bold">
+            {t("savedCrops")} {savingCrops && <Loader2 className="ml-1 inline size-3.5 animate-spin" />}
+          </h3>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Saved crops decide what your dashboard tracks.
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {saved.map((c) => (
-              <Link
-                key={c.id}
-                to="/markets"
-                search={{ crop: c.id, qty: 20 }}
-                className="press card-surface inline-flex items-center gap-2 px-3.5 py-2.5"
-              >
-                <span className="text-base">{c.emoji}</span>
-                <span className="text-xs font-bold">{c.name[lang]}</span>
-                <span className="text-[11px] font-semibold text-primary">{inr(c.price)}</span>
-              </Link>
-            ))}
-            <Link
-              to="/crops"
-              className="press inline-flex items-center gap-1.5 rounded-2xl border border-dashed border-primary/45 px-3.5 py-2.5 text-xs font-bold text-primary"
-            >
-              <Sprout className="size-3.5" /> Add crop
-            </Link>
+            {crops.map((c) => {
+              const active = saved.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => void toggleCrop(c.id)}
+                  className={`press inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold ${
+                    active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"
+                  }`}
+                >
+                  <span className="text-base">{c.emoji}</span>
+                  {c.name[lang]}
+                  {active ? <Check className="size-3.5" strokeWidth={3} /> : <Sprout className="size-3.5" />}
+                </button>
+              );
+            })}
           </div>
         </section>
 
-        <section className="mt-6">
-          <h3 className="text-sm font-bold">{t("sellingHistory")}</h3>
-          <div className="mt-3 space-y-2.5">
-            {farmer.history.map((h) => (
-              <div
-                key={h.id}
-                className="card-surface grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3"
-              >
-                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <Wallet className="size-4.5 text-primary" />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">
-                    {h.crop} · {h.qty} q
-                  </p>
-                  <p className="truncate text-[11px] text-muted-foreground">
-                    {h.market} · {h.date}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm font-extrabold text-primary">{inr(h.amount)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-6">
+        <section>
           <h3 className="text-sm font-bold">{t("language")}</h3>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {(Object.keys(langNames) as Lang[]).map((l) => (
               <button
                 key={l}
-                onClick={() => setLang(l)}
+                onClick={() => void changeLanguage(l)}
                 className={`press rounded-2xl border py-3.5 text-sm font-bold ${
                   lang === l
                     ? "border-primary bg-primary/10 text-primary"
@@ -156,23 +169,12 @@ function ProfilePage() {
           </div>
         </section>
 
-        <div className="mt-6 space-y-2.5">
-          {["Notification settings", "Payment & bank details", "Help & support"].map((item) => (
-            <button
-              key={item}
-              className="press card-surface flex w-full items-center justify-between px-4 py-4 text-sm font-semibold"
-            >
-              {item}
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </button>
-          ))}
-          <button
-            onClick={handleLogout}
-            className="press flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 py-4 text-sm font-bold text-destructive"
-          >
-            <LogOut className="size-4" /> {t("logout")}
-          </button>
-        </div>
+        <button
+          onClick={() => void handleLogout()}
+          className="press flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 py-4 text-sm font-bold text-destructive"
+        >
+          <LogOut className="size-4" /> {t("logout")}
+        </button>
       </div>
     </Screen>
   );

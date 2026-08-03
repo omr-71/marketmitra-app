@@ -93,11 +93,64 @@ export const requestPhoneOtp = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    // No SMS provider is connected yet, so the code is returned to the app and
-    // shown on the verification screen. Once an SMS gateway is connected, send
-    // it here and stop returning `code`.
-    return { ok: true as const, expiresInSeconds: OTP_TTL_MINUTES * 60, code, delivered: false };
+    const delivery = await sendOtpSms(phone, code);
+    if (delivery.status === "failed") {
+      return { ok: false as const, error: delivery.error };
+    }
+
+    return {
+      ok: true as const,
+      expiresInSeconds: OTP_TTL_MINUTES * 60,
+      delivered: delivery.status === "sent",
+      // Only present until an SMS sender is connected, so sign-in is never blocked.
+      ...(delivery.status === "not_configured" ? { code } : {}),
+    };
   });
+
+type SmsResult =
+  | { status: "sent" }
+  | { status: "not_configured" }
+  | { status: "failed"; error: string };
+
+async function sendOtpSms(phone: string, code: string): Promise<SmsResult> {
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const twilioKey = process.env["TWILIO_API_KEY"];
+  const from = process.env["TWILIO_FROM_NUMBER"];
+  if (!lovableKey || !twilioKey || !from) return { status: "not_configured" };
+
+  try {
+    const response = await fetch("https://connector-gateway.lovable.dev/twilio/Messages.json", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": twilioKey,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        To: `+91${phone}`,
+        From: from,
+        Body: `${code} is your MarketMitra verification code. It expires in ${OTP_TTL_MINUTES} minutes. Do not share it with anyone.`,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`Twilio send failed [${response.status}]: ${body.slice(0, 400)}`);
+      return {
+        status: "failed",
+        error:
+          response.status === 429
+            ? "Too many messages right now. Please try again in a minute."
+            : "We could not send the SMS. Please check the number and try again.",
+      };
+    }
+
+    return { status: "sent" };
+  } catch (err) {
+    console.error("Twilio network error", err);
+    return { status: "failed", error: "Network problem while sending the SMS. Please try again." };
+  }
+}
 
 export const verifyPhoneOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => verifySchema.parse(data))

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
-import { schemes } from "@/lib/data";
-import { BadgeCheck, CalendarDays, ChevronRight, FileCheck2, Landmark } from "lucide-react";
+import { schemes } from "@/lib/schemes";
+import { ExternalLink, Landmark } from "lucide-react";
 
 export const Route = createFileRoute("/schemes")({
   head: () => ({
@@ -11,12 +11,12 @@ export const Route = createFileRoute("/schemes")({
       {
         name: "description",
         content:
-          "Browse farmer schemes like PM Kisan, Fasal Bima and Kisan Credit Card with eligibility details.",
+          "Central agriculture schemes with published benefits, eligibility criteria and links to the official application portals.",
       },
       { property: "og:title", content: "Government schemes — MarketMitra" },
       {
         property: "og:description",
-        content: "Check which agriculture subsidies and credit schemes you qualify for.",
+        content: "PM-KISAN, PMFBY, Kisan Credit Card, PM-KUSUM, e-NAM and more.",
       },
     ],
   }),
@@ -25,68 +25,49 @@ export const Route = createFileRoute("/schemes")({
 
 function SchemesPage() {
   const { t } = useLang();
-  const eligibleCount = schemes.filter((s) => s.eligible).length;
 
   return (
     <Screen>
-      <TopBar title={t("schemes")} subtitle={`${eligibleCount} schemes match your profile`} back="/home" />
+      <TopBar title={t("schemes")} back="/home" />
 
       <div className="px-5 pt-5">
-        <div className="grad-ink flex items-center gap-4 rounded-3xl p-5 text-[oklch(0.97_0.01_140)]">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[oklch(1_0_0/0.1)]">
-            <Landmark className="size-6 text-primary-glow" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-extrabold">₹1,08,000 potential benefit</p>
-            <p className="text-xs text-[oklch(0.82_0.02_145)]">
-              Based on 4.5 acres in Ahmednagar district
-            </p>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Benefits and criteria as published by the implementing department. Apply on the official portal —
+          MarketMitra does not process applications.
+        </p>
 
-        <div className="mt-5 space-y-3">
-          {schemes.map((s) => (
-            <article key={s.id} className="card-surface p-5">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-extrabold leading-snug">{s.name}</h2>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{s.dept}</p>
-                </div>
-                <span
-                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
-                    s.eligible
-                      ? "bg-primary/12 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {s.eligible && <BadgeCheck className="size-3" />}
-                  {s.eligible ? t("eligible") : t("notEligible")}
+        <div className="mt-4 space-y-3">
+          {schemes.map((scheme) => (
+            <article key={scheme.id} className="card-surface p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                  <Landmark className="size-4.5 text-primary" />
                 </span>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-extrabold leading-snug">{scheme.name}</h2>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{scheme.dept}</p>
+                </div>
               </div>
 
-              <p className="mt-3 rounded-2xl bg-secondary/70 px-3.5 py-2.5 text-xs font-bold text-secondary-foreground">
-                {s.benefit}
-              </p>
+              <p className="mt-3 text-[13px] font-semibold leading-snug text-primary">{scheme.benefit}</p>
 
-              <ul className="mt-3 space-y-2">
-                {s.criteria.map((c) => (
-                  <li key={c} className="flex items-start gap-2 text-[11px] text-muted-foreground">
-                    <FileCheck2 className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                    <span className="min-w-0">{c}</span>
+              <ul className="mt-3 space-y-1.5">
+                {scheme.criteria.map((c) => (
+                  <li key={c} className="flex gap-2 text-[12px] leading-snug text-muted-foreground">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary/60" />
+                    {c}
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-4 flex items-center justify-between border-t border-border/70 pt-3">
-                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-                  <CalendarDays className="size-3.5" />
-                  {s.deadline}
-                </span>
-                <button className="press inline-flex items-center gap-1 text-xs font-extrabold text-primary">
-                  Apply
-                  <ChevronRight className="size-3.5" />
-                </button>
-              </div>
+              <a
+                href={scheme.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="press mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-primary/35 text-xs font-bold text-primary"
+              >
+                Open official portal <ExternalLink className="size-3.5" />
+              </a>
             </article>
           ))}
         </div>

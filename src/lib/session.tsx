@@ -7,6 +7,11 @@ export type FarmerProfile = {
   full_name: string;
   village: string | null;
   language: string;
+  state: string | null;
+  district: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  saved_crops: string[] | null;
 };
 
 type SessionCtx = {
@@ -41,7 +46,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     const { data: row } = await supabase
       .from("profiles")
-      .select("id, phone, full_name, village, language")
+      .select("id, phone, full_name, village, language, state, district, latitude, longitude, saved_crops")
       .eq("id", id)
       .maybeSingle();
     setProfile((row as FarmerProfile | null) ?? null);
