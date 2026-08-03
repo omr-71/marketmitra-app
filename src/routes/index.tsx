@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "MarketMitra — Sell Smarter. Earn Better." },
       {
         property: "og:description",
-        content: "Pick the best market for every crop with live prices and AI price forecasts.",
+        content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell.",
       },
     ],
   }),

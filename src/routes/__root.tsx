@@ -83,11 +83,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "MarketMitra helps farmers compare mandi prices, transport costs and net profit to pick the best market for every crop.",
+          "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell.",
       },
       { name: "author", content: "MarketMitra" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "MarketMitra — Sell Smarter. Earn Better." },
+      { name: "twitter:title", content: "MarketMitra — Sell Smarter. Earn Better." },
+      { property: "og:description", content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell." },
+      { name: "twitter:description", content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell." },
     ],
     links: [
       {
