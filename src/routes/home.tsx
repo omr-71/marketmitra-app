@@ -83,6 +83,10 @@ function HomePage() {
         <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight">
           {profile?.full_name ?? "MarketMitra"}
         </h1>
+        <p className="mt-1 text-xs font-medium text-muted-foreground">
+          {now.dateLabel} ·{" "}
+          <span className="font-semibold tabular-nums text-foreground">{now.timeLabel} IST</span>
+        </p>
       </header>
 
       <div className="mt-5 space-y-4 px-5">
