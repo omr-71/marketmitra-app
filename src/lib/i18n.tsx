@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Lang } from "./data";
+import type { Lang } from "./crops";
 
 const dict = {
   tagline: {
@@ -70,6 +70,42 @@ const dict = {
     hi: "आपका डेटा निजी और एन्क्रिप्टेड रहता है",
   },
   logout: { en: "Log out", mr: "बाहेर पडा", hi: "लॉग आउट" },
+  lastUpdated: { en: "Last updated", mr: "शेवटचे अद्यतन", hi: "अंतिम अपडेट" },
+  loading: { en: "Loading…", mr: "लोड होत आहे…", hi: "लोड हो रहा है…" },
+  retry: { en: "Try again", mr: "पुन्हा प्रयत्न", hi: "फिर कोशिश करें" },
+  yourLocation: { en: "Your location", mr: "तुमचे स्थान", hi: "आपका स्थान" },
+  useMyLocation: { en: "Use my location", mr: "माझे स्थान वापरा", hi: "मेरा स्थान उपयोग करें" },
+  chooseDistrict: { en: "Choose state & district", mr: "राज्य व जिल्हा निवडा", hi: "राज्य व ज़िला चुनें" },
+  state: { en: "State", mr: "राज्य", hi: "राज्य" },
+  district: { en: "District", mr: "जिल्हा", hi: "ज़िला" },
+  save: { en: "Save", mr: "जतन करा", hi: "सहेजें" },
+  noPrices: {
+    en: "No mandi prices reported for this crop and district yet.",
+    mr: "या पिकासाठी व जिल्ह्यासाठी बाजारभाव उपलब्ध नाहीत.",
+    hi: "इस फसल और ज़िले के लिए मंडी भाव उपलब्ध नहीं हैं.",
+  },
+  searchMarket: { en: "Search market or district", mr: "बाजार किंवा जिल्हा शोधा", hi: "मंडी या ज़िला खोजें" },
+  minPrice: { en: "Min", mr: "किमान", hi: "न्यूनतम" },
+  maxPrice: { en: "Max", mr: "कमाल", hi: "अधिकतम" },
+  modalPrice: { en: "Modal", mr: "सरासरी", hi: "मॉडल" },
+  transportRate: { en: "Transport cost per quintal", mr: "प्रति क्विंटल वाहतूक खर्च", hi: "प्रति क्विंटल परिवहन लागत" },
+  commissionRate: { en: "Mandi commission", mr: "बाजार कमिशन", hi: "मंडी कमीशन" },
+  forecastUnavailable: { en: "Forecast not available yet", mr: "अंदाज अजून उपलब्ध नाही", hi: "अनुमान अभी उपलब्ध नहीं" },
+  confidence: { en: "Confidence", mr: "विश्वास", hi: "विश्वास" },
+  explanation: { en: "Why", mr: "कारण", hi: "कारण" },
+  sellNow: { en: "Sell now", mr: "आता विका", hi: "अभी बेचें" },
+  hold: { en: "Hold stock", mr: "साठा ठेवा", hi: "स्टॉक रोकें" },
+  sunrise: { en: "Sunrise", mr: "सूर्योदय", hi: "सूर्योदय" },
+  sunset: { en: "Sunset", mr: "सूर्यास्त", hi: "सूर्यास्त" },
+  humidity: { en: "Humidity", mr: "आर्द्रता", hi: "नमी" },
+  wind: { en: "Wind", mr: "वारा", hi: "हवा" },
+  rainChance: { en: "Rain chance", mr: "पावसाची शक्यता", hi: "बारिश की संभावना" },
+  sevenDay: { en: "7-day forecast", mr: "७ दिवसांचा अंदाज", hi: "7-दिन का पूर्वानुमान" },
+  locationNeeded: {
+    en: "Share your location or pick your district to see live data.",
+    mr: "थेट माहितीसाठी स्थान द्या किंवा जिल्हा निवडा.",
+    hi: "लाइव जानकारी के लिए स्थान दें या ज़िला चुनें.",
+  },
 } as const;
 
 

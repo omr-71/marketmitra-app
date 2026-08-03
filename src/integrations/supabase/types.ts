@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      market_prices: {
+        Row: {
+          arrival_date: string
+          commodity: string
+          created_at: string
+          district: string
+          fetched_at: string
+          id: string
+          market: string
+          max_price: number
+          min_price: number
+          modal_price: number
+          state: string
+          variety: string | null
+        }
+        Insert: {
+          arrival_date: string
+          commodity: string
+          created_at?: string
+          district: string
+          fetched_at?: string
+          id?: string
+          market: string
+          max_price: number
+          min_price: number
+          modal_price: number
+          state: string
+          variety?: string | null
+        }
+        Update: {
+          arrival_date?: string
+          commodity?: string
+          created_at?: string
+          district?: string
+          fetched_at?: string
+          id?: string
+          market?: string
+          max_price?: number
+          min_price?: number
+          modal_price?: number
+          state?: string
+          variety?: string | null
+        }
+        Relationships: []
+      }
       phone_verification_codes: {
         Row: {
           attempts: number
@@ -47,28 +92,43 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          district: string | null
           full_name: string
           id: string
           language: string
+          latitude: number | null
+          longitude: number | null
           phone: string
+          saved_crops: string[]
+          state: string | null
           updated_at: string
           village: string | null
         }
         Insert: {
           created_at?: string
+          district?: string | null
           full_name: string
           id: string
           language?: string
+          latitude?: number | null
+          longitude?: number | null
           phone: string
+          saved_crops?: string[]
+          state?: string | null
           updated_at?: string
           village?: string | null
         }
         Update: {
           created_at?: string
+          district?: string | null
           full_name?: string
           id?: string
           language?: string
+          latitude?: number | null
+          longitude?: number | null
           phone?: string
+          saved_crops?: string[]
+          state?: string | null
           updated_at?: string
           village?: string | null
         }

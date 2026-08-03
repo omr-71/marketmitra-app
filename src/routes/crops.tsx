@@ -1,9 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
+import { LocationCard } from "@/components/location-card";
 import { useLang } from "@/lib/i18n";
-import { crops, inr } from "@/lib/data";
-import { Check, Minus, Plus, ArrowRight } from "lucide-react";
+import { crops } from "@/lib/crops";
+import { useLocationContext } from "@/lib/location";
+import { fetchMandiPrices } from "@/lib/market.functions";
+import { formatIstDateTime, inr } from "@/lib/format";
+import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/crops")({
   head: () => ({
@@ -11,12 +16,12 @@ export const Route = createFileRoute("/crops")({
       { title: "Select your crop — MarketMitra" },
       {
         name: "description",
-        content: "Choose a crop and quantity to compare mandi prices, transport cost and net profit.",
+        content: "Choose a crop and quantity to compare live APMC prices and your net realisation.",
       },
       { property: "og:title", content: "Select your crop — MarketMitra" },
       {
         property: "og:description",
-        content: "Onion, tomato, wheat, cotton, soybean, sugarcane and more.",
+        content: "Onion, tomato, wheat, cotton, soybean, gram and more — live mandi rates.",
       },
     ],
   }),
@@ -26,17 +31,36 @@ export const Route = createFileRoute("/crops")({
 function CropsPage() {
   const { t, lang } = useLang();
   const navigate = useNavigate();
+  const { location } = useLocationContext();
   const [selected, setSelected] = useState("onion");
-  const [qty, setQty] = useState(30);
+  const [qty, setQty] = useState(20);
 
   const crop = crops.find((c) => c.id === selected)!;
+
+  const priceQuery = useQuery({
+    queryKey: ["mandi", crop.commodity, location?.state, location?.district],
+    enabled: Boolean(location?.state),
+    queryFn: () =>
+      fetchMandiPrices({
+        data: {
+          commodity: crop.commodity,
+          state: location!.state,
+          ...(location?.district ? { district: location.district } : {}),
+        },
+      }),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const best = priceQuery.data?.ok ? priceQuery.data.records[0] : undefined;
 
   return (
     <Screen>
       <TopBar title={t("selectCrop")} subtitle="Step 1 of 2" back="/home" />
 
       <div className="px-5 pt-5">
-        <div className="grid grid-cols-3 gap-2.5">
+        <LocationCard />
+
+        <div className="mt-5 grid grid-cols-3 gap-2.5">
           {crops.map((c) => {
             const active = c.id === selected;
             return (
@@ -44,9 +68,7 @@ function CropsPage() {
                 key={c.id}
                 onClick={() => setSelected(c.id)}
                 className={`press relative flex flex-col items-center gap-2 rounded-3xl border px-2 py-4 ${
-                  active
-                    ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]"
-                    : "border-border bg-card"
+                  active ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]" : "border-border bg-card"
                 }`}
               >
                 {active && (
@@ -56,9 +78,6 @@ function CropsPage() {
                 )}
                 <span className="text-2xl">{c.emoji}</span>
                 <span className="line-clamp-1 text-xs font-bold">{c.name[lang]}</span>
-                <span className="text-[10px] font-semibold text-muted-foreground">
-                  {inr(c.price)}
-                </span>
               </button>
             );
           })}
@@ -98,23 +117,46 @@ function CropsPage() {
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
             className="mt-5 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
+            aria-label={t("quantity")}
           />
 
-          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4">
-            <div>
-              <p className="text-[11px] text-muted-foreground">Today's rate</p>
-              <p className="text-base font-extrabold">{inr(crop.price)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] text-muted-foreground">Gross value</p>
-              <p className="text-base font-extrabold text-primary">{inr(crop.price * qty)}</p>
-            </div>
+          <div className="mt-5 border-t border-border pt-4">
+            {!location?.state ? (
+              <p className="text-xs text-muted-foreground">{t("locationNeeded")}</p>
+            ) : priceQuery.isPending ? (
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" /> {t("loading")}
+              </p>
+            ) : best ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("modalPrice")} · {best.market}
+                  </p>
+                  <p className="text-base font-extrabold">{inr(best.modalPrice)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[11px] text-muted-foreground">Gross value</p>
+                  <p className="text-base font-extrabold text-primary">{inr(best.modalPrice * qty)}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {priceQuery.data && !priceQuery.data.ok ? priceQuery.data.error : t("noPrices")}
+              </p>
+            )}
+            {priceQuery.data?.ok && best && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {t("lastUpdated")}: {formatIstDateTime(priceQuery.data.updatedAt)} IST
+              </p>
+            )}
           </div>
         </div>
 
         <button
           onClick={() => navigate({ to: "/markets", search: { crop: selected, qty } })}
-          className="press grad-primary mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)]"
+          disabled={!location?.state}
+          className="press grad-primary mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)] disabled:opacity-60"
         >
           {t("compareMarkets")}
           <ArrowRight className="size-5" />
