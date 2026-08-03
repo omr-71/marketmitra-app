@@ -7,7 +7,7 @@ import { langNames, useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { crops, type Lang } from "@/lib/crops";
 import { updateFarmerProfile } from "@/lib/profile.functions";
-import { Check, Loader2, LogOut, MapPin, Phone, Sprout } from "lucide-react";
+import { Check, Loader2, LogOut, Mail, MapPin, Sprout } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
