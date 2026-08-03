@@ -10,33 +10,154 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CropsRouteImport } from './routes/crops'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as PredictRouteImport } from './routes/predict'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SchemesRouteImport } from './routes/schemes'
+import { Route as WeatherRouteImport } from './routes/weather'
+import { Route as MarketMarketIdRouteImport } from './routes/market.$marketId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CropsRoute = CropsRouteImport.update({
+  id: '/crops',
+  path: '/crops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsRoute = MarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PredictRoute = PredictRouteImport.update({
+  id: '/predict',
+  path: '/predict',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchemesRoute = SchemesRouteImport.update({
+  id: '/schemes',
+  path: '/schemes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WeatherRoute = WeatherRouteImport.update({
+  id: '/weather',
+  path: '/weather',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketMarketIdRoute = MarketMarketIdRouteImport.update({
+  id: '/market/$marketId',
+  path: '/market/$marketId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/crops': typeof CropsRoute
+  '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
+  '/profile': typeof ProfileRoute
+  '/schemes': typeof SchemesRoute
+  '/weather': typeof WeatherRoute
+  '/market/$marketId': typeof MarketMarketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/crops': typeof CropsRoute
+  '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
+  '/profile': typeof ProfileRoute
+  '/schemes': typeof SchemesRoute
+  '/weather': typeof WeatherRoute
+  '/market/$marketId': typeof MarketMarketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/crops': typeof CropsRoute
+  '/home': typeof HomeRoute
+  '/markets': typeof MarketsRoute
+  '/predict': typeof PredictRoute
+  '/profile': typeof ProfileRoute
+  '/schemes': typeof SchemesRoute
+  '/weather': typeof WeatherRoute
+  '/market/$marketId': typeof MarketMarketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/crops'
+    | '/home'
+    | '/markets'
+    | '/predict'
+    | '/profile'
+    | '/schemes'
+    | '/weather'
+    | '/market/$marketId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/crops'
+    | '/home'
+    | '/markets'
+    | '/predict'
+    | '/profile'
+    | '/schemes'
+    | '/weather'
+    | '/market/$marketId'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/crops'
+    | '/home'
+    | '/markets'
+    | '/predict'
+    | '/profile'
+    | '/schemes'
+    | '/weather'
+    | '/market/$marketId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  CropsRoute: typeof CropsRoute
+  HomeRoute: typeof HomeRoute
+  MarketsRoute: typeof MarketsRoute
+  PredictRoute: typeof PredictRoute
+  ProfileRoute: typeof ProfileRoute
+  SchemesRoute: typeof SchemesRoute
+  WeatherRoute: typeof WeatherRoute
+  MarketMarketIdRoute: typeof MarketMarketIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +169,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crops': {
+      id: '/crops'
+      path: '/crops'
+      fullPath: '/crops'
+      preLoaderRoute: typeof CropsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets': {
+      id: '/markets'
+      path: '/markets'
+      fullPath: '/markets'
+      preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/predict': {
+      id: '/predict'
+      path: '/predict'
+      fullPath: '/predict'
+      preLoaderRoute: typeof PredictRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schemes': {
+      id: '/schemes'
+      path: '/schemes'
+      fullPath: '/schemes'
+      preLoaderRoute: typeof SchemesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/weather': {
+      id: '/weather'
+      path: '/weather'
+      fullPath: '/weather'
+      preLoaderRoute: typeof WeatherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/market/$marketId': {
+      id: '/market/$marketId'
+      path: '/market/$marketId'
+      fullPath: '/market/$marketId'
+      preLoaderRoute: typeof MarketMarketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  CropsRoute: CropsRoute,
+  HomeRoute: HomeRoute,
+  MarketsRoute: MarketsRoute,
+  PredictRoute: PredictRoute,
+  ProfileRoute: ProfileRoute,
+  SchemesRoute: SchemesRoute,
+  WeatherRoute: WeatherRoute,
+  MarketMarketIdRoute: MarketMarketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
