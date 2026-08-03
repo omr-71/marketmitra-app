@@ -166,12 +166,12 @@ function ProfilePage() {
               <ChevronRight className="size-4 text-muted-foreground" />
             </button>
           ))}
-          <Link
-            to="/"
+          <button
+            onClick={handleLogout}
             className="press flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/30 py-4 text-sm font-bold text-destructive"
           >
-            <LogOut className="size-4" /> Log out
-          </Link>
+            <LogOut className="size-4" /> {t("logout")}
+          </button>
         </div>
       </div>
     </Screen>
