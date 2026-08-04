@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { reverseGeocode } from "./weather.functions";
-import { updateFarmerProfile } from "./profile.functions";
 import { useSession } from "./session";
 
 export type FarmLocation = {
