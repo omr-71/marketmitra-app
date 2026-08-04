@@ -63,7 +63,7 @@ function Splash() {
           style={{ animationDelay: "240ms" }}
         >
           <Link
-            to="/auth"
+            to="/home"
             className="press grad-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)]"
           >
             {t("getStarted")}
