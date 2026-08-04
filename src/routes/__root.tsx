@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MarketMitra — Sell Smarter. Earn Better." },
+      { title: "MarketMitra" },
       {
         name: "description",
         content:
@@ -91,10 +91,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "MarketMitra" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:title", content: "MarketMitra — Sell Smarter. Earn Better." },
-      { name: "twitter:title", content: "MarketMitra — Sell Smarter. Earn Better." },
+      { property: "og:title", content: "MarketMitra" },
+      { name: "twitter:title", content: "MarketMitra" },
       { property: "og:description", content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell." },
       { name: "twitter:description", content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/13be7300-a74f-4f0a-a7cb-67d19efe24b4/id-preview-b696cdf0--1f0dfdaa-c120-4ff4-aa20-ea74627b101b.lovable.app-1785830020583.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/13be7300-a74f-4f0a-a7cb-67d19efe24b4/id-preview-b696cdf0--1f0dfdaa-c120-4ff4-aa20-ea74627b101b.lovable.app-1785830020583.png" },
     ],
     links: [
       {
@@ -107,7 +109,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
       },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
     ],
   }),
 

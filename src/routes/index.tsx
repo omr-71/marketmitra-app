@@ -7,13 +7,13 @@ import { ArrowRight } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MarketMitra — Sell Smarter. Earn Better." },
+      { title: "MarketMitra" },
       {
         name: "description",
         content:
           "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell.",
       },
-      { property: "og:title", content: "MarketMitra — Sell Smarter. Earn Better." },
+      { property: "og:title", content: "MarketMitra" },
       {
         property: "og:description",
         content: "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell.",
