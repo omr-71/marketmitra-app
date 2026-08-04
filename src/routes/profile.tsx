@@ -116,7 +116,7 @@ function ProfilePage() {
           <div className="mt-5 space-y-3 border-t border-border pt-4">
             <label className="block">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("name")}
+                {t("fullName")}
               </span>
               <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
                 <User className="size-4 text-muted-foreground" />
