@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { reverseGeocode } from "./weather.functions";
-import { updateFarmerProfile } from "./profile.functions";
 import { useSession } from "./session";
 
 export type FarmLocation = {
@@ -39,7 +38,7 @@ const LocationContext = createContext<Ctx>({
 });
 
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const { profile, userId, refresh } = useSession();
+  const { profile, updateProfile } = useSession();
   const [location, setLocation] = useState<FarmLocation | null>(null);
   const [status, setStatus] = useState<Ctx["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +58,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!profile?.state) return;
+    if (!profile.state) return;
     setLocation((current) => {
       if (current?.state) return current;
       const next: FarmLocation = {
@@ -79,18 +78,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setLocation(next);
       setStatus("ready");
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      if (!userId) return;
-      await updateFarmerProfile({
-        data: {
-          state: next.state,
-          district: next.district,
-          latitude: next.latitude,
-          longitude: next.longitude,
-        },
+      updateProfile({
+        state: next.state,
+        district: next.district,
+        latitude: next.latitude,
+        longitude: next.longitude,
       });
-      await refresh();
     },
-    [userId, refresh],
+    [updateProfile],
   );
 
   const detect = useCallback(async () => {

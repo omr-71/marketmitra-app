@@ -1,10 +1,16 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type FarmerProfile = {
-  id: string;
-  phone: string;
-  full_name: string;
+  full_name: string | null;
+  phone: string | null;
   village: string | null;
   language: string;
   state: string | null;
@@ -14,65 +20,67 @@ export type FarmerProfile = {
   saved_crops: string[] | null;
 };
 
+const EMPTY: FarmerProfile = {
+  full_name: null,
+  phone: null,
+  village: null,
+  language: "en",
+  state: null,
+  district: null,
+  latitude: null,
+  longitude: null,
+  saved_crops: null,
+};
+
+const STORAGE_KEY = "mm-profile";
+
 type SessionCtx = {
-  userId: string | null;
-  profile: FarmerProfile | null;
+  profile: FarmerProfile;
   loading: boolean;
-  refresh: () => Promise<void>;
-  signOut: () => Promise<void>;
+  updateProfile: (patch: Partial<FarmerProfile>) => void;
+  clearProfile: () => void;
 };
 
 const SessionContext = createContext<SessionCtx>({
-  userId: null,
-  profile: null,
+  profile: EMPTY,
   loading: true,
-  refresh: async () => {},
-  signOut: async () => {},
+  updateProfile: () => {},
+  clearProfile: () => {},
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<FarmerProfile | null>(null);
+  const [profile, setProfile] = useState<FarmerProfile>(EMPTY);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    const { data } = await supabase.auth.getUser();
-    const id = data.user?.id ?? null;
-    setUserId(id);
-    if (!id) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-    const { data: row } = await supabase
-      .from("profiles")
-      .select("id, phone, full_name, village, language, state, district, latitude, longitude, saved_crops")
-      .eq("id", id)
-      .maybeSingle();
-    setProfile((row as FarmerProfile | null) ?? null);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    void load();
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      void load();
-    });
-    return () => sub.subscription.unsubscribe();
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) setProfile({ ...EMPTY, ...(JSON.parse(raw) as Partial<FarmerProfile>) });
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+    setLoading(false);
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUserId(null);
-    setProfile(null);
-  };
+  const updateProfile = useCallback((patch: Partial<FarmerProfile>) => {
+    setProfile((current) => {
+      const next = { ...current, ...patch };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
-  return (
-    <SessionContext.Provider value={{ userId, profile, loading, refresh: load, signOut }}>
-      {children}
-    </SessionContext.Provider>
+  const clearProfile = useCallback(() => {
+    window.localStorage.removeItem(STORAGE_KEY);
+    setProfile(EMPTY);
+  }, []);
+
+  const value = useMemo(
+    () => ({ profile, loading, updateProfile, clearProfile }),
+    [profile, loading, updateProfile, clearProfile],
   );
+
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
 export const useSession = () => useContext(SessionContext);

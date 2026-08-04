@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CropsRouteImport } from './routes/crops'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as MarketsRouteImport } from './routes/markets'
@@ -23,11 +22,6 @@ import { Route as MarketMarketIdRouteImport } from './routes/market.$marketId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CropsRoute = CropsRouteImport.update({
@@ -73,7 +67,6 @@ const MarketMarketIdRoute = MarketMarketIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
@@ -98,7 +90,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/crops': typeof CropsRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
@@ -112,7 +103,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/crops'
     | '/home'
     | '/markets'
@@ -124,7 +114,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/crops'
     | '/home'
     | '/markets'
@@ -136,7 +125,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/auth'
     | '/crops'
     | '/home'
     | '/markets'
@@ -149,7 +137,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
   CropsRoute: typeof CropsRoute
   HomeRoute: typeof HomeRoute
   MarketsRoute: typeof MarketsRoute
@@ -167,13 +154,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crops': {
@@ -237,7 +217,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
   CropsRoute: CropsRoute,
   HomeRoute: HomeRoute,
   MarketsRoute: MarketsRoute,
