@@ -1,5 +1,5 @@
 import type { WeatherDay, WeatherResult } from "./weather.functions";
-import { formatIstWeekday } from "./format";
+import { formatIstWeekday, istDate } from "./format";
 
 type Ok = Extract<WeatherResult, { ok: true }>;
 
@@ -26,8 +26,8 @@ export function uvLabel(uv: number) {
 
 /** Which part of today suits field work, derived from real sunrise/sunset and conditions. */
 export function bestFarmingWindow(data: Ok) {
-  const sunrise = new Date(data.sunrise);
-  const sunset = new Date(data.sunset);
+  const sunrise = istDate(data.sunrise);
+  const sunset = istDate(data.sunset);
   const fmt = (d: Date, addHours: number) =>
     new Intl.DateTimeFormat("en-IN", {
       timeZone: "Asia/Kolkata",
