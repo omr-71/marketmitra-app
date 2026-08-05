@@ -94,6 +94,8 @@ export function Screen({
   nav?: boolean;
   className?: string;
 }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
   return (
     <div className="min-h-screen bg-background lg:flex">
       {withNav && <SideNav />}
@@ -103,7 +105,7 @@ export function Screen({
             withNav ? "pb-28 lg:pb-14" : ""
           } ${className}`}
         >
-          <div key={useRouterState({ select: (s) => s.location.pathname })} className="animate-page">
+          <div key={pathname} className="animate-page">
             {children}
           </div>
         </div>
