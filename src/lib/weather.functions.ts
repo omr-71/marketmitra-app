@@ -13,6 +13,7 @@ export type WeatherDay = {
   rainChance: number;
   rainMm: number;
   code: number;
+  uvIndex: number;
 };
 
 export type WeatherResult =
@@ -27,6 +28,8 @@ export type WeatherResult =
         rainChance: number;
         code: number;
         isDay: boolean;
+        pressure: number;
+        uvIndex: number;
       };
       sunrise: string;
       sunset: string;
@@ -43,11 +46,11 @@ export const fetchWeather = createServerFn({ method: "POST" })
     url.searchParams.set("longitude", String(data.longitude));
     url.searchParams.set(
       "current",
-      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,is_day",
+      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,is_day,surface_pressure",
     );
     url.searchParams.set(
       "daily",
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max",
     );
     url.searchParams.set("timezone", "Asia/Kolkata");
     url.searchParams.set("forecast_days", "7");
@@ -69,6 +72,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
           precipitation_sum: (number | null)[];
           sunrise: string[];
           sunset: string[];
+          uv_index_max: (number | null)[];
         };
       };
 
@@ -79,6 +83,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
         rainChance: Math.round(json.daily.precipitation_probability_max[i] ?? 0),
         rainMm: Number((json.daily.precipitation_sum[i] ?? 0).toFixed(1)),
         code: json.daily.weather_code[i] ?? 0,
+        uvIndex: Number((json.daily.uv_index_max[i] ?? 0).toFixed(1)),
       }));
 
       return {
@@ -92,6 +97,8 @@ export const fetchWeather = createServerFn({ method: "POST" })
           rainChance: Math.round(json.current["precipitation_probability"] ?? 0),
           code: json.current["weather_code"] ?? 0,
           isDay: (json.current["is_day"] ?? 1) === 1,
+          pressure: Math.round(json.current["surface_pressure"] ?? 0),
+          uvIndex: days[0]?.uvIndex ?? 0,
         },
         sunrise: json.daily.sunrise[0] ?? "",
         sunset: json.daily.sunset[0] ?? "",
