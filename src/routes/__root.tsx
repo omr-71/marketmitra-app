@@ -15,6 +15,7 @@ import { LangProvider } from "../lib/i18n";
 import { SessionProvider } from "../lib/session";
 import { LocationProvider } from "../lib/location";
 import { Toaster } from "@/components/ui/sonner";
+import { SplashOverlay } from "@/components/splash-overlay";
 
 
 function NotFoundComponent() {
@@ -103,6 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -110,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
       },
     ],
+
   }),
 
   shellComponent: RootShell,
@@ -141,6 +145,7 @@ function RootComponent() {
         <LocationProvider>
         <LangProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <SplashOverlay />
           <Outlet />
           <Toaster position="top-center" richColors />
         </LangProvider>

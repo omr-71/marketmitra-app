@@ -32,9 +32,20 @@ export function formatIstDate(value: string | number | Date) {
   }).format(date);
 }
 
+/**
+ * Open-Meteo returns local (IST) wall-clock strings without an offset, e.g.
+ * "2026-08-05T06:11". Anchor those to IST so they don't get read as UTC.
+ */
+export function istDate(value: string | number | Date) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)) {
+    return new Date(`${value}+05:30`);
+  }
+  return new Date(value);
+}
+
 /** hh:mm am/pm in IST */
 export function formatIstTime(value: string | number | Date) {
-  const date = new Date(value);
+  const date = istDate(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-IN", {
     timeZone: IST_TIME_ZONE,
@@ -45,7 +56,7 @@ export function formatIstTime(value: string | number | Date) {
 }
 
 export function formatIstWeekday(value: string | number | Date) {
-  const date = new Date(value);
+  const date = istDate(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-IN", {
     timeZone: IST_TIME_ZONE,
