@@ -15,6 +15,7 @@ import { LangProvider } from "../lib/i18n";
 import { SessionProvider } from "../lib/session";
 import { LocationProvider } from "../lib/location";
 import { Toaster } from "@/components/ui/sonner";
+import { SplashOverlay } from "@/components/splash-overlay";
 
 
 function NotFoundComponent() {
@@ -144,6 +145,7 @@ function RootComponent() {
         <LocationProvider>
         <LangProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <SplashOverlay />
           <Outlet />
           <Toaster position="top-center" richColors />
         </LangProvider>
