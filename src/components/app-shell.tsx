@@ -1,5 +1,16 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Store, CloudSun, Landmark, User, ChevronLeft } from "lucide-react";
+import {
+  Home,
+  Store,
+  CloudSun,
+  Landmark,
+  User,
+  ChevronLeft,
+  Info,
+  Mail,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
@@ -11,6 +22,7 @@ const nav = [
   { to: "/schemes", icon: Landmark, key: "schemes" as const },
   { to: "/profile", icon: User, key: "profile" as const },
 ];
+
 
 function useActive() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -76,11 +88,20 @@ export function SideNav() {
         })}
       </nav>
 
-      <p className="mt-auto px-3 text-[11px] leading-relaxed text-muted-foreground">
+      <Link
+        to="/about"
+        className="press mt-auto flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <Info className="size-5" strokeWidth={1.9} />
+        About us
+      </Link>
+
+      <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground">
         Official APMC / Agmarknet prices · Open-Meteo weather
         <br />
         English · मराठी · हिंदी
       </p>
+
     </aside>
   );
 }
@@ -102,14 +123,16 @@ export function Screen({
       <div className="min-w-0 flex-1">
         <div
           className={`mx-auto w-full max-w-[430px] lg:max-w-6xl lg:px-8 ${
-            withNav ? "pb-28 lg:pb-14" : ""
+            withNav ? "pb-28 lg:pb-0" : ""
           } ${className}`}
         >
           <div key={pathname} className="animate-page">
             {children}
           </div>
+          {withNav && <SiteFooter />}
         </div>
       </div>
+
       {withNav && <BottomNav />}
     </div>
   );
@@ -147,6 +170,74 @@ export function TopBar({
     </header>
   );
 }
+
+/** Professional site footer, shown on every app screen. */
+export function SiteFooter() {
+  const { t } = useLang();
+
+  return (
+    <footer className="mt-10 border-t border-border/70 px-5 pb-6 pt-8 lg:mt-16 lg:px-0 lg:pb-10 lg:pt-12">
+      <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr_1fr]">
+        <div>
+          <Link to="/home" className="flex items-center gap-2.5">
+            <LogoMark className="size-9" />
+            <Wordmark className="text-lg" />
+          </Link>
+          <p className="mt-3 max-w-sm text-xs leading-relaxed text-muted-foreground">
+            Mandi intelligence for Indian farmers — official APMC prices, transport-adjusted net
+            profit and live farm weather, in English, Marathi and Hindi.
+          </p>
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-[11px] font-bold text-muted-foreground">
+            <Sparkles className="size-3.5 text-primary" /> Official data · No fake prices
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Platform
+          </p>
+          <ul className="mt-3 space-y-2 text-sm font-semibold">
+            {nav.map(({ to, key }) => (
+              <li key={to}>
+                <Link to={to} className="text-foreground/80 transition-colors hover:text-primary">
+                  {t(key)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link to="/about" className="text-foreground/80 transition-colors hover:text-primary">
+                About us
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Contact
+          </p>
+          <a
+            href="mailto:hello.marketmitra@gmail.com"
+            className="mt-3 flex items-center gap-2 text-sm font-semibold text-foreground/80 transition-colors hover:text-primary"
+          >
+            <Mail className="size-4 shrink-0 text-primary" />
+            hello.marketmitra@gmail.com
+          </a>
+          <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <MapPin className="size-4 shrink-0 text-primary" />
+            Maharashtra, India
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-8 flex flex-col gap-1.5 border-t border-border/70 pt-5 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>© 2026 Market Mitra. All rights reserved.</p>
+        <p>Developed by Market Mitra Team</p>
+      </div>
+    </footer>
+  );
+}
+
 
 export function MobileBrandBar() {
   return (

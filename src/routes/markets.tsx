@@ -100,7 +100,7 @@ function MarketsPage() {
 
       <div className="px-5 pt-5">
         <div className="flex gap-2">
-          <label className="card-surface flex h-12 flex-1 items-center gap-2 px-4">
+          <label className="card-surface hover-lift flex h-12 flex-1 items-center gap-2 px-4">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               value={query}
@@ -122,7 +122,7 @@ function MarketsPage() {
         </div>
 
         {showFilters && (
-          <div className="card-surface mt-3 space-y-4 p-4">
+          <div className="card-surface hover-lift mt-3 space-y-4 p-4">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span>{t("transportRate")}</span>
@@ -159,18 +159,18 @@ function MarketsPage() {
         )}
 
         {!location?.state ? (
-          <p className="card-surface mt-5 p-5 text-sm text-muted-foreground">{t("locationNeeded")}</p>
+          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">{t("locationNeeded")}</p>
         ) : priceQuery.isPending ? (
           <div className="mt-5 space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="card-surface h-28 animate-pulse" />
+              <div key={i} className="card-surface hover-lift h-28 animate-pulse" />
             ))}
             <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> {t("loading")}
             </p>
           </div>
         ) : priceQuery.data && !priceQuery.data.ok ? (
-          <div className="card-surface mt-5 p-5">
+          <div className="card-surface hover-lift mt-5 p-5">
             <p className="text-sm font-semibold text-destructive">{priceQuery.data.error}</p>
             <button
               onClick={() => void priceQuery.refetch()}
@@ -180,7 +180,7 @@ function MarketsPage() {
             </button>
           </div>
         ) : ranked.length === 0 ? (
-          <p className="card-surface mt-5 p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
+          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
         ) : (
           <div className="mt-5 space-y-3">
             {ranked.map((row, index) => (

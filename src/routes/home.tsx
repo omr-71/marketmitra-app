@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import { useLocationContext } from "@/lib/location";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices } from "@/lib/market.functions";
-import { fetchWeather } from "@/lib/weather.functions";
+import { getWeather } from "@/lib/weather.client";
 import { formatIstDateTime, inr, useIstNow } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
 import { bestFarmingWindow, conditionLabel, todayInsight, uvLabel } from "@/lib/farm-insights";
@@ -75,7 +75,7 @@ function HomePage() {
     queryKey: ["weather", location?.latitude, location?.longitude],
     enabled: Boolean(location?.latitude != null && location?.longitude != null),
     queryFn: () =>
-      fetchWeather({ data: { latitude: location!.latitude!, longitude: location!.longitude! } }),
+      getWeather(location!.latitude!, location!.longitude!),
     staleTime: 15 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   });
@@ -156,14 +156,14 @@ function HomePage() {
         {!weather && location?.latitude != null && weatherQuery.isPending && <CardSkeleton lines={4} />}
 
         {!location?.latitude && (
-          <section className="card-surface p-5">
+          <section className="card-surface hover-lift p-5">
             <p className="text-sm font-bold">{t("weather")}</p>
             <p className="mt-2 text-xs text-muted-foreground">{t("locationNeeded")}</p>
           </section>
         )}
 
         {weatherQuery.data && !weatherQuery.data.ok && (
-          <section className="card-surface p-5">
+          <section className="card-surface hover-lift p-5">
             <p className="text-sm font-bold">{t("weather")}</p>
             <ErrorLine
               message={weatherQuery.data.error}
@@ -186,7 +186,7 @@ function HomePage() {
         ) : null}
 
         {/* Best market recommendation */}
-        <section className="card-surface p-5">
+        <section className="card-surface hover-lift p-5">
           <div className="flex items-center gap-2">
             <span className="grid size-7 place-items-center rounded-full bg-primary/12">
               <Sparkles className="size-4 text-primary" />
@@ -248,7 +248,7 @@ function HomePage() {
                 <RowSkeleton rows={4} />
               </div>
             ) : records.length === 0 ? (
-              <p className="card-surface mt-3 p-4 text-xs text-muted-foreground">
+              <p className="card-surface hover-lift mt-3 p-4 text-xs text-muted-foreground">
                 {location?.state ? t("noPrices") : t("locationNeeded")}
               </p>
             ) : (
@@ -303,7 +303,7 @@ function HomePage() {
 
           <div className="space-y-4">
             {weather && (
-              <section className="card-surface p-5">
+              <section className="card-surface hover-lift p-5">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
                   <Lightbulb className="size-4" /> Today's weather insight
                 </p>
@@ -352,7 +352,7 @@ function HomePage() {
 function CounterCard({ label, value, money }: { label: string; value: number; money?: boolean }) {
   const shown = useCountUp(value);
   return (
-    <div className="card-surface p-4">
+    <div className="card-surface hover-lift p-4">
       <p className="truncate text-[11px] font-bold text-muted-foreground">{label}</p>
       <p className="mt-1.5 font-display text-xl font-extrabold tabular-nums leading-none lg:text-2xl">
         {money ? inr(Math.round(shown)) : Math.round(shown).toLocaleString("en-IN")}

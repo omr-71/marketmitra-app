@@ -20,7 +20,7 @@ export function LocationCard() {
   };
 
   return (
-    <div className="card-surface p-4">
+    <div className="card-surface hover-lift p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary/10">

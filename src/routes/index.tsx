@@ -65,7 +65,7 @@ function Splash() {
         >
           <Link
             to="/home"
-            className="press grad-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)]"
+            className="press sheen-on-hover grad-primary flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)]"
           >
             {t("getStarted")}
             <ArrowRight className="size-5" />
