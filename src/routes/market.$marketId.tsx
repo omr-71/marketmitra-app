@@ -59,11 +59,11 @@ function MarketDetailPage() {
 
       <div className="px-5 pt-5">
         {todayQuery.isPending ? (
-          <div className="card-surface flex items-center gap-2 p-5 text-xs text-muted-foreground">
+          <div className="card-surface hover-lift flex items-center gap-2 p-5 text-xs text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> {t("loading")}
           </div>
         ) : todayQuery.data && !todayQuery.data.ok ? (
-          <div className="card-surface p-5">
+          <div className="card-surface hover-lift p-5">
             <p className="text-sm font-semibold text-destructive">{todayQuery.data.error}</p>
             <button
               onClick={() => void todayQuery.refetch()}
@@ -73,7 +73,7 @@ function MarketDetailPage() {
             </button>
           </div>
         ) : latest ? (
-          <div className="card-surface p-5">
+          <div className="card-surface hover-lift p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
               {t("price")} · {formatIstDate(latest.arrivalDate)}
             </p>
@@ -99,10 +99,10 @@ function MarketDetailPage() {
             )}
           </div>
         ) : (
-          <p className="card-surface p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
+          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
         )}
 
-        <section className="card-surface mt-4 p-5">
+        <section className="card-surface hover-lift mt-4 p-5">
           <div className="flex items-center gap-2">
             <BarChart3 className="size-4 text-primary" />
             <p className="text-sm font-bold">{t("priceHistory")}</p>

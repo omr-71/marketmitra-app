@@ -83,7 +83,7 @@ function CropsPage() {
           })}
         </div>
 
-        <div className="card-surface mt-6 p-5">
+        <div className="card-surface hover-lift mt-6 p-5">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <div className="min-w-0">
               <p className="text-sm font-bold">{t("quantity")}</p>

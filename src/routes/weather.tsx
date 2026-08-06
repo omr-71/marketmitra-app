@@ -5,7 +5,8 @@ import { LocationCard } from "@/components/location-card";
 import { CardSkeleton, StatSkeleton } from "@/components/skeletons";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
-import { fetchWeather, type WeatherDay } from "@/lib/weather.functions";
+import type { WeatherDay } from "@/lib/weather.functions";
+import { getWeather } from "@/lib/weather.client";
 import { formatIstDateTime, formatIstTime, formatIstWeekday } from "@/lib/format";
 import {
   bestFarmingWindow,
@@ -65,7 +66,7 @@ function WeatherPage() {
     queryKey: ["weather", location?.latitude, location?.longitude],
     enabled: Boolean(location?.latitude != null && location?.longitude != null),
     queryFn: () =>
-      fetchWeather({ data: { latitude: location!.latitude!, longitude: location!.longitude! } }),
+      getWeather(location!.latitude!, location!.longitude!),
     staleTime: 15 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   });
@@ -94,7 +95,7 @@ function WeatherPage() {
         <LocationCard />
 
         {!location?.latitude ? (
-          <div className="card-surface flex flex-col items-center gap-3 p-8 text-center">
+          <div className="card-surface hover-lift flex flex-col items-center gap-3 p-8 text-center">
             <span className="grid size-14 place-items-center rounded-3xl bg-primary/10">
               <MapPin className="size-6 text-primary" />
             </span>
@@ -110,7 +111,7 @@ function WeatherPage() {
             <CardSkeleton lines={6} />
           </div>
         ) : !data ? (
-          <div className="card-surface p-6 text-center">
+          <div className="card-surface hover-lift p-6 text-center">
             <span className="mx-auto grid size-14 place-items-center rounded-3xl bg-destructive/10">
               <AlertTriangle className="size-6 text-destructive" />
             </span>
@@ -127,7 +128,7 @@ function WeatherPage() {
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-              <section className="card-surface overflow-hidden p-6">
+              <section className="card-surface hover-lift overflow-hidden p-6">
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="font-display text-6xl font-extrabold leading-none">
@@ -173,14 +174,14 @@ function WeatherPage() {
                   />
                 </div>
 
-                <section className="card-surface p-5">
+                <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
                     <Lightbulb className="size-4" /> Today's weather insight
                   </p>
                   <p className="mt-2.5 text-[15px] font-semibold leading-snug">{todayInsight(data)}</p>
                 </section>
 
-                <section className="card-surface p-5">
+                <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
                     <Clock className="size-4" /> Best time for farming today
                   </p>
@@ -206,7 +207,7 @@ function WeatherPage() {
             )}
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <section className="card-surface p-5">
+              <section className="card-surface hover-lift p-5">
                 <p className="text-sm font-bold">{t("sevenDay")}</p>
                 <div className="mt-3 space-y-2">
                   {data.days.map((day) => (
@@ -227,7 +228,7 @@ function WeatherPage() {
               </section>
 
               <div className="space-y-4">
-                <section className="card-surface p-5">
+                <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-sm font-bold">
                     <Sprout className="size-4 text-primary" /> {t("harvestAdvice")}
                   </p>
@@ -241,7 +242,7 @@ function WeatherPage() {
                   </ul>
                 </section>
 
-                <section className="card-surface p-5">
+                <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-sm font-bold">
                     <Lightbulb className="size-4 text-primary" /> Farming tips for these conditions
                   </p>
@@ -285,7 +286,7 @@ function TileStat({
   hint: string;
 }) {
   return (
-    <div className="card-surface p-4">
+    <div className="card-surface hover-lift p-4">
       <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
         {icon}
         {label}

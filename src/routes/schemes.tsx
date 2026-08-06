@@ -38,7 +38,7 @@ function SchemesPage() {
 
         <div className="mt-4 space-y-3">
           {schemes.map((scheme) => (
-            <article key={scheme.id} className="card-surface p-5">
+            <article key={scheme.id} className="card-surface hover-lift p-5">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10">
                   <Landmark className="size-4.5 text-primary" />

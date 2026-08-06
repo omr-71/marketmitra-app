@@ -93,7 +93,7 @@ function ProfilePage() {
       <TopBar title={t("profile")} back="/home" />
 
       <div className="space-y-5 px-5 pt-5">
-        <div className="card-surface p-5">
+        <div className="card-surface hover-lift p-5">
           <div className="flex items-center gap-4">
             <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground">
               {initials}

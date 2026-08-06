@@ -254,3 +254,79 @@
     animation: shimmer 1.4s infinite;
   }
 }
+
+/* ---------- Premium micro-interactions ---------- */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Elegant desktop lift on cards */
+@utility hover-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease;
+  @media (hover: hover) and (min-width: 1024px) {
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-float);
+      border-color: color-mix(in oklab, var(--color-primary) 32%, transparent);
+    }
+  }
+}
+
+/* Subtle sheen sweep for hero/CTA surfaces */
+@keyframes sheen {
+  0% {
+    transform: translateX(-120%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-12deg);
+  }
+}
+
+@utility sheen-on-hover {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background-image: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.22), transparent);
+    transform: translateX(-120%) skewX(-12deg);
+  }
+  @media (hover: hover) {
+    &:hover::after {
+      animation: sheen 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+}
+
+/* Animated icon nudge inside interactive rows */
+@utility nudge-icon {
+  & svg {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (hover: hover) {
+    &:hover svg {
+      transform: translateX(3px);
+    }
+  }
+}

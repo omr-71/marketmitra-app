@@ -66,7 +66,7 @@ function PredictPage() {
       <Screen>
         <TopBar title={t("pricePrediction")} back="/home" />
         <div className="px-5 pt-5">
-          <p className="card-surface p-5 text-sm text-muted-foreground">
+          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">
             Open a market from the comparison list to see its price outlook.
           </p>
         </div>
@@ -79,7 +79,7 @@ function PredictPage() {
       <TopBar title={t("pricePrediction")} subtitle={`${crop.name[lang]} · ${market}`} back="/markets" />
 
       <div className="px-5 pt-5">
-        <section className="card-surface p-5">
+        <section className="card-surface hover-lift p-5">
           <div className="flex items-center gap-2">
             <span className="grid size-7 place-items-center rounded-full bg-primary/12">
               <Sparkles className="size-4 text-primary" />
@@ -142,7 +142,7 @@ function PredictPage() {
           )}
         </section>
 
-        <section className="card-surface mt-4 p-5">
+        <section className="card-surface hover-lift mt-4 p-5">
           <div className="flex items-center gap-2">
             <BarChart3 className="size-4 text-primary" />
             <p className="text-sm font-bold">{t("priceHistory")}</p>
