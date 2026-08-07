@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LogoMark } from "@/components/brand";
+import { Reveal } from "@/components/reveal";
 import {
   ArrowRight,
   BarChart3,
@@ -13,6 +14,9 @@ import {
   ShieldCheck,
   Sprout,
   Target,
+  Wallet,
+  Gauge,
+  Users,
 } from "lucide-react";
 
 export const Route = createFileRoute("/about")({
@@ -76,6 +80,29 @@ const values = [
   },
 ];
 
+const whyUs = [
+  {
+    icon: <Wallet className="size-5 text-primary" />,
+    title: "Net profit, not just rates",
+    body: "Every market is ranked after transport, freight and distance are deducted — the number you actually take home.",
+  },
+  {
+    icon: <Gauge className="size-5 text-primary" />,
+    title: "Live, verified sources",
+    body: "Official APMC / Agmarknet price feeds and Open-Meteo weather, timestamped in IST on every screen.",
+  },
+  {
+    icon: <Languages className="size-5 text-primary" />,
+    title: "Three languages, one tap",
+    body: "English, Marathi and Hindi across the whole product — including crop names and market terminology.",
+  },
+  {
+    icon: <Users className="size-5 text-primary" />,
+    title: "Free and account-free",
+    body: "No paperwork, no subscription. Open the app and get today's answer in seconds on any phone.",
+  },
+];
+
 function AboutPage() {
   return (
     <Screen>
@@ -120,7 +147,7 @@ function AboutPage() {
         </section>
 
         {/* Story */}
-        <section className="grid gap-4 lg:grid-cols-[1.25fr_1fr] lg:gap-6">
+        <Reveal><section className="grid gap-4 lg:grid-cols-[1.25fr_1fr] lg:gap-6">
           <article className="card-surface hover-lift p-6 lg:p-8">
             <p className="text-xs font-bold uppercase tracking-wider text-primary">Our story</p>
             <h3 className="mt-3 font-display text-xl font-extrabold lg:text-2xl">
@@ -167,7 +194,38 @@ function AboutPage() {
               </p>
             </div>
           </div>
-        </section>
+        </section></Reveal>
+
+        {/* Why Market Mitra */}
+        <Reveal>
+          <section
+            className="relative overflow-hidden rounded-4xl border border-border/70 p-6 lg:p-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(120% 120% at 100% 0%, color-mix(in oklab, var(--color-primary) 12%, transparent) 0%, transparent 55%)",
+            }}
+          >
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">
+              Why Market Mitra
+            </p>
+            <h3 className="mt-2 font-display text-xl font-extrabold lg:text-2xl">
+              Built for the decision at the farm gate
+            </h3>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {whyUs.map((item, i) => (
+                <Reveal key={item.title} delay={i * 70}>
+                  <article className="glass hover-lift h-full rounded-3xl p-5">
+                    <span className="grid size-11 place-items-center rounded-2xl bg-primary/10">
+                      {item.icon}
+                    </span>
+                    <p className="mt-4 text-sm font-extrabold">{item.title}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        </Reveal>
 
         {/* Problem */}
         <section>
@@ -181,13 +239,15 @@ function AboutPage() {
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {problems.map((item) => (
-              <article key={item.title} className="card-surface hover-lift p-6">
+              <Reveal key={item.title}>
+              <article className="card-surface hover-lift h-full p-6">
                 <span className="grid size-11 place-items-center rounded-2xl bg-primary/10">
                   {item.icon}
                 </span>
                 <p className="mt-4 text-sm font-extrabold">{item.title}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
               </article>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -200,7 +260,8 @@ function AboutPage() {
           </h3>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             {values.map((item) => (
-              <article key={item.title} className="card-surface hover-lift p-6">
+              <Reveal key={item.title}>
+              <article className="card-surface hover-lift h-full p-6">
                 <span className="grid size-11 place-items-center rounded-2xl bg-primary/10">
                   {item.icon}
                 </span>
