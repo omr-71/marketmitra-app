@@ -141,6 +141,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <SessionProvider>
         <LocationProvider>
         <LangProvider>
@@ -151,6 +152,8 @@ function RootComponent() {
         </LangProvider>
         </LocationProvider>
       </SessionProvider>
+      </ThemeProvider>
     </QueryClientProvider>
+
   );
 }
