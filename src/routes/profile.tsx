@@ -6,7 +6,8 @@ import { LocationCard } from "@/components/location-card";
 import { langNames, useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { crops, type Lang } from "@/lib/crops";
-import { Check, Loader2, MapPin, Phone, Sprout, User } from "lucide-react";
+import { themes, useTheme } from "@/lib/theme";
+import { Check, Loader2, MapPin, Palette, Phone, Sprout, User } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
   const { profile, loading, updateProfile } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
