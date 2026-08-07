@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LangProvider } from "../lib/i18n";
 import { SessionProvider } from "../lib/session";
 import { LocationProvider } from "../lib/location";
+import { ThemeProvider } from "../lib/theme";
+
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
 
@@ -141,6 +143,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <SessionProvider>
         <LocationProvider>
         <LangProvider>
@@ -151,6 +154,8 @@ function RootComponent() {
         </LangProvider>
         </LocationProvider>
       </SessionProvider>
+      </ThemeProvider>
     </QueryClientProvider>
+
   );
 }

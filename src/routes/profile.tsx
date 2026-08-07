@@ -6,7 +6,8 @@ import { LocationCard } from "@/components/location-card";
 import { langNames, useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { crops, type Lang } from "@/lib/crops";
-import { Check, Loader2, MapPin, Phone, Sprout, User } from "lucide-react";
+import { themes, useTheme } from "@/lib/theme";
+import { Check, Loader2, MapPin, Palette, Phone, Sprout, User } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const { t, lang, setLang } = useLang();
   const { profile, loading, updateProfile } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -210,6 +212,39 @@ function ProfilePage() {
             ))}
           </div>
         </section>
+
+        <section>
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Palette className="size-4 text-primary" /> Theme
+          </h3>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Your choice is saved on this device.
+          </p>
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {themes.map((th) => (
+              <button
+                key={th.id}
+                onClick={() => setTheme(th.id)}
+                className={`press hover-lift flex items-center gap-3 rounded-2xl border p-3.5 text-left ${
+                  theme === th.id ? "border-primary bg-primary/10" : "border-border bg-card"
+                }`}
+              >
+                <span className="flex shrink-0 gap-1">
+                  {th.swatch.map((c) => (
+                    <span
+                      key={c}
+                      className="size-5 rounded-full ring-1 ring-border"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs font-bold">{th.label}</span>
+                {theme === th.id && <Check className="size-4 shrink-0 text-primary" strokeWidth={3} />}
+              </button>
+            ))}
+          </div>
+        </section>
+
       </div>
     </Screen>
   );
