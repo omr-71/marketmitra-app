@@ -6,7 +6,7 @@ import { CardSkeleton, StatSkeleton } from "@/components/skeletons";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
 import type { WeatherDay } from "@/lib/weather.functions";
-import { getWeather } from "@/lib/weather.client";
+import { getWeather } from "@/lib/weather-fetch";
 import { formatIstDateTime, formatIstTime, formatIstWeekday } from "@/lib/format";
 import {
   bestFarmingWindow,
