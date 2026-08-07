@@ -8,8 +8,6 @@ import {
   ChevronLeft,
   Info,
   Mail,
-  MapPin,
-  Sparkles,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
@@ -35,26 +33,33 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-3 lg:hidden">
-      <div className="glass flex items-center justify-between rounded-3xl px-2 py-2 shadow-[var(--shadow-card)]">
-        {nav.map(({ to, icon: Icon, key }) => {
-          const active = isActive(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={`press flex flex-1 flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold ${
-                active ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
-              <span className="truncate">{t(key)}</span>
-            </Link>
-          );
-        })}
+      <div className="glass flex items-center justify-between rounded-3xl px-1.5 py-2 shadow-[var(--shadow-card)]">
+        {[...nav, { to: "/about", icon: Info, key: "about" as const }].map(
+          ({ to, icon: Icon, key }) => {
+            const active = isActive(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`press flex flex-1 flex-col items-center gap-1 rounded-2xl px-0.5 py-2 text-[9.5px] font-semibold ${
+                  active
+                    ? "bg-primary/12 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
+                <span className="w-full truncate text-center">
+                  {key === "about" ? "About" : t(key)}
+                </span>
+              </Link>
+            );
+          },
+        )}
       </div>
     </nav>
   );
 }
+
 
 /** Desktop-only left rail: makes the app read like a professional web platform. */
 export function SideNav() {
