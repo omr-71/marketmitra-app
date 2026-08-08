@@ -100,9 +100,10 @@ function WeatherPage() {
               <MapPin className="size-6 text-primary" />
             </span>
             <p className="max-w-md text-sm text-muted-foreground">
-              Share your location to load the forecast for your farm — a district name alone cannot
-              pinpoint rainfall.
+              Allow location access for an automatic forecast, or enter your city, district and
+              state above — that works without GPS and stays saved.
             </p>
+
           </div>
         ) : query.isPending ? (
           <div className="space-y-4">
