@@ -453,3 +453,38 @@
   --chart-2: oklch(0.62 0.01 260);
   --gradient-ink: linear-gradient(160deg, oklch(0.26 0.006 260) 0%, oklch(0.15 0.004 260) 100%);
 }
+
+/* ---------- Mobile performance & app-like feel ---------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    /* Stops the pull-to-refresh rubber-band from fighting in-app scrolling. */
+    overscroll-behavior-y: contain;
+  }
+
+  /* Long stacked lists only paint what is on screen. */
+  section,
+  footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Touch devices skip the decorative lift/sheen work entirely. */
+  @media (hover: none) {
+    .hover-lift,
+    .sheen-on-hover {
+      transition: none;
+    }
+  }
+}
