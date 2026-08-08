@@ -78,7 +78,22 @@ const dict = {
   chooseDistrict: { en: "Choose state & district", mr: "राज्य व जिल्हा निवडा", hi: "राज्य व ज़िला चुनें" },
   state: { en: "State", mr: "राज्य", hi: "राज्य" },
   district: { en: "District", mr: "जिल्हा", hi: "ज़िला" },
+  city: { en: "City / village", mr: "शहर / गाव", hi: "शहर / गाँव" },
+  cancel: { en: "Cancel", mr: "रद्द करा", hi: "रद्द करें" },
+  autoLocation: { en: "Auto", mr: "स्वयं", hi: "स्वतः" },
+  manualLocation: { en: "Manual", mr: "मॅन्युअल", hi: "मैनुअल" },
+  enterLocation: {
+    en: "Enter city, district & state",
+    mr: "शहर, जिल्हा व राज्य भरा",
+    hi: "शहर, ज़िला व राज्य भरें",
+  },
+  manualHint: {
+    en: "Works without GPS. Saved for next time.",
+    mr: "GPS शिवाय चालते. पुढील वेळेसाठी जतन होते.",
+    hi: "GPS के बिना काम करता है. अगली बार के लिए सहेजा जाता है.",
+  },
   save: { en: "Save", mr: "जतन करा", hi: "सहेजें" },
+
   noPrices: {
     en: "No mandi prices reported for this crop and district yet.",
     mr: "या पिकासाठी व जिल्ह्यासाठी बाजारभाव उपलब्ध नाहीत.",

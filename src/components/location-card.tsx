@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Crosshair, Loader2 } from "lucide-react";
+import { MapPin, Crosshair, Loader2, Check } from "lucide-react";
 import { INDIAN_STATES } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { useLang } from "@/lib/i18n";
@@ -10,14 +10,22 @@ export function LocationCard() {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState(location?.state ?? "Maharashtra");
   const [district, setDistrict] = useState(location?.district ?? "");
+  const [city, setCity] = useState(location?.city ?? "");
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
     setSaving(true);
-    await setManual({ state, district: district.trim() });
+    await setManual({ state, district: district.trim(), city: city.trim() });
     setSaving(false);
     setOpen(false);
   };
+
+  const label = location?.state || location?.city
+    ? [location.city || location.place || location.district, location.district, location.state]
+        .filter((part, index, all) => Boolean(part) && all.indexOf(part) === index)
+        .slice(0, 3)
+        .join(", ")
+    : t("locationNeeded");
 
   return (
     <div className="card-surface hover-lift p-4">
@@ -29,12 +37,13 @@ export function LocationCard() {
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               {t("yourLocation")}
+              {location ? (
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold normal-case tracking-normal">
+                  {location.source === "gps" ? t("autoLocation") : t("manualLocation")}
+                </span>
+              ) : null}
             </p>
-            <p className="truncate text-sm font-bold">
-              {location?.state
-                ? [location.place || location.district, location.state].filter(Boolean).join(", ")
-                : t("locationNeeded")}
-            </p>
+            <p className="truncate text-sm font-bold">{label}</p>
           </div>
         </div>
         <button
@@ -58,10 +67,33 @@ export function LocationCard() {
           onClick={() => setOpen(true)}
           className="press mt-3 w-full rounded-2xl border border-dashed border-primary/40 py-2.5 text-xs font-bold text-primary"
         >
-          {t("chooseDistrict")}
+          {t("enterLocation")}
         </button>
       ) : (
         <div className="mt-3 space-y-2.5">
+          <p className="text-[11px] font-semibold text-muted-foreground">{t("manualHint")}</p>
+          <label className="block">
+            <span className="text-[11px] font-semibold text-muted-foreground">{t("city")}</span>
+            <input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              maxLength={60}
+              placeholder="Lasalgaon"
+              autoComplete="address-level2"
+              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold text-muted-foreground">{t("district")}</span>
+            <input
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              maxLength={60}
+              placeholder="Nashik"
+              autoComplete="address-level3"
+              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
+            />
+          </label>
           <label className="block">
             <span className="text-[11px] font-semibold text-muted-foreground">{t("state")}</span>
             <select
@@ -76,29 +108,25 @@ export function LocationCard() {
               ))}
             </select>
           </label>
-          <label className="block">
-            <span className="text-[11px] font-semibold text-muted-foreground">{t("district")}</span>
-            <input
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              maxLength={60}
-              placeholder="Nashik"
-              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
-            />
-          </label>
           <div className="flex gap-2">
             <button
               onClick={() => setOpen(false)}
               className="press h-11 flex-1 rounded-2xl border border-border text-sm font-bold"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={() => void submit()}
               disabled={saving || !state}
-              className="press grad-primary h-11 flex-1 rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-60"
+              className="press grad-primary inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-60"
             >
-              {saving ? <Loader2 className="mx-auto size-4 animate-spin" /> : t("save")}
+              {saving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>
+                  <Check className="size-4" /> {t("save")}
+                </>
+              )}
             </button>
           </div>
         </div>
