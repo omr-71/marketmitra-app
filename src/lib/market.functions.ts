@@ -46,7 +46,8 @@ function pick(row: Record<string, unknown>, ...keys: string[]) {
   }
   for (const key of keys) {
     const value = normalized.get(key.toLowerCase().replace(/[^a-z]/g, ""));
-    if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim();
+    if (value !== undefined && value !== null && String(value).trim() !== "")
+      return String(value).trim();
   }
   return "";
 }
@@ -74,7 +75,12 @@ type ApiPayload = {
  */
 function buildUrl(
   apiKey: string,
-  filters: { commodity: string; state: string; district?: string | undefined; market?: string | undefined },
+  filters: {
+    commodity: string;
+    state: string;
+    district?: string | undefined;
+    market?: string | undefined;
+  },
   limit: number,
 ) {
   const url = new URL(`https://api.data.gov.in/resource/${RESOURCE_ID}`);
@@ -115,7 +121,11 @@ function parseRecords(payload: ApiPayload): MandiRecord[] {
         Number.isFinite(r.maxPrice),
     )
     .sort((a, b) =>
-      a.arrivalDate === b.arrivalDate ? b.modalPrice - a.modalPrice : a.arrivalDate < b.arrivalDate ? 1 : -1,
+      a.arrivalDate === b.arrivalDate
+        ? b.modalPrice - a.modalPrice
+        : a.arrivalDate < b.arrivalDate
+          ? 1
+          : -1,
     );
 }
 
@@ -234,7 +244,11 @@ export const fetchPriceHistory = createServerFn({ method: "POST" })
     if (apiKey) {
       try {
         const response = await fetch(
-          buildUrl(apiKey, { commodity: data.commodity, state: data.state, market: data.market }, 60),
+          buildUrl(
+            apiKey,
+            { commodity: data.commodity, state: data.state, market: data.market },
+            60,
+          ),
           { headers: { accept: "application/json" } },
         );
         if (response.ok) {

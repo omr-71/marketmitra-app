@@ -102,9 +102,13 @@ export function farmingTips(data: Ok) {
   if (data.current.uvIndex >= 8)
     tips.push(`UV index ${data.current.uvIndex} — schedule labour work outside 11am–3pm.`);
   if (today && today.max >= 38)
-    tips.push(`Peak ${today.max}° — irrigate before sunrise or after sunset to cut evaporation loss.`);
+    tips.push(
+      `Peak ${today.max}° — irrigate before sunrise or after sunset to cut evaporation loss.`,
+    );
   if (data.current.pressure && data.current.pressure < 1000)
-    tips.push("Air pressure is low, which often precedes unsettled weather — plan mandi trips earlier.");
+    tips.push(
+      "Air pressure is low, which often precedes unsettled weather — plan mandi trips earlier.",
+    );
 
   if (tips.length === 0)
     tips.push(
@@ -112,7 +116,6 @@ export function farmingTips(data: Ok) {
     );
   return tips.slice(0, 4);
 }
-
 
 export function harvestAdvice(days: WeatherDay[]) {
   const advice: string[] = [];
@@ -122,7 +125,10 @@ export function harvestAdvice(days: WeatherDay[]) {
 
   if (dry.length > 0) {
     advice.push(
-      `Dry window on ${dry.slice(0, 3).map((d) => formatIstWeekday(d.date)).join(", ")} — best for harvesting and drying.`,
+      `Dry window on ${dry
+        .slice(0, 3)
+        .map((d) => formatIstWeekday(d.date))
+        .join(", ")} — best for harvesting and drying.`,
     );
   }
   if (wet.length > 0) {

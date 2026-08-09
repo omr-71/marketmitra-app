@@ -47,13 +47,16 @@ function MarketDetailPage() {
 
   const historyQuery = useQuery({
     queryKey: ["history", crop.commodity, state, marketId],
-    queryFn: () => fetchPriceHistory({ data: { commodity: crop.commodity, state, market: marketId } }),
+    queryFn: () =>
+      fetchPriceHistory({ data: { commodity: crop.commodity, state, market: marketId } }),
     staleTime: 10 * 60 * 1000,
   });
 
   const latest = todayQuery.data?.ok ? todayQuery.data.records[0] : undefined;
   const points = historyQuery.data?.points ?? [];
-  const chartData = points.slice(-14).map((p) => ({ label: formatIstDate(p.date).slice(0, 6), price: p.modal }));
+  const chartData = points
+    .slice(-14)
+    .map((p) => ({ label: formatIstDate(p.date).slice(0, 6), price: p.modal }));
 
   return (
     <Screen>
@@ -101,9 +104,10 @@ function MarketDetailPage() {
               />
             )}
           </div>
-
         ) : (
-          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
+          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">
+            {t("noPrices")}
+          </p>
         )}
 
         <section className="card-surface hover-lift mt-4 p-5">

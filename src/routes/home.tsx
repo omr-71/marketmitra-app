@@ -75,8 +75,7 @@ function HomePage() {
   const weatherQuery = useQuery({
     queryKey: ["weather", location?.latitude, location?.longitude],
     enabled: Boolean(location?.latitude != null && location?.longitude != null),
-    queryFn: () =>
-      getWeather(location!.latitude!, location!.longitude!),
+    queryFn: () => getWeather(location!.latitude!, location!.longitude!),
     staleTime: 15 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   });
@@ -135,10 +134,26 @@ function HomePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <GlassStat icon={<Droplets className="size-4" />} label={t("humidity")} value={`${weather.current.humidity}%`} />
-                <GlassStat icon={<Wind className="size-4" />} label={t("wind")} value={`${weather.current.wind} km/h`} />
-                <GlassStat icon={<CloudRain className="size-4" />} label={t("rainChance")} value={`${weather.current.rainChance}%`} />
-                <GlassStat icon={<Sun className="size-4" />} label="UV" value={uvLabel(weather.current.uvIndex)} />
+                <GlassStat
+                  icon={<Droplets className="size-4" />}
+                  label={t("humidity")}
+                  value={`${weather.current.humidity}%`}
+                />
+                <GlassStat
+                  icon={<Wind className="size-4" />}
+                  label={t("wind")}
+                  value={`${weather.current.wind} km/h`}
+                />
+                <GlassStat
+                  icon={<CloudRain className="size-4" />}
+                  label={t("rainChance")}
+                  value={`${weather.current.rainChance}%`}
+                />
+                <GlassStat
+                  icon={<Sun className="size-4" />}
+                  label="UV"
+                  value={uvLabel(weather.current.uvIndex)}
+                />
               </div>
             </div>
 
@@ -147,14 +162,19 @@ function HomePage() {
                 <Clock className="size-3.5" /> Best time for farming today:{" "}
                 <b className="font-extrabold">{bestFarmingWindow(weather).window}</b>
               </span>
-              <Link to="/weather" className="ml-auto flex items-center gap-1 font-bold underline-offset-2 hover:underline">
+              <Link
+                to="/weather"
+                className="ml-auto flex items-center gap-1 font-bold underline-offset-2 hover:underline"
+              >
                 {t("viewAll")} <ArrowRight className="size-3.5" />
               </Link>
             </div>
           </section>
         )}
 
-        {!weather && location?.latitude != null && weatherQuery.isPending && <CardSkeleton lines={4} />}
+        {!weather && location?.latitude != null && weatherQuery.isPending && (
+          <CardSkeleton lines={4} />
+        )}
 
         {!location?.latitude && (
           <section className="card-surface hover-lift p-5">
@@ -180,7 +200,11 @@ function HomePage() {
         ) : records.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <CounterCard label="Markets reporting" value={marketCount} />
-            <CounterCard label={`${primary.name[lang]} top rate`} value={best?.modalPrice ?? 0} money />
+            <CounterCard
+              label={`${primary.name[lang]} top rate`}
+              value={best?.modalPrice ?? 0}
+              money
+            />
             <CounterCard label="Average modal rate" value={avgModal} money />
             <CounterCard label="Price spread" value={spread} money />
           </div>
@@ -213,8 +237,8 @@ function HomePage() {
           ) : best ? (
             <>
               <p className="mt-3 text-[15px] font-semibold leading-snug">
-                {primary.name[lang]} is fetching the highest reported rate at{" "}
-                <b>{best.market}</b>, {best.district}.
+                {primary.name[lang]} is fetching the highest reported rate at <b>{best.market}</b>,{" "}
+                {best.district}.
               </p>
               <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
                 <Stat label={t("minPrice")} value={inr(best.minPrice)} />
@@ -284,7 +308,11 @@ function HomePage() {
                             up ? "text-primary" : "text-destructive"
                           }`}
                         >
-                          {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+                          {up ? (
+                            <TrendingUp className="size-3" />
+                          ) : (
+                            <TrendingDown className="size-3" />
+                          )}
                           {Math.abs(change).toFixed(1)}%
                         </p>
                       </div>
@@ -294,10 +322,7 @@ function HomePage() {
               </div>
             )}
 
-            {priceQuery.data?.ok && (
-              <SourceNote result={priceQuery.data} className="mt-3" />
-            )}
-
+            {priceQuery.data?.ok && <SourceNote result={priceQuery.data} className="mt-3" />}
           </section>
 
           <div className="space-y-4">
@@ -306,10 +331,15 @@ function HomePage() {
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
                   <Lightbulb className="size-4" /> Today's weather insight
                 </p>
-                <p className="mt-2.5 text-[14px] font-semibold leading-snug">{todayInsight(weather)}</p>
+                <p className="mt-2.5 text-[14px] font-semibold leading-snug">
+                  {todayInsight(weather)}
+                </p>
                 <div className="mt-4 space-y-2">
                   {weather.days.slice(0, 4).map((d) => (
-                    <div key={d.date} className="flex items-center justify-between text-xs font-semibold">
+                    <div
+                      key={d.date}
+                      className="flex items-center justify-between text-xs font-semibold"
+                    >
                       <span className="flex items-center gap-2 text-muted-foreground">
                         <CloudSun className="size-3.5 text-primary" />
                         {new Intl.DateTimeFormat("en-IN", {
@@ -331,14 +361,26 @@ function HomePage() {
             <section>
               <h2 className="text-sm font-bold">{t("quickActions")}</h2>
               <div className="mt-3 grid grid-cols-3 gap-2.5">
-                <QuickAction to="/crops" icon={<Store className="size-5 text-primary" />} label={t("selectCrop")} />
+                <QuickAction
+                  to="/crops"
+                  icon={<Store className="size-5 text-primary" />}
+                  label={t("selectCrop")}
+                />
                 <QuickAction
                   to="/predict"
-                  search={{ crop: primary.id, market: best?.market ?? "", state: location?.state ?? "" }}
+                  search={{
+                    crop: primary.id,
+                    market: best?.market ?? "",
+                    state: location?.state ?? "",
+                  }}
                   icon={<BarChart3 className="size-5 text-primary" />}
                   label={t("pricePrediction")}
                 />
-                <QuickAction to="/schemes" icon={<Landmark className="size-5 text-primary" />} label={t("schemes")} />
+                <QuickAction
+                  to="/schemes"
+                  icon={<Landmark className="size-5 text-primary" />}
+                  label={t("schemes")}
+                />
               </div>
             </section>
           </div>
@@ -360,7 +402,15 @@ function CounterCard({ label, value, money }: { label: string; value: number; mo
   );
 }
 
-function GlassStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function GlassStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="rounded-2xl bg-[oklch(1_0_0/0.14)] px-3 py-2.5 backdrop-blur-sm">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide opacity-85">
@@ -394,7 +444,10 @@ function ErrorLine({
   return (
     <div className="mt-3">
       <p className="text-xs font-semibold text-destructive">{message}</p>
-      <button onClick={onRetry} className="press mt-2 rounded-full bg-muted px-3 py-1.5 text-[11px] font-bold">
+      <button
+        onClick={onRetry}
+        className="press mt-2 rounded-full bg-muted px-3 py-1.5 text-[11px] font-bold"
+      >
         {retryLabel}
       </button>
     </div>

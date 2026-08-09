@@ -76,10 +76,15 @@ function MarketsPage() {
     const byMarket = new Map<string, MandiRecord>();
     for (const record of result.records) {
       const existing = byMarket.get(record.market);
-      if (!existing || existing.arrivalDate < record.arrivalDate) byMarket.set(record.market, record);
+      if (!existing || existing.arrivalDate < record.arrivalDate)
+        byMarket.set(record.market, record);
     }
     return [...byMarket.values()].sort((a, b) =>
-      a.arrivalDate === b.arrivalDate ? b.modalPrice - a.modalPrice : a.arrivalDate < b.arrivalDate ? 1 : -1,
+      a.arrivalDate === b.arrivalDate
+        ? b.modalPrice - a.modalPrice
+        : a.arrivalDate < b.arrivalDate
+          ? 1
+          : -1,
     );
   }, [result]);
 
@@ -108,7 +113,9 @@ function MarketsPage() {
         const coords = await locateMarket(record.market, record.district, record.state);
         if (cancelled || !coords) continue;
         const km = roadDistanceKm(origin, coords);
-        setDistances((prev) => (prev[record.market] === km ? prev : { ...prev, [record.market]: km }));
+        setDistances((prev) =>
+          prev[record.market] === km ? prev : { ...prev, [record.market]: km },
+        );
       }
     })();
     return () => {
@@ -227,7 +234,9 @@ function MarketsPage() {
         )}
 
         {!location?.state ? (
-          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">{t("locationNeeded")}</p>
+          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
+            {t("locationNeeded")}
+          </p>
         ) : priceQuery.isPending ? (
           <div className="mt-5 space-y-3">
             {[0, 1, 2].map((i) => (
@@ -248,7 +257,9 @@ function MarketsPage() {
             </button>
           </div>
         ) : rows.length === 0 ? (
-          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
+          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
+            {t("noPrices")}
+          </p>
         ) : (
           <>
             {bestPrice && result && (
@@ -257,12 +268,15 @@ function MarketsPage() {
                   <Award className="size-3.5" /> {t("bestChoice")} · best available price
                 </p>
                 <p className="mt-1.5 text-lg font-extrabold">{bestPrice.record.market}</p>
-                <p className="font-display text-3xl font-extrabold">{inr(bestPrice.record.modalPrice)}</p>
+                <p className="font-display text-3xl font-extrabold">
+                  {inr(bestPrice.record.modalPrice)}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {t("perQuintal")} · {t("modalPrice")}
                 </p>
                 <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
-                  Updated: {formatIstDate(bestPrice.record.arrivalDate)} · {bestPrice.record.district}
+                  Updated: {formatIstDate(bestPrice.record.arrivalDate)} ·{" "}
+                  {bestPrice.record.district}
                 </p>
 
                 {bestPractical && bestPractical.record.market !== bestPrice.record.market && (
@@ -322,13 +336,13 @@ function MarketsPage() {
                         <Truck className="size-3" />
                         {location?.place || location?.district || "Your location"} →{" "}
                         {row.record.market} · ~{row.transport.distanceKm} km ·{" "}
-                        {inr(row.transport.ratePerKm)}/km round trip · {inr(row.transport.perQuintal)}/
-                        {crop.unit} (estimated)
+                        {inr(row.transport.ratePerKm)}/km round trip ·{" "}
+                        {inr(row.transport.perQuintal)}/{crop.unit} (estimated)
                       </p>
                     ) : (
                       <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
-                        <MapPin className="size-3" /> Distance not available for this mandi — transport not
-                        included.
+                        <MapPin className="size-3" /> Distance not available for this mandi —
+                        transport not included.
                       </p>
                     )}
                   </Link>
@@ -342,8 +356,8 @@ function MarketsPage() {
           <div className="mt-4">
             <SourceNote result={result} />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Transport is an estimate from road distance × your ₹/km rate, not an official freight rate.
-              Commission is the % you set.
+              Transport is an estimate from road distance × your ₹/km rate, not an official freight
+              rate. Commission is the % you set.
             </p>
           </div>
         )}

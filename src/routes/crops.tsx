@@ -69,7 +69,9 @@ function CropsPage() {
                 key={c.id}
                 onClick={() => setSelected(c.id)}
                 className={`press relative flex flex-col items-center gap-2 rounded-3xl border px-2 py-4 ${
-                  active ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]" : "border-border bg-card"
+                  active
+                    ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]"
+                    : "border-border bg-card"
                 }`}
               >
                 {active && (
@@ -138,7 +140,9 @@ function CropsPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] text-muted-foreground">Gross value</p>
-                  <p className="text-base font-extrabold text-primary">{inr(best.modalPrice * qty)}</p>
+                  <p className="text-base font-extrabold text-primary">
+                    {inr(best.modalPrice * qty)}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -149,7 +153,6 @@ function CropsPage() {
             {priceQuery.data?.ok && best && (
               <SourceNote result={priceQuery.data} priceDate={best.arrivalDate} className="mt-2" />
             )}
-
           </div>
         </div>
 
