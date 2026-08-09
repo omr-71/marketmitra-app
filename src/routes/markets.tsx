@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
+import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
-import { fetchMandiPrices } from "@/lib/market.functions";
-import { formatIstDate, formatIstDateTime, inr } from "@/lib/format";
-import { Award, Loader2, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { fetchMandiPrices, type MandiRecord } from "@/lib/market.functions";
+import { locateMarket } from "@/lib/market-geo";
+import { DEFAULT_RATE_PER_KM, estimateTransport, roadDistanceKm } from "@/lib/transport";
+import { formatIstDate, inr } from "@/lib/format";
+import { Award, Loader2, MapPin, RefreshCw, Search, SlidersHorizontal, Truck } from "lucide-react";
 
 const searchSchema = z.object({
   crop: z.string().catch("onion"),
@@ -23,17 +26,20 @@ export const Route = createFileRoute("/markets")({
       {
         name: "description",
         content:
-          "Compare live APMC mandi rates with your transport cost and commission to find the highest net realisation.",
+          "Compare official AGMARKNET mandi rates with your estimated transport cost and commission to find the best available price.",
       },
       { property: "og:title", content: "Best market comparison — MarketMitra" },
       {
         property: "og:description",
-        content: "Rank nearby mandis by net money in hand, not just headline price.",
+        content: "Rank mandis by net money in hand using government-reported prices.",
       },
     ],
   }),
   component: MarketsPage,
 });
+
+/** How many mandis we resolve coordinates for (keeps geocoding requests low). */
+const GEO_LIMIT = 12;
 
 function MarketsPage() {
   const { t, lang } = useLang();
@@ -42,7 +48,7 @@ function MarketsPage() {
   const crop = findCrop(cropId) ?? crops[0]!;
 
   const [query, setQuery] = useState("");
-  const [transport, setTransport] = useState(120);
+  const [ratePerKm, setRatePerKm] = useState(DEFAULT_RATE_PER_KM);
   const [commission, setCommission] = useState(2);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -57,29 +63,88 @@ function MarketsPage() {
           ...(location?.district ? { district: location.district } : {}),
         },
       }),
-    staleTime: 10 * 60 * 1000,
+    // AGMARKNET publishes once a day; revalidate on mount but don't spam the API.
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: "always",
   });
 
-  const ranked = useMemo(() => {
-    if (!priceQuery.data?.ok) return [];
-    const latestByMarket = new Map<string, (typeof priceQuery.data.records)[number]>();
-    for (const record of priceQuery.data.records) {
-      const existing = latestByMarket.get(record.market);
-      if (!existing || existing.arrivalDate < record.arrivalDate) latestByMarket.set(record.market, record);
+  const result = priceQuery.data?.ok ? priceQuery.data : null;
+
+  /** Latest official record per mandi, newest reporting date first. */
+  const latestPerMarket = useMemo<MandiRecord[]>(() => {
+    if (!result) return [];
+    const byMarket = new Map<string, MandiRecord>();
+    for (const record of result.records) {
+      const existing = byMarket.get(record.market);
+      if (!existing || existing.arrivalDate < record.arrivalDate) byMarket.set(record.market, record);
     }
-    return [...latestByMarket.values()]
-      .filter((r) => {
-        const q = query.trim().toLowerCase();
-        return !q || r.market.toLowerCase().includes(q) || r.district.toLowerCase().includes(q);
-      })
-      .map((r) => {
-        const gross = r.modalPrice * qty;
-        const transportCost = transport * qty;
-        const commissionCost = (gross * commission) / 100;
-        return { record: r, gross, transportCost, commissionCost, net: gross - transportCost - commissionCost };
-      })
-      .sort((a, b) => b.net - a.net);
-  }, [priceQuery.data, query, qty, transport, commission]);
+    return [...byMarket.values()].sort((a, b) =>
+      a.arrivalDate === b.arrivalDate ? b.modalPrice - a.modalPrice : a.arrivalDate < b.arrivalDate ? 1 : -1,
+    );
+  }, [result]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return latestPerMarket.filter(
+      (r) => !q || r.market.toLowerCase().includes(q) || r.district.toLowerCase().includes(q),
+    );
+  }, [latestPerMarket, query]);
+
+  /* Distances for the top mandis, from real geocoded coordinates. */
+  const origin =
+    location?.latitude != null && location?.longitude != null
+      ? { latitude: location.latitude, longitude: location.longitude }
+      : null;
+  const [distances, setDistances] = useState<Record<string, number>>({});
+  const geoTargets = visible.slice(0, GEO_LIMIT);
+  const geoKey = origin ? geoTargets.map((r) => r.market).join("|") : "";
+
+  useEffect(() => {
+    if (!origin || geoTargets.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const record of geoTargets) {
+        if (cancelled) return;
+        const coords = await locateMarket(record.market, record.district, record.state);
+        if (cancelled || !coords) continue;
+        const km = roadDistanceKm(origin, coords);
+        setDistances((prev) => (prev[record.market] === km ? prev : { ...prev, [record.market]: km }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geoKey, origin?.latitude, origin?.longitude]);
+
+  const rows = useMemo(
+    () =>
+      visible.map((record) => {
+        const gross = record.modalPrice * qty;
+        const km = distances[record.market];
+        const transport = km != null ? estimateTransport(km, qty, ratePerKm) : null;
+        const commissionCost = Math.round((gross * commission) / 100);
+        return {
+          record,
+          gross,
+          transport,
+          commissionCost,
+          net: gross - (transport?.totalCost ?? 0) - commissionCost,
+        };
+      }),
+    [visible, qty, distances, ratePerKm, commission],
+  );
+
+  /**
+   * Best choice is only compared inside the newest reporting date group — never
+   * across different dates, which would compare last week against today.
+   */
+  const comparableDate = visible[0]?.arrivalDate ?? "";
+  const sameDay = rows.filter((r) => r.record.arrivalDate === comparableDate);
+  const bestPrice = [...sameDay].sort((a, b) => b.record.modalPrice - a.record.modalPrice)[0];
+  const withTransport = sameDay.filter((r) => r.transport);
+  const bestPractical =
+    withTransport.length > 1 ? [...withTransport].sort((a, b) => b.net - a.net)[0] : undefined;
 
   return (
     <Screen>
@@ -125,19 +190,22 @@ function MarketsPage() {
           <div className="card-surface hover-lift mt-3 space-y-4 p-4">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold">
-                <span>{t("transportRate")}</span>
-                <span className="text-primary">{inr(transport)}</span>
+                <span>Transport rate (₹ per km)</span>
+                <span className="text-primary">{inr(ratePerKm)}/km</span>
               </div>
               <input
                 type="range"
-                min={0}
-                max={800}
-                step={10}
-                value={transport}
-                onChange={(e) => setTransport(Number(e.target.value))}
+                min={5}
+                max={120}
+                step={1}
+                value={ratePerKm}
+                onChange={(e) => setRatePerKm(Number(e.target.value))}
                 className="mt-2 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
-                aria-label={t("transportRate")}
+                aria-label="Transport rate per km"
               />
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Set your own vehicle hire rate. Cost is estimated for the round trip.
+              </p>
             </div>
             <div>
               <div className="flex items-center justify-between text-xs font-semibold">
@@ -179,53 +247,105 @@ function MarketsPage() {
               {t("retry")}
             </button>
           </div>
-        ) : ranked.length === 0 ? (
+        ) : rows.length === 0 ? (
           <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
         ) : (
-          <div className="mt-5 space-y-3">
-            {ranked.map((row, index) => (
-              <Link
-                key={row.record.market}
-                to="/market/$marketId"
-                params={{ marketId: row.record.market }}
-                search={{ crop: crop.id, state: row.record.state }}
-                className={`press card-surface block p-4 ${index === 0 ? "ring-2 ring-primary/40" : ""}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold">{row.record.market}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      {row.record.district} · {formatIstDate(row.record.arrivalDate)}
-                    </p>
-                  </div>
-                  {index === 0 && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
-                      <Award className="size-3" /> {t("bestChoice")}
-                    </span>
-                  )}
-                </div>
+          <>
+            {bestPrice && result && (
+              <section className="mt-5 rounded-3xl bg-primary/10 p-5 ring-1 ring-primary/25">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+                  <Award className="size-3.5" /> {t("bestChoice")} · best available price
+                </p>
+                <p className="mt-1.5 text-lg font-extrabold">{bestPrice.record.market}</p>
+                <p className="font-display text-3xl font-extrabold">{inr(bestPrice.record.modalPrice)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("perQuintal")} · {t("modalPrice")}
+                </p>
+                <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
+                  Updated: {formatIstDate(bestPrice.record.arrivalDate)} · {bestPrice.record.district}
+                </p>
 
-                <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
-                  <Cell label={t("minPrice")} value={inr(row.record.minPrice)} />
-                  <Cell label={t("modalPrice")} value={inr(row.record.modalPrice)} />
-                  <Cell label={t("maxPrice")} value={inr(row.record.maxPrice)} />
-                </div>
+                {bestPractical && bestPractical.record.market !== bestPrice.record.market && (
+                  <p className="mt-3 border-t border-primary/20 pt-3 text-[12px] font-semibold leading-snug">
+                    Best practical choice after estimated transport:{" "}
+                    <b>{bestPractical.record.market}</b> — {inr(bestPractical.net)} net for {qty}{" "}
+                    {crop.unit} ({bestPractical.transport!.distanceKm} km).
+                  </p>
+                )}
+              </section>
+            )}
 
-                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
-                  <Cell label="Gross" value={inr(row.gross)} />
-                  <Cell label={t("transport")} value={`- ${inr(row.transportCost)}`} />
-                  <Cell label={t("netProfit")} value={inr(row.net)} accent />
-                </div>
-              </Link>
-            ))}
-          </div>
+            <div className="mt-4 space-y-3">
+              {rows.map((row) => {
+                const isBest = row.record.market === bestPrice?.record.market;
+                const older = row.record.arrivalDate !== comparableDate;
+                return (
+                  <Link
+                    key={row.record.market}
+                    to="/market/$marketId"
+                    params={{ marketId: row.record.market }}
+                    search={{ crop: crop.id, state: row.record.state }}
+                    className={`press card-surface block p-4 ${isBest ? "ring-2 ring-primary/40" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-extrabold">{row.record.market}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {row.record.district} · Updated {formatIstDate(row.record.arrivalDate)}
+                          {older ? " (older report)" : ""}
+                        </p>
+                      </div>
+                      {isBest && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
+                          <Award className="size-3" /> {t("bestChoice")}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                      <Cell label={t("minPrice")} value={inr(row.record.minPrice)} />
+                      <Cell label={t("modalPrice")} value={inr(row.record.modalPrice)} />
+                      <Cell label={t("maxPrice")} value={inr(row.record.maxPrice)} />
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
+                      <Cell label="Gross" value={inr(row.gross)} />
+                      <Cell
+                        label={row.transport ? `${t("transport")} (est.)` : t("transport")}
+                        value={row.transport ? `- ${inr(row.transport.totalCost)}` : "—"}
+                      />
+                      <Cell label={t("netProfit")} value={inr(row.net)} accent />
+                    </div>
+
+                    {row.transport ? (
+                      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[10px] font-semibold text-muted-foreground">
+                        <Truck className="size-3" />
+                        {location?.place || location?.district || "Your location"} →{" "}
+                        {row.record.market} · ~{row.transport.distanceKm} km ·{" "}
+                        {inr(row.transport.ratePerKm)}/km round trip · {inr(row.transport.perQuintal)}/
+                        {crop.unit} (estimated)
+                      </p>
+                    ) : (
+                      <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
+                        <MapPin className="size-3" /> Distance not available for this mandi — transport not
+                        included.
+                      </p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </>
         )}
 
-        {priceQuery.data?.ok && (
-          <p className="mt-4 text-[11px] text-muted-foreground">
-            {priceQuery.data.source} · {t("lastUpdated")}: {formatIstDateTime(priceQuery.data.updatedAt)} IST.
-            Net realisation uses the transport and commission values you set above.
-          </p>
+        {result && (
+          <div className="mt-4">
+            <SourceNote result={result} />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Transport is an estimate from road distance × your ₹/km rate, not an official freight rate.
+              Commission is the % you set.
+            </p>
+          </div>
         )}
       </div>
     </Screen>
