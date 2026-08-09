@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
+import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices, fetchPriceHistory } from "@/lib/market.functions";
-import { formatIstDate, formatIstDateTime, inr } from "@/lib/format";
+import { formatIstDate, inr } from "@/lib/format";
+
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { BarChart3, Loader2, TrendingUp } from "lucide-react";
 

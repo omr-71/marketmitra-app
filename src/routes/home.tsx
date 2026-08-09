@@ -294,11 +294,9 @@ function HomePage() {
             )}
 
             {priceQuery.data?.ok && (
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                {priceQuery.data.source} · {t("lastUpdated")}:{" "}
-                {formatIstDateTime(priceQuery.data.updatedAt)} IST
-              </p>
+              <SourceNote result={priceQuery.data} className="mt-3" />
             )}
+
           </section>
 
           <div className="space-y-4">

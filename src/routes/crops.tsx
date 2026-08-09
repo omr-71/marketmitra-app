@@ -146,10 +146,9 @@ function CropsPage() {
               </p>
             )}
             {priceQuery.data?.ok && best && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                {t("lastUpdated")}: {formatIstDateTime(priceQuery.data.updatedAt)} IST
-              </p>
+              <SourceNote result={priceQuery.data} priceDate={best.arrivalDate} className="mt-2" />
             )}
+
           </div>
         </div>
 
