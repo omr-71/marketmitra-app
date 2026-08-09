@@ -50,7 +50,9 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
       rainMm: Number((json.daily.precipitation_sum[i] ?? 0).toFixed(1)),
       code: json.daily.weather_code[i] ?? 0,
       uvIndex: Number((json.daily.uv_index_max[i] ?? 0).toFixed(1)),
+      windMax: Math.round(json.daily.wind_speed_10m_max[i] ?? 0),
     }));
+
 
     return {
       ok: true,

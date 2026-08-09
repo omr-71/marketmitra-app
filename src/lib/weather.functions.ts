@@ -85,9 +85,8 @@ export const fetchWeather = createServerFn({ method: "POST" })
 
       const num = (key: string) => Number(json.current[key] ?? 0);
 
-      const num = (key: string) => Number(json.current[key] ?? 0);
+      const days: WeatherDay[] = json.daily.time.map((date, i) => ({
 
-    const days: WeatherDay[] = json.daily.time.map((date, i) => ({
         date,
         max: Math.round(json.daily.temperature_2m_max[i] ?? 0),
         min: Math.round(json.daily.temperature_2m_min[i] ?? 0),
