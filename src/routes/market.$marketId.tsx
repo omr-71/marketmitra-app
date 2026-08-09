@@ -75,7 +75,7 @@ function MarketDetailPage() {
         ) : latest ? (
           <div className="card-surface hover-lift p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
-              {t("price")} · {formatIstDate(latest.arrivalDate)}
+              {t("modalPrice")}
             </p>
             <p className="mt-2 text-3xl font-extrabold">{inr(latest.modalPrice)}</p>
             <p className="text-xs text-muted-foreground">
@@ -92,12 +92,14 @@ function MarketDetailPage() {
               </div>
             </div>
             {todayQuery.data?.ok && (
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                {todayQuery.data.source} · {t("lastUpdated")}:{" "}
-                {formatIstDateTime(todayQuery.data.updatedAt)} IST
-              </p>
+              <SourceNote
+                result={todayQuery.data}
+                priceDate={latest.arrivalDate}
+                className="mt-3"
+              />
             )}
           </div>
+
         ) : (
           <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
         )}
