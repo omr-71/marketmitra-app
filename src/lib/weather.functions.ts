@@ -110,7 +110,11 @@ export const fetchWeather = createServerFn({ method: "POST" })
           isDay: num("is_day") === 1,
           pressure: Math.round(num("surface_pressure")),
           uvIndex: days[0]?.uvIndex ?? 0,
+          precipitation: Number(num("precipitation").toFixed(1)),
+          windGust: Math.round(num("wind_gusts_10m")),
         },
+        observedAt: typeof json.current["time"] === "string" ? json.current["time"] : "",
+
         sunrise: json.daily.sunrise[0] ?? "",
         sunset: json.daily.sunset[0] ?? "",
         days,
