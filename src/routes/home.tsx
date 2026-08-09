@@ -10,7 +10,7 @@ import { useLocationContext } from "@/lib/location";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices } from "@/lib/market.functions";
 import { getWeather } from "@/lib/weather-fetch";
-import { formatIstDateTime, inr, useIstNow } from "@/lib/format";
+import { inr, useIstNow } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
 import { bestFarmingWindow, conditionLabel, todayInsight, uvLabel } from "@/lib/farm-insights";
 import {

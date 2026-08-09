@@ -8,7 +8,7 @@ import { useLang } from "@/lib/i18n";
 import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { fetchMandiPrices } from "@/lib/market.functions";
-import { formatIstDateTime, inr } from "@/lib/format";
+import { inr } from "@/lib/format";
 import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/crops")({
