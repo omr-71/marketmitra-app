@@ -74,7 +74,7 @@ type ApiPayload = {
  */
 function buildUrl(
   apiKey: string,
-  filters: { commodity: string; state: string; district?: string; market?: string },
+  filters: { commodity: string; state: string; district?: string | undefined; market?: string | undefined },
   limit: number,
 ) {
   const url = new URL(`https://api.data.gov.in/resource/${RESOURCE_ID}`);
