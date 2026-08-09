@@ -149,14 +149,23 @@ function WeatherPage() {
                   <Metric icon={<CloudRain className="size-4 text-primary" />} label={t("rainChance")} value={`${data.current.rainChance}%`} />
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                  <Metric icon={<CloudRain className="size-4 text-primary" />} label="Rain (1h)" value={`${data.current.precipitation} mm`} />
+                  <Metric icon={<Wind className="size-4 text-primary" />} label="Gusts" value={`${data.current.windGust}`} />
                   <Metric icon={<Sunrise className="size-4 text-warning" />} label={t("sunrise")} value={formatIstTime(data.sunrise)} />
                   <Metric icon={<Sunset className="size-4 text-warning" />} label={t("sunset")} value={formatIstTime(data.sunset)} />
                 </div>
 
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  {data.source} · {t("lastUpdated")}: {formatIstDateTime(data.updatedAt)} IST
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                  {data.observedAt
+                    ? `Observed ${formatIstTime(data.observedAt)} IST · forecast to ${
+                        data.days[data.days.length - 1] ? formatIstWeekday(data.days[data.days.length - 1]!.date) : ""
+                      }`
+                    : `${t("lastUpdated")}: ${formatIstDateTime(data.updatedAt)} IST`}
+                  <br />
+                  Source: {data.source} weather API
                 </p>
+
               </section>
 
               <div className="space-y-4">
