@@ -65,8 +65,7 @@ function WeatherPage() {
   const query = useQuery({
     queryKey: ["weather", location?.latitude, location?.longitude],
     enabled: Boolean(location?.latitude != null && location?.longitude != null),
-    queryFn: () =>
-      getWeather(location!.latitude!, location!.longitude!),
+    queryFn: () => getWeather(location!.latitude!, location!.longitude!),
     staleTime: 15 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   });
@@ -103,7 +102,6 @@ function WeatherPage() {
               Allow location access for an automatic forecast, or enter your city, district and
               state above — that works without GPS and stays saved.
             </p>
-
           </div>
         ) : query.isPending ? (
           <div className="space-y-4">
@@ -144,18 +142,56 @@ function WeatherPage() {
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
-                  <Metric icon={<Droplets className="size-4 text-primary" />} label={t("humidity")} value={`${data.current.humidity}%`} />
-                  <Metric icon={<Wind className="size-4 text-primary" />} label={t("wind")} value={`${data.current.wind} km/h`} />
-                  <Metric icon={<CloudRain className="size-4 text-primary" />} label={t("rainChance")} value={`${data.current.rainChance}%`} />
+                  <Metric
+                    icon={<Droplets className="size-4 text-primary" />}
+                    label={t("humidity")}
+                    value={`${data.current.humidity}%`}
+                  />
+                  <Metric
+                    icon={<Wind className="size-4 text-primary" />}
+                    label={t("wind")}
+                    value={`${data.current.wind} km/h`}
+                  />
+                  <Metric
+                    icon={<CloudRain className="size-4 text-primary" />}
+                    label={t("rainChance")}
+                    value={`${data.current.rainChance}%`}
+                  />
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
-                  <Metric icon={<Sunrise className="size-4 text-warning" />} label={t("sunrise")} value={formatIstTime(data.sunrise)} />
-                  <Metric icon={<Sunset className="size-4 text-warning" />} label={t("sunset")} value={formatIstTime(data.sunset)} />
+                <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                  <Metric
+                    icon={<CloudRain className="size-4 text-primary" />}
+                    label="Rain (1h)"
+                    value={`${data.current.precipitation} mm`}
+                  />
+                  <Metric
+                    icon={<Wind className="size-4 text-primary" />}
+                    label="Gusts"
+                    value={`${data.current.windGust}`}
+                  />
+                  <Metric
+                    icon={<Sunrise className="size-4 text-warning" />}
+                    label={t("sunrise")}
+                    value={formatIstTime(data.sunrise)}
+                  />
+                  <Metric
+                    icon={<Sunset className="size-4 text-warning" />}
+                    label={t("sunset")}
+                    value={formatIstTime(data.sunset)}
+                  />
                 </div>
 
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  {data.source} · {t("lastUpdated")}: {formatIstDateTime(data.updatedAt)} IST
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                  {data.observedAt
+                    ? `Observed ${formatIstTime(data.observedAt)} IST · forecast to ${
+                        data.days[data.days.length - 1]
+                          ? formatIstWeekday(data.days[data.days.length - 1]!.date)
+                          : ""
+                      }`
+                    : `${t("lastUpdated")}: ${formatIstDateTime(data.updatedAt)} IST`}
+                  <br />
+                  Source: {data.source} weather API
                 </p>
               </section>
 
@@ -179,7 +215,9 @@ function WeatherPage() {
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
                     <Lightbulb className="size-4" /> Today's weather insight
                   </p>
-                  <p className="mt-2.5 text-[15px] font-semibold leading-snug">{todayInsight(data)}</p>
+                  <p className="mt-2.5 text-[15px] font-semibold leading-snug">
+                    {todayInsight(data)}
+                  </p>
                 </section>
 
                 <section className="card-surface hover-lift p-5">
@@ -189,7 +227,9 @@ function WeatherPage() {
                   <p className="mt-2 font-display text-lg font-extrabold">
                     {bestFarmingWindow(data).window}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">{bestFarmingWindow(data).reason}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {bestFarmingWindow(data).reason}
+                  </p>
                 </section>
               </div>
             </div>
@@ -200,9 +240,9 @@ function WeatherPage() {
                   <AlertTriangle className="size-4" /> {t("rainAlert")}
                 </p>
                 <p className="mt-2 text-[15px] font-semibold leading-snug">
-                  Rain is likely on {wetDays.map((d) => formatIstWeekday(d.date)).join(", ")} — up to{" "}
-                  {Math.max(...wetDays.map((d) => d.rainMm))} mm. Cover harvested stock and plan mandi
-                  trips around these days.
+                  Rain is likely on {wetDays.map((d) => formatIstWeekday(d.date)).join(", ")} — up
+                  to {Math.max(...wetDays.map((d) => d.rainMm))} mm. Cover harvested stock and plan
+                  mandi trips around these days.
                 </p>
               </section>
             )}
@@ -218,10 +258,14 @@ function WeatherPage() {
                     >
                       <DayIcon day={day} />
                       <p className="truncate text-sm font-bold">{formatIstWeekday(day.date)}</p>
-                      <p className="text-xs font-semibold text-muted-foreground">{day.rainChance}%</p>
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        {day.rainChance}%
+                      </p>
                       <p className="text-sm font-extrabold">
                         {day.max}°{" "}
-                        <span className="text-xs font-semibold text-muted-foreground">{day.min}°</span>
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {day.min}°
+                        </span>
                       </p>
                     </div>
                   ))}

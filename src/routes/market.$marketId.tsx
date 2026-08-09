@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
+import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices, fetchPriceHistory } from "@/lib/market.functions";
-import { formatIstDate, formatIstDateTime, inr } from "@/lib/format";
+import { formatIstDate, inr } from "@/lib/format";
+
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { BarChart3, Loader2, TrendingUp } from "lucide-react";
 
@@ -45,13 +47,16 @@ function MarketDetailPage() {
 
   const historyQuery = useQuery({
     queryKey: ["history", crop.commodity, state, marketId],
-    queryFn: () => fetchPriceHistory({ data: { commodity: crop.commodity, state, market: marketId } }),
+    queryFn: () =>
+      fetchPriceHistory({ data: { commodity: crop.commodity, state, market: marketId } }),
     staleTime: 10 * 60 * 1000,
   });
 
   const latest = todayQuery.data?.ok ? todayQuery.data.records[0] : undefined;
   const points = historyQuery.data?.points ?? [];
-  const chartData = points.slice(-14).map((p) => ({ label: formatIstDate(p.date).slice(0, 6), price: p.modal }));
+  const chartData = points
+    .slice(-14)
+    .map((p) => ({ label: formatIstDate(p.date).slice(0, 6), price: p.modal }));
 
   return (
     <Screen>
@@ -75,7 +80,7 @@ function MarketDetailPage() {
         ) : latest ? (
           <div className="card-surface hover-lift p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
-              {t("price")} · {formatIstDate(latest.arrivalDate)}
+              {t("modalPrice")}
             </p>
             <p className="mt-2 text-3xl font-extrabold">{inr(latest.modalPrice)}</p>
             <p className="text-xs text-muted-foreground">
@@ -92,14 +97,17 @@ function MarketDetailPage() {
               </div>
             </div>
             {todayQuery.data?.ok && (
-              <p className="mt-3 text-[11px] text-muted-foreground">
-                {todayQuery.data.source} · {t("lastUpdated")}:{" "}
-                {formatIstDateTime(todayQuery.data.updatedAt)} IST
-              </p>
+              <SourceNote
+                result={todayQuery.data}
+                priceDate={latest.arrivalDate}
+                className="mt-3"
+              />
             )}
           </div>
         ) : (
-          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">{t("noPrices")}</p>
+          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">
+            {t("noPrices")}
+          </p>
         )}
 
         <section className="card-surface hover-lift mt-4 p-5">

@@ -14,6 +14,7 @@ export type WeatherDay = {
   rainMm: number;
   code: number;
   uvIndex: number;
+  windMax: number;
 };
 
 export type WeatherResult =
@@ -30,7 +31,12 @@ export type WeatherResult =
         isDay: boolean;
         pressure: number;
         uvIndex: number;
+        /** Rain measured in the last hour, mm. */
+        precipitation: number;
+        windGust: number;
       };
+      /** Observation timestamp reported by the weather service (IST wall clock). */
+      observedAt: string;
       sunrise: string;
       sunset: string;
       days: WeatherDay[];
@@ -46,11 +52,11 @@ export const fetchWeather = createServerFn({ method: "POST" })
     url.searchParams.set("longitude", String(data.longitude));
     url.searchParams.set(
       "current",
-      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,weather_code,wind_speed_10m,is_day,surface_pressure",
+      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,is_day,surface_pressure",
     );
     url.searchParams.set(
       "daily",
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max",
     );
     url.searchParams.set("timezone", "Asia/Kolkata");
     url.searchParams.set("forecast_days", "7");
@@ -62,7 +68,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
         return { ok: false, error: "The weather service is temporarily unavailable." };
       }
       const json = (await response.json()) as {
-        current: Record<string, number>;
+        current: Record<string, number | string>;
         daily: {
           time: string[];
           weather_code: number[];
@@ -73,10 +79,14 @@ export const fetchWeather = createServerFn({ method: "POST" })
           sunrise: string[];
           sunset: string[];
           uv_index_max: (number | null)[];
+        wind_speed_10m_max: (number | null)[];
         };
       };
 
+      const num = (key: string) => Number(json.current[key] ?? 0);
+
       const days: WeatherDay[] = json.daily.time.map((date, i) => ({
+
         date,
         max: Math.round(json.daily.temperature_2m_max[i] ?? 0),
         min: Math.round(json.daily.temperature_2m_min[i] ?? 0),
@@ -84,22 +94,27 @@ export const fetchWeather = createServerFn({ method: "POST" })
         rainMm: Number((json.daily.precipitation_sum[i] ?? 0).toFixed(1)),
         code: json.daily.weather_code[i] ?? 0,
         uvIndex: Number((json.daily.uv_index_max[i] ?? 0).toFixed(1)),
+        windMax: Math.round(json.daily.wind_speed_10m_max[i] ?? 0),
       }));
 
       return {
         ok: true,
         updatedAt: new Date().toISOString(),
         current: {
-          temperature: Math.round(json.current["temperature_2m"] ?? 0),
-          apparent: Math.round(json.current["apparent_temperature"] ?? 0),
-          humidity: Math.round(json.current["relative_humidity_2m"] ?? 0),
-          wind: Math.round(json.current["wind_speed_10m"] ?? 0),
-          rainChance: Math.round(json.current["precipitation_probability"] ?? 0),
-          code: json.current["weather_code"] ?? 0,
-          isDay: (json.current["is_day"] ?? 1) === 1,
-          pressure: Math.round(json.current["surface_pressure"] ?? 0),
+          temperature: Math.round(num("temperature_2m")),
+          apparent: Math.round(num("apparent_temperature")),
+          humidity: Math.round(num("relative_humidity_2m")),
+          wind: Math.round(num("wind_speed_10m")),
+          rainChance: Math.round(num("precipitation_probability")),
+          code: num("weather_code"),
+          isDay: num("is_day") === 1,
+          pressure: Math.round(num("surface_pressure")),
           uvIndex: days[0]?.uvIndex ?? 0,
+          precipitation: Number(num("precipitation").toFixed(1)),
+          windGust: Math.round(num("wind_gusts_10m")),
         },
+        observedAt: typeof json.current["time"] === "string" ? json.current["time"] : "",
+
         sunrise: json.daily.sunrise[0] ?? "",
         sunset: json.daily.sunset[0] ?? "",
         days,

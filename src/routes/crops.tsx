@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
+import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
 import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { fetchMandiPrices } from "@/lib/market.functions";
-import { formatIstDateTime, inr } from "@/lib/format";
+import { inr } from "@/lib/format";
 import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/crops")({
@@ -68,7 +69,9 @@ function CropsPage() {
                 key={c.id}
                 onClick={() => setSelected(c.id)}
                 className={`press relative flex flex-col items-center gap-2 rounded-3xl border px-2 py-4 ${
-                  active ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]" : "border-border bg-card"
+                  active
+                    ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]"
+                    : "border-border bg-card"
                 }`}
               >
                 {active && (
@@ -137,7 +140,9 @@ function CropsPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] text-muted-foreground">Gross value</p>
-                  <p className="text-base font-extrabold text-primary">{inr(best.modalPrice * qty)}</p>
+                  <p className="text-base font-extrabold text-primary">
+                    {inr(best.modalPrice * qty)}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -146,9 +151,7 @@ function CropsPage() {
               </p>
             )}
             {priceQuery.data?.ok && best && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                {t("lastUpdated")}: {formatIstDateTime(priceQuery.data.updatedAt)} IST
-              </p>
+              <SourceNote result={priceQuery.data} priceDate={best.arrivalDate} className="mt-2" />
             )}
           </div>
         </div>

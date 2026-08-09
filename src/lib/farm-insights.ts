@@ -80,14 +80,40 @@ export function todayInsight(data: Ok) {
 export function farmingTips(data: Ok) {
   const tips: string[] = [];
   const today = data.days[0];
-  if (today && today.rainChance >= 50) tips.push("Cover drying yards and bagged produce before evening.");
-  if (data.current.uvIndex >= 8) tips.push("UV is high — schedule labour work outside 11am–3pm.");
-  if (data.current.humidity >= 80) tips.push("High humidity: check stored grain for moisture and mould.");
-  if (data.current.wind >= 20) tips.push("Windy: secure shade nets and skip pesticide spraying.");
+  const wind = Math.max(data.current.wind, data.current.windGust);
+
+  if (today && today.rainMm >= 10)
+    tips.push(
+      `About ${today.rainMm} mm rain expected today — hold back irrigation and let the field drain before working it.`,
+    );
+  else if (today && today.rainChance >= 50)
+    tips.push(
+      `${today.rainChance}% rain chance — cover drying yards and bagged produce, and finish field work early.`,
+    );
+
+  if (wind >= 20)
+    tips.push(
+      `Wind up to ${wind} km/h can carry spray off target — postpone spraying and follow the product label for wind limits.`,
+    );
+  if (data.current.humidity >= 80)
+    tips.push(
+      `Humidity ${data.current.humidity}% with slow drying favours fungal disease — improve airflow, scout the crop, and confirm any diagnosis before treating.`,
+    );
+  if (data.current.uvIndex >= 8)
+    tips.push(`UV index ${data.current.uvIndex} — schedule labour work outside 11am–3pm.`);
+  if (today && today.max >= 38)
+    tips.push(
+      `Peak ${today.max}° — irrigate before sunrise or after sunset to cut evaporation loss.`,
+    );
   if (data.current.pressure && data.current.pressure < 1000)
-    tips.push("Falling air pressure often precedes unsettled weather — plan mandi trips earlier.");
-  if (tips.length < 3) tips.push("Move produce to the mandi on dry days to protect quality and price.");
-  if (tips.length < 3) tips.push("Irrigate early morning or after sunset to reduce water loss.");
+    tips.push(
+      "Air pressure is low, which often precedes unsettled weather — plan mandi trips earlier.",
+    );
+
+  if (tips.length === 0)
+    tips.push(
+      `${conditionLabel(data.current.code)} at ${data.current.temperature}° with ${today?.rainChance ?? 0}% rain chance — normal field work, spraying and mandi transport are all workable today.`,
+    );
   return tips.slice(0, 4);
 }
 
@@ -99,7 +125,10 @@ export function harvestAdvice(days: WeatherDay[]) {
 
   if (dry.length > 0) {
     advice.push(
-      `Dry window on ${dry.slice(0, 3).map((d) => formatIstWeekday(d.date)).join(", ")} — best for harvesting and drying.`,
+      `Dry window on ${dry
+        .slice(0, 3)
+        .map((d) => formatIstWeekday(d.date))
+        .join(", ")} — best for harvesting and drying.`,
     );
   }
   if (wet.length > 0) {
