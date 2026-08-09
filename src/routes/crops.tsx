@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
+import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
 import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";

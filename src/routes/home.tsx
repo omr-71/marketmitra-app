@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
+import { SourceNote } from "@/components/source-note";
 import { CardSkeleton, RowSkeleton, StatSkeleton } from "@/components/skeletons";
 import { useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
