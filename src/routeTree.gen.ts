@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CropsRouteImport } from './routes/crops'
+import { Route as DiagnoseRouteImport } from './routes/diagnose'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as PredictRouteImport } from './routes/predict'
@@ -33,6 +34,11 @@ const AboutRoute = AboutRouteImport.update({
 const CropsRoute = CropsRouteImport.update({
   id: '/crops',
   path: '/crops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnoseRoute = DiagnoseRouteImport.update({
+  id: '/diagnose',
+  path: '/diagnose',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/crops': typeof CropsRoute
+  '/diagnose': typeof DiagnoseRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
   '/predict': typeof PredictRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/crops': typeof CropsRoute
+  '/diagnose': typeof DiagnoseRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
   '/predict': typeof PredictRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/crops': typeof CropsRoute
+  '/diagnose': typeof DiagnoseRoute
   '/home': typeof HomeRoute
   '/markets': typeof MarketsRoute
   '/predict': typeof PredictRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/crops'
+    | '/diagnose'
     | '/home'
     | '/markets'
     | '/predict'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/crops'
+    | '/diagnose'
     | '/home'
     | '/markets'
     | '/predict'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/crops'
+    | '/diagnose'
     | '/home'
     | '/markets'
     | '/predict'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   CropsRoute: typeof CropsRoute
+  DiagnoseRoute: typeof DiagnoseRoute
   HomeRoute: typeof HomeRoute
   MarketsRoute: typeof MarketsRoute
   PredictRoute: typeof PredictRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/crops'
       fullPath: '/crops'
       preLoaderRoute: typeof CropsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnose': {
+      id: '/diagnose'
+      path: '/diagnose'
+      fullPath: '/diagnose'
+      preLoaderRoute: typeof DiagnoseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   CropsRoute: CropsRoute,
+  DiagnoseRoute: DiagnoseRoute,
   HomeRoute: HomeRoute,
   MarketsRoute: MarketsRoute,
   PredictRoute: PredictRoute,
@@ -250,13 +271,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
