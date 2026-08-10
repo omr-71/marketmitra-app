@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   Info,
   Mail,
+  Stethoscope,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
@@ -16,10 +17,12 @@ import { BrandLockup, LogoMark, Wordmark } from "./brand";
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
   { to: "/crops", icon: Store, key: "markets" as const },
+  { to: "/diagnose", icon: Stethoscope, key: "diagnose" as const },
   { to: "/weather", icon: CloudSun, key: "weather" as const },
   { to: "/schemes", icon: Landmark, key: "schemes" as const },
   { to: "/profile", icon: User, key: "profile" as const },
 ];
+
 
 
 function useActive() {
