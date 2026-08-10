@@ -27,6 +27,8 @@ const dict = {
   weather: { en: "Weather", mr: "हवामान", hi: "मौसम" },
   schemes: { en: "Schemes", mr: "योजना", hi: "योजनाएँ" },
   profile: { en: "Profile", mr: "प्रोफाइल", hi: "प्रोफ़ाइल" },
+  diagnose: { en: "Diagnose", mr: "रोग ओळख", hi: "रोग पहचान" },
+
   todayPrices: { en: "Today's crop prices", mr: "आजचे पीक दर", hi: "आज के फसल भाव" },
   quickActions: { en: "Quick actions", mr: "झटपट क्रिया", hi: "क्विक एक्शन" },
   aiRecommendation: { en: "Top market today", mr: "आजचा सर्वोत्तम बाजार", hi: "आज का सर्वोत्तम मंडी" },
