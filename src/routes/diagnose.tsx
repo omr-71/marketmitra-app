@@ -354,7 +354,7 @@ function DiagnosePage() {
   );
 
   const uploader = (
-    <div className="rounded-3xl border border-border/70 bg-card/50 p-4 lg:p-6">
+    <div className="rounded-3xl border border-border/70 bg-card/50 p-4 shadow-[var(--shadow-card)] lg:p-6">
       <h2 className="flex items-center gap-2 text-sm font-bold">
         <Stethoscope className="size-4 text-primary" />
         {s("aiAnalysis")}
@@ -368,7 +368,7 @@ function DiagnosePage() {
             alt="Crop photo selected for analysis"
             loading="lazy"
             decoding="async"
-            className="h-56 w-full object-cover lg:h-[340px]"
+            className="aspect-[4/3] max-h-[55vh] w-full object-cover lg:aspect-auto lg:h-[340px] lg:max-h-none"
           />
           <div className="absolute right-2 top-2 flex gap-2">
             <button
@@ -729,7 +729,7 @@ function DiagnosePage() {
 
             {!busy && diagnosis && (
               <div className="animate-fade-in space-y-4">
-                <div className="rounded-3xl border border-border/70 bg-card/50 p-4 lg:p-6">
+                <div className="rounded-3xl border border-border/70 bg-card/50 p-4 shadow-[var(--shadow-card)] lg:p-6">
                   <div className="grid gap-5 lg:grid-cols-2 lg:items-center">
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -767,7 +767,7 @@ function DiagnosePage() {
                 <div
                   role="tablist"
                   aria-label={s("aiAnalysis")}
-                  className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible"
+                  className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
                 >
                   {tabs.map(({ id, label, icon: Icon }) => {
                     const active = tab === id;
