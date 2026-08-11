@@ -615,23 +615,26 @@ function DiagnosePage() {
 
   return (
     <Screen>
-      <TopBar
-        title={s("title")}
-        subtitle={s("subtitle")}
-        back="/home"
-        action={
-          preview || result ? (
-            <button
-              type="button"
-              onClick={reset}
-              aria-label={s("again")}
-              className="press grid size-9 place-items-center rounded-full bg-muted"
-            >
-              <RefreshCw className="size-4" />
-            </button>
-          ) : undefined
-        }
-      />
+      <div className="lg:hidden">
+        <TopBar
+          title={s("title")}
+          subtitle={s("subtitle")}
+          back="/home"
+          action={
+            preview || result ? (
+              <button
+                type="button"
+                onClick={reset}
+                aria-label={s("again")}
+                className="press grid size-9 place-items-center rounded-full bg-muted"
+              >
+                <RefreshCw className="size-4" />
+              </button>
+            ) : undefined
+          }
+        />
+      </div>
+
 
       <div className="px-5 pb-6 pt-5 lg:px-0 lg:pt-8">
         {/* Desktop workspace header */}
