@@ -18,6 +18,8 @@ import { ThemeProvider } from "../lib/theme";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
+import { MitraAI } from "@/components/mitra-ai";
+
 
 
 function NotFoundComponent() {
