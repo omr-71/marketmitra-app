@@ -22,10 +22,15 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
+        // `entities` v4 has no ./escape or ./decode subpaths (parse5 v8 expects v6),
+        // so point those bare subpaths at the real ESM files.
         "entities/lib/decode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/decode.js"),
         "entities/lib/encode.js": path.resolve(import.meta.dirname, "node_modules/entities/lib/encode.js"),
+        "entities/escape": path.resolve(import.meta.dirname, "node_modules/entities/lib/esm/escape.js"),
+        "entities/decode": path.resolve(import.meta.dirname, "node_modules/entities/lib/esm/decode.js"),
         entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },
+
   },
 });

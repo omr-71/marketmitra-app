@@ -18,6 +18,8 @@ import { ThemeProvider } from "../lib/theme";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
+import { MitraAI } from "@/components/mitra-ai";
+
 
 
 function NotFoundComponent() {
@@ -161,7 +163,9 @@ function RootComponent() {
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <SplashOverlay />
           <Outlet />
+          <MitraAI />
           <Toaster position="top-center" richColors />
+
         </LangProvider>
         </LocationProvider>
       </SessionProvider>
