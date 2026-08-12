@@ -19,6 +19,7 @@ import { Route as PredictRouteImport } from './routes/predict'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SchemesRouteImport } from './routes/schemes'
 import { Route as WeatherRouteImport } from './routes/weather'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as MarketMarketIdRouteImport } from './routes/market.$marketId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
@@ -72,6 +73,11 @@ const WeatherRoute = WeatherRouteImport.update({
   path: '/weather',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketMarketIdRoute = MarketMarketIdRouteImport.update({
   id: '/market/$marketId',
   path: '/market/$marketId',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/schemes': typeof SchemesRoute
   '/weather': typeof WeatherRoute
+  '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof MarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/schemes': typeof SchemesRoute
   '/weather': typeof WeatherRoute
+  '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof MarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/schemes': typeof SchemesRoute
   '/weather': typeof WeatherRoute
+  '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof MarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/schemes'
     | '/weather'
+    | '/api/chat'
     | '/market/$marketId'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/schemes'
     | '/weather'
+    | '/api/chat'
     | '/market/$marketId'
     | '/lovable/email/transactional/preview'
   id:
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/schemes'
     | '/weather'
+    | '/api/chat'
     | '/market/$marketId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   SchemesRoute: typeof SchemesRoute
   WeatherRoute: typeof WeatherRoute
+  ApiChatRoute: typeof ApiChatRoute
   MarketMarketIdRoute: typeof MarketMarketIdRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WeatherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/market/$marketId': {
       id: '/market/$marketId'
       path: '/market/$marketId'
@@ -287,19 +307,10 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   SchemesRoute: SchemesRoute,
   WeatherRoute: WeatherRoute,
+  ApiChatRoute: ApiChatRoute,
   MarketMarketIdRoute: MarketMarketIdRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
