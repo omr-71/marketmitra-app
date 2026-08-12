@@ -129,7 +129,7 @@ export async function withLovableAiGatewayRunIdHeader(
   });
 }
 
-/** Responses-API provider for the Lovable AI Gateway (OpenAI models only). */
+/** Responses-API provider for the Lovable AI Gateway (OpenAI models). */
 export function createLovableResponsesProvider(lovableApiKey: string, initialRunId?: string) {
   const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
   const provider = createOpenAI({
