@@ -75,11 +75,7 @@ export function track(
     lang: lang(),
     props: (opts.props ?? {}) as never,
   };
-  void supabase
-    .from("analytics_events")
-    .insert(row)
-    .then(() => undefined)
-    .catch?.(() => undefined);
+  void Promise.resolve(supabase.from("analytics_events").insert(row)).catch(() => undefined);
 }
 
 let launched = false;
