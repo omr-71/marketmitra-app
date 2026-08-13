@@ -1,7 +1,8 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useRouterState } from "@tanstack/react-router";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { Leaf, X, Sprout, CloudSun, Landmark, Stethoscope } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Conversation,
@@ -16,8 +17,25 @@ import {
   PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { track } from "@/lib/analytics";
+import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
+
+const CHAT_STORAGE_KEY = "mm-mitra-chat";
+
+/** Session-scoped chat memory: survives closing the panel, cleared with the tab. */
+function loadSavedMessages(): UIMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as UIMessage[];
+    return Array.isArray(parsed) ? parsed.slice(-40) : [];
+  } catch {
+    return [];
+  }
+}
 
 const copy = {
   title: { en: "Mitra AI", mr: "मित्र AI", hi: "मित्र AI" },
