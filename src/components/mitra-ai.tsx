@@ -191,7 +191,11 @@ export function MitraAI() {
 
 
       {open && (
-        <div className="fixed inset-x-2 bottom-24 z-50 lg:inset-x-auto lg:bottom-28 lg:right-8 lg:w-[420px]">
+        <div
+          style={{ bottom: `calc(${bottomOffset} + 4.25rem)` }}
+          className="fixed inset-x-2 z-50 lg:inset-x-auto lg:right-8 lg:w-[420px]"
+        >
+
           <div className="glass flex h-[70vh] max-h-[620px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[var(--shadow-card)] backdrop-blur-2xl lg:h-[600px]">
             <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 py-3">
               <span className="grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary">
