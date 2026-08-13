@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { schemes } from "@/lib/schemes";
 import { ExternalLink, Landmark } from "lucide-react";
 
@@ -62,6 +63,7 @@ function SchemesPage() {
 
               <a
                 href={scheme.url}
+                onClick={() => track("scheme_viewed", { label: scheme.name })}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="press mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-primary/35 text-xs font-bold text-primary"

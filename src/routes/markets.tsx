@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
 import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { crops, findCrop } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { fetchMandiPrices, type MandiRecord } from "@/lib/market.functions";
@@ -51,6 +52,10 @@ function MarketsPage() {
   const [ratePerKm, setRatePerKm] = useState(DEFAULT_RATE_PER_KM);
   const [commission, setCommission] = useState(2);
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    if (location?.state) track("market_search", { label: crop.commodity });
+  }, [crop.commodity, location?.state]);
 
   const priceQuery = useQuery({
     queryKey: ["mandi", crop.commodity, location?.state, location?.district],
