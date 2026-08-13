@@ -103,7 +103,7 @@ export function SideNav() {
         className="press mt-auto flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <Info className="size-5" strokeWidth={1.9} />
-        About us
+        About MarketMitra
       </Link>
 
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground">
