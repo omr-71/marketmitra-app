@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchPriceHistory } from "@/lib/market.functions";
 import { predictPrice } from "@/lib/predict.functions";
@@ -41,6 +43,10 @@ function PredictPage() {
   const { crop: cropId, market, state } = Route.useSearch();
   const crop = findCrop(cropId) ?? crops[0]!;
   const ready = Boolean(market && state);
+
+  useEffect(() => {
+    if (ready) track("prediction_viewed", { label: crop.commodity });
+  }, [ready, crop.commodity]);
 
   const historyQuery = useQuery({
     queryKey: ["history", crop.commodity, state, market],

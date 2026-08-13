@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
 import { CardSkeleton, StatSkeleton } from "@/components/skeletons";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { useLocationContext } from "@/lib/location";
 import type { WeatherDay } from "@/lib/weather.functions";
 import { getWeather } from "@/lib/weather-fetch";
@@ -61,6 +63,10 @@ function DayIcon({ day }: { day: WeatherDay }) {
 function WeatherPage() {
   const { t } = useLang();
   const { location } = useLocationContext();
+
+  useEffect(() => {
+    if (location?.latitude != null) track("weather_lookup");
+  }, [location?.latitude, location?.longitude]);
 
   const query = useQuery({
     queryKey: ["weather", location?.latitude, location?.longitude],

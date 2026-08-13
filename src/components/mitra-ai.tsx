@@ -1,7 +1,8 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { useRouterState } from "@tanstack/react-router";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { Leaf, X, Sprout, CloudSun, Landmark, Stethoscope } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Conversation,
@@ -16,8 +17,25 @@ import {
   PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { track } from "@/lib/analytics";
+import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
+
+const CHAT_STORAGE_KEY = "mm-mitra-chat";
+
+/** Session-scoped chat memory: survives closing the panel, cleared with the tab. */
+function loadSavedMessages(): UIMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as UIMessage[];
+    return Array.isArray(parsed) ? parsed.slice(-40) : [];
+  } catch {
+    return [];
+  }
+}
 
 const copy = {
   title: { en: "Mitra AI", mr: "मित्र AI", hi: "मित्र AI" },
@@ -71,16 +89,21 @@ const suggestions = {
 export function MitraAI() {
   const { lang } = useLang();
   const { location } = useLocationContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const flag = useFeature("mitra_ai");
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState("");
+  const initialMessages = useMemo(() => loadSavedMessages(), []);
 
   const { messages, sendMessage, status, error } = useChat({
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ messages: msgs }) => ({
         body: {
-          messages: msgs,
+          // Send the recent window so Mitra keeps the thread's context.
+          messages: msgs.slice(-24),
           lang,
           location: location
             ? {
@@ -98,6 +121,20 @@ export function MitraAI() {
 
   const busy = status === "submitted" || status === "streaming";
 
+  // Persist the thread for this browser session only.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    try {
+      window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-40)));
+    } catch {
+      /* storage full or blocked — chat still works in memory */
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (error) track("mitra_ai_error");
+  }, [error]);
+
   // Keep the composer focused during normal chat use.
   useEffect(() => {
     if (!open) return;
@@ -113,18 +150,36 @@ export function MitraAI() {
     const trimmed = value.trim();
     if (!trimmed || busy) return;
     setText("");
+    track("mitra_ai_message");
     void sendMessage({ text: trimmed });
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  // Pages rendered inside the app shell carry a mobile bottom nav; the landing
+  // screen and the admin console do not. Lift the orb above whatever is there
+  // and always respect the device safe area.
+  const hasBottomNav = pathname !== "/" && !pathname.startsWith("/admin");
+  const bottomOffset = hasBottomNav
+    ? "calc(env(safe-area-inset-bottom, 0px) + 6.25rem)"
+    : "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)";
+
+  if (pathname.startsWith("/admin") || flag?.enabled === false) return null;
+
   return (
     <>
-      {/* Floating orb */}
+      {/* Floating orb — offset so it never sits on top of navigation or CTAs */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => {
+            if (!v) track("mitra_ai_opened");
+            return !v;
+          });
+        }}
         aria-label={copy.open[lang]}
-        className="press fixed bottom-24 right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-primary-foreground/20 transition-transform hover:scale-105 lg:bottom-8 lg:right-8 lg:size-16"
+        aria-expanded={open}
+        style={{ bottom: bottomOffset }}
+        className="press fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-primary-foreground/20 transition-transform hover:scale-105 lg:right-8 lg:size-16"
       >
         <span className="absolute inset-0 animate-ping rounded-full bg-primary/25" />
         {open ? (
@@ -134,8 +189,13 @@ export function MitraAI() {
         )}
       </button>
 
+
       {open && (
-        <div className="fixed inset-x-2 bottom-24 z-50 lg:inset-x-auto lg:bottom-28 lg:right-8 lg:w-[420px]">
+        <div
+          style={{ bottom: `calc(${bottomOffset} + 4.25rem)` }}
+          className="fixed inset-x-2 z-50 lg:inset-x-auto lg:right-8 lg:w-[420px]"
+        >
+
           <div className="glass flex h-[70vh] max-h-[620px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[var(--shadow-card)] backdrop-blur-2xl lg:h-[600px]">
             <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 py-3">
               <span className="grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary">

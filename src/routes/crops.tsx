@@ -5,6 +5,7 @@ import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
 import { SourceNote } from "@/components/source-note";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { fetchMandiPrices } from "@/lib/market.functions";
@@ -67,7 +68,10 @@ function CropsPage() {
             return (
               <button
                 key={c.id}
-                onClick={() => setSelected(c.id)}
+                onClick={() => {
+                  setSelected(c.id);
+                  track("crop_selected", { label: c.commodity });
+                }}
                 className={`press relative flex flex-col items-center gap-2 rounded-3xl border px-2 py-4 ${
                   active
                     ? "border-primary bg-primary/8 shadow-[var(--shadow-card)]"

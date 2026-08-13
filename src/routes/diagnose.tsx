@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
+import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
 import {
   diagnoseCropImage,
@@ -312,14 +313,17 @@ function DiagnosePage() {
     setBusy(true);
     setError(null);
     setResult(null);
+    track("diagnose_started", { label: cropHint || null });
     try {
       const data = await diagnoseCropImage({
         data: { image: preview, lang, ...(cropHint ? { cropHint } : {}) },
       });
       setResult(data);
       setTab("diagnosis");
+      track(data.ok ? "diagnose_completed" : "diagnose_failed", { label: cropHint || null });
       if (!data.ok) setError(data.message);
     } catch {
+      track("diagnose_failed");
       setError(L.networkError[lang]);
     } finally {
       setBusy(false);

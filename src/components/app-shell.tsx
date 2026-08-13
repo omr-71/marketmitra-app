@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
+import { usePageTracking } from "@/lib/analytics";
+import { featureKeyForPath, MaintenanceNotice, useFeature } from "@/lib/features";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
 
 const nav = [
@@ -124,6 +126,9 @@ export function Screen({
   className?: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  usePageTracking();
+  const flag = useFeature(featureKeyForPath(pathname));
+  const disabled = flag && !flag.enabled ? flag : null;
 
   return (
     <div className="min-h-screen bg-background lg:flex">
@@ -135,7 +140,7 @@ export function Screen({
           } ${className}`}
         >
           <div key={pathname} className="animate-page">
-            {children}
+            {disabled ? <MaintenanceNotice flag={disabled} /> : children}
           </div>
           {withNav && <SiteFooter />}
         </div>
