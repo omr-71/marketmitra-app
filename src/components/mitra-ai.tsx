@@ -85,6 +85,32 @@ const suggestions = {
   ],
 } as const;
 
+/**
+ * Tracks the on-screen keyboard inset (iOS/Android) plus the usable viewport
+ * height, so the orb and panel are never hidden behind the keyboard.
+ */
+function useKeyboardInset() {
+  const [state, setState] = useState({ inset: 0, height: 0 });
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setState({ inset: inset > 80 ? Math.round(inset) : 0, height: Math.round(vv.height) });
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return state;
+}
+
 /** Premium floating assistant available on every screen. */
 export function MitraAI() {
   const { lang } = useLang();
@@ -95,6 +121,8 @@ export function MitraAI() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState("");
   const initialMessages = useMemo(() => loadSavedMessages(), []);
+  const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
+
 
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
