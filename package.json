@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@ai-sdk/groq": "^4.0.28",
     "@ai-sdk/openai": "^4.0.36",
     "@ai-sdk/react": "^4.0.61",
     "@hookform/resolvers": "^5.2.2",
@@ -65,6 +66,7 @@
     "lucide-react": "^0.575.0",
     "motion": "^13.1.0",
     "nanoid": "^6.0.1",
+    "openai": "^7.4.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",

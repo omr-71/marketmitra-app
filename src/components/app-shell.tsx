@@ -189,7 +189,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-10 border-t border-border/70 px-5 pb-6 pt-6 text-center lg:mt-16 lg:px-0 lg:pb-10 lg:pt-8">
       <div className="flex flex-col items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:justify-center sm:gap-5">
-        <p>© 2026 Market Mitra</p>
+        <p>© 2026 Market Mitra.All rights reserved</p>
         <p>Developed by Om Labhade</p>
         <a
           href="mailto:hello.marketmitra@gmail.com"

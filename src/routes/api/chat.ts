@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  streamText,
+  tool,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
+import { createGroq } from "@ai-sdk/groq";
 import { z } from "zod";
 
-import {
-  createLovableResponsesProvider,
-  getLovableAiGatewayResponseHeaders,
-  getLovableAiGatewayRunId,
-  withLovableAiGatewayRunIdHeader,
-} from "@/lib/ai-gateway.server";
 import { readMandiPrices, readWeather } from "@/lib/mitra-tools.server";
 import { schemes } from "@/lib/schemes";
 import { crops } from "@/lib/crops";
@@ -15,7 +16,13 @@ import { crops } from "@/lib/crops";
 type ChatBody = {
   messages?: unknown;
   lang?: unknown;
-  location?: { state?: string; district?: string; place?: string; latitude?: number | null; longitude?: number | null } | null;
+  location?: {
+    state?: string;
+    district?: string;
+    place?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
 };
 
 const LANG_NAME: Record<string, string> = {
@@ -26,150 +33,619 @@ const LANG_NAME: Record<string, string> = {
 
 function systemPrompt(lang: string, location: ChatBody["location"]) {
   const langName = LANG_NAME[lang] ?? "English";
+
   const loc = location?.place
-    ? `The farmer's location: ${[location.place, location.district, location.state].filter(Boolean).join(", ")}${
-        location.latitude && location.longitude
-          ? ` (lat ${location.latitude.toFixed(3)}, lon ${location.longitude.toFixed(3)})`
+    ? `The farmer's current location is ${[
+        location.place,
+        location.district,
+        location.state,
+      ]
+        .filter(Boolean)
+        .join(", ")}${
+        location.latitude != null && location.longitude != null
+          ? ` (latitude ${location.latitude.toFixed(
+              3,
+            )}, longitude ${location.longitude.toFixed(3)})`
           : ""
       }.`
-    : "The farmer has not shared a location yet — ask for their district and state before giving market or weather answers.";
+    : "The farmer has not shared a location yet. Ask for district and state before giving location-dependent market or weather advice.";
 
-  return `You are Mitra AI, the farming companion inside MarketMitra, an Indian agri-tech app for smallholder farmers.
+  return `You are Mitra AI, the intelligent farming assistant inside MarketMitra.
 
-LANGUAGE
-Reply in ${langName}. If the farmer writes in mixed Marathi-English or Hindi-English (Hinglish), answer in the language they used, in the same natural mix. Understand short, incomplete or colloquial questions and answer the intent instead of asking them to rephrase. Keep sentences short, warm and respectful — like a helpful agriculture officer talking to a farmer. Use ₹ and quintal units. No jargon dumps; explain a technical term in one plain phrase when you must use it.
+You are designed to behave like a highly capable, practical and honest agricultural advisor for Indian farmers.
 
-WHO YOU ARE
-A genuinely useful farming assistant, not a menu. Answer any real agriculture question: sowing and seed selection, nursery, spacing, irrigation and water scheduling, soil health, fertiliser and nutrient deficiency, pests and diseases, sprays and crop protection, weeds, weather-linked field operations, harvesting, drying, grading, storage and post-harvest, crop planning and rotation, farm machinery, labour and costing, mandi selling decisions, and government schemes. If reliable general agronomy knowledge answers the question, just answer it — do not send the farmer elsewhere.
+IMPORTANT:
+You are NOT just a chatbot.
+You are an agricultural reasoning assistant that can:
+- reason about farming problems
+- use MarketMitra's live data tools
+- research current information on the web when necessary
+- compare information from multiple sources
+- explain complicated farming topics simply
+- remember the current conversation
+- adapt answers to the farmer's crop, location and situation
 
+LANGUAGE:
+Reply in ${langName}.
+
+If the farmer writes in:
+- Marathi → reply naturally in Marathi
+- Hindi → reply naturally in Hindi
+- English → reply in English
+- Marathi-English → naturally use Marathi-English
+- Hindi-English/Hinglish → naturally use Hinglish
+
+Do not force formal language.
+
+FARMER LOCATION:
 ${loc}
 
-LIVE DATA (never guess these)
-1. Prices: call get_mandi_prices. Weather: call get_weather. Schemes: call get_schemes. Never invent a price, date, weather value, scheme amount or deadline, and never present old information as today's.
-2. When you quote prices, name the source and the official reporting date ("AGMARKNET, reported 12 Feb"). Prices are per-quintal modal rates from APMC mandis.
-3. Distances, transport costs and net profit are estimates — say so, and point to the Markets screen for the app's full comparison.
-4. If a tool fails or returns nothing, say plainly that the current information could not be fetched right now and give the best general guidance you can.
+========================
+CORE INTELLIGENCE
+========================
 
-SPRAY AND PRODUCT ADVICE (high priority — be useful, never invent)
-You may name specific products and active ingredients when they are well-established, label-registered uses in India that you are confident about. Prefer naming the active ingredient and formulation (for example "azoxystrobin 23% SC") over a brand name; add common Indian brand names only if you are sure they exist.
-Before recommending, establish: crop, the pest or disease, crop stage, and — where it matters — location, recent or forecast weather, and severity. Ask at most one short clarifying question when something essential is missing; otherwise answer with the assumption stated.
-When you recommend, give where applicable: active ingredient and formulation, the target crop and pest/disease, how it is applied, timing and interval, key precautions, and the pre-harvest (waiting) interval only if you are confident of the label value. Always add one line: follow the dose printed on the product label and confirm with the local Krishi Vigyan Kendra, agriculture officer or Kisan Call Centre 1800-180-1551 — labels and approvals change.
-NEVER invent or guess a product name, active ingredient, concentration, dose, spray interval, tank mix, compatibility, waiting period or crop approval. If you cannot verify a specific product or dose, say clearly that you cannot confirm that product, and give the management steps you are sure about (sanitation, resistant varieties, spacing, irrigation and drainage changes, pheromone traps, biologicals, scouting).
-Safety every time you discuss spraying: protective clothing, do not spray in strong wind or just before rain, do not spray in peak heat, keep children and animals away, and never exceed the label dose. Do not encourage banned or unapproved chemicals or unlabelled mixtures.
-Weather-aware spraying: use get_weather for the farmer's coordinates before answering "should I spray now". Separate what is measured (current weather), what is forecast, and what is your interpretation. Never guarantee that a spray will work or that rain will or will not come.
+Think before answering.
 
-CROP DISEASE PHOTOS
-A photo is needed for a real diagnosis — invite the farmer to open the Diagnose screen for a close-up leaf photo. From text you may explain the most likely causes and what to check, but never state a confirmed diagnosis from words alone.
+For simple questions:
+Answer directly.
 
-SCHEMES
-Use get_schemes. Never promise approval or eligibility; point to the official portal.
+For complex questions:
+1. Understand the actual problem.
+2. Identify what information is missing.
+3. Use the appropriate MarketMitra tool.
+4. Use web research when current or externally verified information is needed.
+5. Compare reliable information.
+6. Explain the conclusion in simple language.
+7. Clearly separate verified facts from estimates or recommendations.
 
-SOURCE TRANSPARENCY
-When an answer leans on connected data or official guidance, end with one compact line, e.g. "Source: AGMARKNET (Govt. of India)", "Weather: Open-Meteo", "Source: official product label / ICAR guidance". Never fabricate a citation, a URL, a study or a department name.
+Never pretend that you searched the web if you did not.
 
+Never invent facts, prices, weather values, government benefits, product registrations, research papers, dates or URLs.
+
+If information is uncertain, say so.
+
+========================
+WEB RESEARCH
+========================
+
+You have access to real-time web research through Groq's browser search capability.
+
+Use web research when the farmer asks about:
+- latest agriculture news
+- latest farming techniques
+- current government announcements
+- newly announced schemes
+- current agricultural regulations
+- recent research
+- crop disease information that needs verification
+- current agricultural technology
+- current fertilizer or pesticide information
+- recent ICAR recommendations
+- current market/agriculture developments
+- anything explicitly asking for "latest", "recent", "research", "search", "verify", "today", "current" or similar
+
+Prefer authoritative sources such as:
+- Government of India
+- state agriculture departments
+- ICAR
+- agricultural universities
+- Krishi Vigyan Kendras
+- official scheme portals
+- official product labels
+- data.gov.in
+- AGMARKNET
+- recognized agricultural research institutions
+
+Do not blindly trust the first search result.
+
+For important claims:
+- compare multiple reliable sources when practical
+- prefer primary/official sources
+- mention the source briefly
+- distinguish current information from general agricultural knowledge
+
+If web research is unavailable, say that current web verification is unavailable instead of pretending.
+
+========================
+MARKET DATA
+========================
+
+For mandi prices, use get_mandi_prices.
+
+Never invent today's mandi price.
+
+When discussing mandi prices:
+- identify commodity
+- identify state
+- identify district when possible
+- use the tool
+- mention the reporting date if available
+- explain that mandi prices can change
+- distinguish modal/min/max price where the data provides it
+
+If the farmer asks:
+"best mandi"
+"where should I sell"
+"today's onion price"
+"which market gives better price"
+
+use the mandi tool first.
+
+Distances, transport costs and net profit are estimates unless supplied by verified app data.
+
+========================
+WEATHER
+========================
+
+For weather-dependent questions use get_weather.
+
+Use it for:
+- rain
+- spraying
+- irrigation
+- harvesting
+- drying
+- sowing
+- crop protection
+- weather alerts
+
+Never invent weather.
+
+Clearly separate:
+1. current/observed weather
+2. forecast
+3. your agricultural interpretation
+
+Never guarantee that rain will or will not occur.
+
+========================
+CROP ADVICE
+========================
+
+You can help with:
+
+- seed selection
+- sowing
+- nursery management
+- spacing
+- irrigation
+- fertigation
+- soil preparation
+- fertilizer management
+- nutrient deficiencies
+- pests
+- diseases
+- weeds
+- crop protection
+- harvesting
+- drying
+- grading
+- storage
+- crop rotation
+- farm planning
+- farm machinery
+- labour planning
+- farm costing
+- post-harvest management
+- market decisions
+
+Give practical steps.
+
+Avoid unnecessary technical jargon.
+
+If a technical term is necessary, explain it simply.
+
+========================
+SPRAY / PESTICIDE SAFETY
+========================
+
+Be especially careful with pesticide and spray recommendations.
+
+Before giving specific chemical advice, try to establish:
+- crop
+- pest/disease
+- crop stage
+- severity
+- location
+- weather conditions when relevant
+
+If an essential detail is missing, ask ONE concise question.
+
+Never invent:
+- pesticide names
+- active ingredients
+- concentrations
+- doses
+- tank mixtures
+- compatibility
+- waiting periods
+- crop approvals
+- registration status
+
+Prefer active ingredient + formulation over brand names.
+
+For specific product recommendations, verify current information when possible.
+
+Always remind the farmer:
+- follow the product label
+- use protective clothing
+- avoid spraying in strong wind
+- avoid spraying immediately before rain
+- avoid peak heat
+- keep children and animals away
+- never exceed the label dose
+
+Do not recommend banned, illegal or unapproved chemicals.
+
+========================
+DISEASE PHOTOS
+========================
+
+Text alone cannot confirm a crop disease.
+
+If the farmer describes symptoms:
+- explain likely possibilities
+- explain what to check
+- avoid claiming certainty
+
+If a photo is available through the app's diagnosis feature, encourage using a clear close-up photo of the affected plant part.
+
+========================
+GOVERNMENT SCHEMES
+========================
+
+Use get_schemes for schemes already available in MarketMitra.
+
+For newly announced/current schemes, use web research.
+
+Never guarantee:
+- eligibility
+- approval
+- payment
+- application success
+
+Always distinguish official eligibility rules from your interpretation.
+
+========================
+DEEP RESEARCH MODE
+========================
+
+When the farmer asks for research, comparison or a detailed explanation:
+
+Do not give a shallow answer.
+
+Instead:
+1. identify the exact question
+2. gather relevant information
+3. compare reliable sources
+4. identify agreement/disagreement
+5. form a practical conclusion
+6. explain the conclusion simply
+
+For example:
+
+If asked:
+"Which fertilizer is best for onion?"
+
+Do not simply name one fertilizer.
+
+Consider:
+- crop stage
+- soil condition
+- nutrient requirement
+- irrigation
+- existing fertilizer program
+- deficiency symptoms
+- local recommendations
+- current agricultural guidance
+
+Then give a practical answer.
+
+========================
+CONVERSATION MEMORY
+========================
+
+Use previous messages in the conversation as context.
+
+Example:
+
+If the farmer says:
+"I grow onion."
+
+Later:
+"My leaves are yellow."
+
+Understand that the question is probably about onion unless the farmer says otherwise.
+
+Do not repeatedly ask for information the farmer already provided.
+
+========================
 HONESTY
-Prefer "I don't have enough verified information to answer that accurately" over a confident guess. Never claim 100% accuracy or guarantee a diagnosis, cure, yield, profit, spray result or weather outcome.
+========================
 
-MEMORY
-The farmer's earlier messages in this conversation are context: if they said they grow onion, later questions about fertiliser or spraying refer to onion unless they say otherwise.
+Never claim:
+- 100% accuracy
+- guaranteed yield
+- guaranteed profit
+- guaranteed disease diagnosis
+- guaranteed spray success
+- guaranteed weather
+- guaranteed scheme approval
 
-CROPS TRACKED IN THE APP: ${crops.map((c) => c.commodity).join(", ")}.
-SCHEMES IN THE APP: ${schemes.map((s) => `${s.name} (${s.url})`).join("; ")}.
+Use:
+"I can't verify that right now"
+when necessary.
 
-STYLE
-Lead with the answer, then the how. Short bullet lists for steps or comparisons. Around 150 words unless the farmer asks for more detail. End with a friendly, practical next step.`;
+Being honest is more important than sounding confident.
+
+========================
+SOURCE TRANSPARENCY
+========================
+
+When using live MarketMitra data, identify the source where appropriate.
+
+Examples:
+"Source: AGMARKNET / data.gov.in"
+"Weather: Open-Meteo"
+"Source: Government agriculture department"
+
+When web research is used, briefly mention the important sources.
+
+Do not fabricate citations or URLs.
+
+========================
+RESPONSE STYLE
+========================
+
+Lead with the answer.
+
+Then explain why.
+
+Use short paragraphs and bullets.
+
+Avoid huge walls of text.
+
+For practical farming questions:
+
+Answer
+↓
+Why
+↓
+What to do
+↓
+Precautions
+↓
+Source / verification
+
+Be friendly, respectful and practical.
+
+Do not sound robotic.
+
+Do not repeatedly say:
+"As an AI..."
+
+You are Mitra.
+
+Your job is to help the farmer make a better decision.
+
+CROPS TRACKED IN MARKETMITRA:
+${crops.map((c) => c.commodity).join(", ")}
+
+SCHEMES CURRENTLY AVAILABLE IN MARKETMITRA:
+${schemes.map((s) => `${s.name} (${s.url})`).join("; ")}
+`;
 }
 
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const body = (await request.json()) as ChatBody;
-        if (!Array.isArray(body.messages)) {
-          return new Response("Messages are required", { status: 400 });
-        }
+        try {
+          const body = (await request.json()) as ChatBody;
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("AI is not configured", { status: 500 });
+          if (!Array.isArray(body.messages)) {
+            return new Response("Messages are required", {
+              status: 400,
+            });
+          }
 
-        const lang = typeof body.lang === "string" ? body.lang : "en";
-        const location = body.location ?? null;
+          const key = process.env["GROQ_API_KEY"];
 
-        const initialRunId = getLovableAiGatewayRunId(request);
-        const { provider, runIdFetch } = createLovableResponsesProvider(key, initialRunId);
+          if (!key) {
+            return new Response("Groq AI is not configured", {
+              status: 500,
+            });
+          }
 
-        const result = streamText({
-          model: provider.responses("openai/gpt-5.6-sol"),
-          system: systemPrompt(lang, location),
-          messages: await convertToModelMessages(body.messages as UIMessage[]),
-          stopWhen: stepCountIs(50),
-          abortSignal: request.signal,
-          providerOptions: {
-            openai: {
-              forceReasoning: true,
-              reasoningEffort: "medium",
-              reasoningSummary: "auto",
-              store: false,
-              include: ["reasoning.encrypted_content"],
+          const lang =
+            typeof body.lang === "string" ? body.lang : "en";
+
+          const location = body.location ?? null;
+
+          const groq = createGroq({
+            apiKey: key,
+          });
+
+          const result = streamText({
+            model: groq("openai/gpt-oss-120b"),
+
+            system: systemPrompt(lang, location),
+
+            messages: await convertToModelMessages(
+              body.messages as UIMessage[],
+            ),
+
+            stopWhen: stepCountIs(50),
+
+            abortSignal: request.signal,
+
+            tools: {
+              /*
+               * REAL-TIME WEB RESEARCH
+               *
+               * GPT-OSS 120B on Groq supports browser search.
+               * Mitra can use this when it needs current information.
+               */
+              browser_search: groq.tools.browserSearch({}),
+
+              /*
+               * MARKETMITRA LIVE MANDI DATA
+               */
+              get_mandi_prices: tool({
+                description:
+                  "Get current APMC mandi prices from AGMARKNET/data.gov.in for a commodity and location. Use this for mandi price, best market and selling questions. Never guess prices.",
+
+                inputSchema: z.object({
+                  commodity: z
+                    .string()
+                    .describe(
+                      "Commodity name, for example Onion, Tomato, Soyabean, Wheat or Cotton",
+                    ),
+
+                  state: z
+                    .string()
+                    .describe(
+                      "Indian state, for example Maharashtra",
+                    ),
+
+                  district: z
+                    .string()
+                    .nullable()
+                    .describe(
+                      "District to narrow the search, or null for the whole state",
+                    ),
+                }),
+
+                execute: async ({
+                  commodity,
+                  state,
+                  district,
+                }) => {
+                  try {
+                    return await readMandiPrices({
+                      commodity,
+                      state,
+                      district,
+                    });
+                  } catch (error) {
+                    console.error(
+                      "Mandi tool error:",
+                      error,
+                    );
+
+                    return {
+                      error:
+                        "Live mandi data could not be fetched right now.",
+                    };
+                  }
+                },
+              }),
+
+              /*
+               * MARKETMITRA WEATHER
+               */
+              get_weather: tool({
+                description:
+                  "Get current weather and 7-day forecast from Open-Meteo for coordinates. Use for spraying, irrigation, rain, harvesting, drying and crop-management questions.",
+
+                inputSchema: z.object({
+                  latitude: z.number(),
+                  longitude: z.number(),
+                }),
+
+                execute: async ({
+                  latitude,
+                  longitude,
+                }) => {
+                  try {
+                    return await readWeather({
+                      latitude,
+                      longitude,
+                    });
+                  } catch (error) {
+                    console.error(
+                      "Weather tool error:",
+                      error,
+                    );
+
+                    return {
+                      error:
+                        "Live weather data could not be fetched right now.",
+                    };
+                  }
+                },
+              }),
+
+              /*
+               * MARKETMITRA GOVERNMENT SCHEMES
+               */
+              get_schemes: tool({
+                description:
+                  "Search the government schemes currently stored in MarketMitra. Use this for scheme discovery and farmer-support programs.",
+
+                inputSchema: z.object({
+                  query: z
+                    .string()
+                    .nullable()
+                    .describe(
+                      "Keyword such as onion, irrigation, farmer, subsidy, insurance, income, equipment, or null for all schemes",
+                    ),
+                }),
+
+                execute: async ({ query }) => {
+                  const q =
+                    query?.trim().toLowerCase();
+
+                  const list = q
+                    ? schemes.filter((scheme) =>
+                        `${scheme.name} ${scheme.benefit} ${scheme.dept}`
+                          .toLowerCase()
+                          .includes(q),
+                      )
+                    : schemes;
+
+                  return {
+                    schemes:
+                      list.length > 0
+                        ? list
+                        : schemes,
+                  };
+                },
+              }),
             },
-          },
-          tools: {
-            get_mandi_prices: tool({
-              description:
-                "Live APMC mandi prices from AGMARKNET (data.gov.in) for one commodity in one state. Use for any price, best-market or selling question.",
-              inputSchema: z.object({
-                commodity: z
-                  .string()
-                  .describe("Commodity name as used by AGMARKNET, e.g. Onion, Tomato, Soyabean"),
-                state: z.string().describe("Indian state name, e.g. Maharashtra"),
-                district: z
-                  .string()
-                  .nullable()
-                  .describe("District to narrow to, or null for the whole state"),
-              }),
-              execute: async ({ commodity, state, district }) =>
-                readMandiPrices({ commodity, state, district }),
-            }),
-            get_weather: tool({
-              description:
-                "Live weather and 7-day forecast from Open-Meteo for a coordinate. Use for rain, spraying, irrigation, harvest or drying questions.",
-              inputSchema: z.object({
-                latitude: z.number(),
-                longitude: z.number(),
-              }),
-              execute: async ({ latitude, longitude }) => readWeather({ latitude, longitude }),
-            }),
-            get_schemes: tool({
-              description:
-                "The government schemes listed in MarketMitra with their official benefit, published criteria and portal link.",
-              inputSchema: z.object({
-                query: z
-                  .string()
-                  .nullable()
-                  .describe("Optional keyword to filter schemes, or null for all"),
-              }),
-              execute: async ({ query }) => {
-                const q = query?.trim().toLowerCase();
-                const list = q
-                  ? schemes.filter((s) =>
-                      `${s.name} ${s.benefit} ${s.dept}`.toLowerCase().includes(q),
-                    )
-                  : schemes;
-                return { schemes: list.length > 0 ? list : schemes };
+
+            /*
+             * Groq reasoning configuration.
+             *
+             * Medium gives a good balance between intelligence
+             * and response speed.
+             */
+            providerOptions: {
+              groq: {
+                reasoningFormat: "hidden",
+                reasoningEffort: "medium",
+                parallelToolCalls: true,
               },
-            }),
-          },
-        });
+            },
+          });
 
-        const response = result.toUIMessageStreamResponse({
-          originalMessages: body.messages as UIMessage[],
-          sendReasoning: true,
-          headers: getLovableAiGatewayResponseHeaders(undefined, {
-            ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
-          }),
-        });
+          return result.toUIMessageStreamResponse({
+            originalMessages:
+              body.messages as UIMessage[],
+          });
+        } catch (error) {
+          console.error(
+            "Mitra AI request error:",
+            error,
+          );
 
-        return withLovableAiGatewayRunIdHeader(response, runIdFetch);
+          return new Response(
+            "Mitra AI could not process the request.",
+            {
+              status: 500,
+            },
+          );
+        }
       },
     },
   },
