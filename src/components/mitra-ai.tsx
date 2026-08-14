@@ -85,6 +85,32 @@ const suggestions = {
   ],
 } as const;
 
+/**
+ * Tracks the on-screen keyboard inset (iOS/Android) plus the usable viewport
+ * height, so the orb and panel are never hidden behind the keyboard.
+ */
+function useKeyboardInset() {
+  const [state, setState] = useState({ inset: 0, height: 0 });
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setState({ inset: inset > 80 ? Math.round(inset) : 0, height: Math.round(vv.height) });
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  return state;
+}
+
 /** Premium floating assistant available on every screen. */
 export function MitraAI() {
   const { lang } = useLang();
@@ -95,6 +121,8 @@ export function MitraAI() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState("");
   const initialMessages = useMemo(() => loadSavedMessages(), []);
+  const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
+
 
   const { messages, sendMessage, status, error } = useChat({
     messages: initialMessages,
@@ -159,9 +187,19 @@ export function MitraAI() {
   // screen and the admin console do not. Lift the orb above whatever is there
   // and always respect the device safe area.
   const hasBottomNav = pathname !== "/" && !pathname.startsWith("/admin");
-  const bottomOffset = hasBottomNav
-    ? "calc(env(safe-area-inset-bottom, 0px) + 6.25rem)"
-    : "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)";
+  const keyboardOpen = keyboardInset > 0;
+  const baseGap = hasBottomNav && !keyboardOpen ? "6.25rem" : "1.5rem";
+  // When the keyboard is up, sit above it (the bottom nav is off-screen anyway).
+  const bottomOffset = `calc(env(safe-area-inset-bottom, 0px) + ${baseGap} + ${keyboardInset}px)`;
+
+  // Never cover a focused page input: hide the orb while the keyboard is open
+  // and the assistant itself is closed.
+  const hideOrb = keyboardOpen && !open;
+
+  // Keep the panel inside the usable viewport, keyboard included.
+  const panelMaxHeight = viewportHeight
+    ? `${Math.max(240, viewportHeight - keyboardInset - 96)}px`
+    : undefined;
 
   if (pathname.startsWith("/admin") || flag?.enabled === false) return null;
 
@@ -178,8 +216,12 @@ export function MitraAI() {
         }}
         aria-label={copy.open[lang]}
         aria-expanded={open}
+        aria-hidden={hideOrb}
+        tabIndex={hideOrb ? -1 : 0}
         style={{ bottom: bottomOffset }}
-        className="press fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-primary-foreground/20 transition-transform hover:scale-105 lg:right-8 lg:size-16"
+        className={`press fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-primary-foreground/20 transition-all duration-200 hover:scale-105 lg:right-8 lg:size-16 ${
+          hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100"
+        }`}
       >
         <span className="absolute inset-0 animate-ping rounded-full bg-primary/25" />
         {open ? (
@@ -196,8 +238,12 @@ export function MitraAI() {
           className="fixed inset-x-2 z-50 lg:inset-x-auto lg:right-8 lg:w-[420px]"
         >
 
-          <div className="glass flex h-[70vh] max-h-[620px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[var(--shadow-card)] backdrop-blur-2xl lg:h-[600px]">
+          <div
+            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
+            className="glass flex h-[70vh] max-h-[620px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[var(--shadow-card)] backdrop-blur-2xl lg:h-[600px]"
+          >
             <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 py-3">
+
               <span className="grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary">
                 <Leaf className="size-5" strokeWidth={2.2} />
               </span>
