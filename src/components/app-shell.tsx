@@ -107,7 +107,7 @@ export function SideNav() {
       </Link>
 
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground">
-        Official APMC / Agmarknet prices · Open-Meteo weather
+        Official APMC / Agmarknet prices · WeatherAPI.com weather
         <br />
         English · मराठी · हिंदी
       </p>
