@@ -1,8 +1,22 @@
 import { useChat } from "@ai-sdk/react";
 import { useRouterState } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Leaf, X, Sprout, CloudSun, Landmark, Stethoscope } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Leaf,
+  X,
+  Sprout,
+  CloudSun,
+  Landmark,
+  Stethoscope,
+  Mic,
+  Square,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 
 import {
   Conversation,
