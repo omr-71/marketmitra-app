@@ -419,7 +419,123 @@ export function MitraAI() {
               <ConversationScrollButton />
             </Conversation>
 
-            <div className="border-t border-border/60 bg-card/70 p-3">
+            <div className="space-y-2 border-t border-border/60 bg-card/70 p-3">
+              {showVoiceSettings && (
+                <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-xs">
+                  <p className="mb-2 font-bold uppercase tracking-wider text-muted-foreground">
+                    {copy.voiceSettings[lang]}
+                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{copy.voiceType[lang]}</span>
+                    <div className="flex overflow-hidden rounded-full border border-border/70">
+                      {(["female", "male"] as const).map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => update({ gender: g })}
+                          className={`px-3 py-1 font-semibold ${
+                            prefs.gender === g ? "bg-primary text-primary-foreground" : "bg-transparent"
+                          }`}
+                        >
+                          {copy[g][lang]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="mt-3 flex items-center justify-between gap-3">
+                    <span className="font-semibold">{copy.speed[lang]}</span>
+                    <input
+                      type="range"
+                      min={0.7}
+                      max={1.4}
+                      step={0.1}
+                      value={prefs.rate}
+                      onChange={(e) => update({ rate: Number(e.currentTarget.value) })}
+                      className="w-32 accent-[var(--color-primary)]"
+                    />
+                  </label>
+                  <label className="mt-3 flex items-center justify-between gap-3">
+                    <span className="font-semibold">{copy.autoSpeak[lang]}</span>
+                    <input
+                      type="checkbox"
+                      checked={prefs.autoSpeak}
+                      onChange={(e) => update({ autoSpeak: e.currentTarget.checked })}
+                      className="size-4 accent-[var(--color-primary)]"
+                    />
+                  </label>
+                  {!speech.supported && (
+                    <p className="mt-2 text-muted-foreground">{copy.micUnsupported[lang]}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!mic.supported}
+                  onClick={() => (mic.listening ? mic.stop() : mic.start())}
+                  aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
+                  className={`press relative grid size-10 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-40 ${
+                    mic.listening
+                      ? "border-primary/40 bg-primary text-primary-foreground"
+                      : "border-border/70 bg-background/70 text-foreground"
+                  }`}
+                >
+                  {mic.listening && (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                  )}
+                  {mic.listening ? (
+                    <Square className="relative size-4" strokeWidth={2.4} />
+                  ) : (
+                    <Mic className="relative size-4" strokeWidth={2.2} />
+                  )}
+                </button>
+
+                <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                  {voiceStatus}
+                </p>
+
+                {mic.listening && (
+                  <button
+                    type="button"
+                    onClick={mic.cancel}
+                    aria-label={copy.cancelMic[lang]}
+                    className="press grid size-9 place-items-center rounded-full border border-border/70 bg-background/70 text-muted-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+
+                {speech.supported && lastAssistantText && !mic.listening && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      speech.speaking ? speech.stop() : speech.speak(lastAssistantText)
+                    }
+                    aria-label={speech.speaking ? copy.stopSpeak[lang] : copy.replay[lang]}
+                    className="press grid size-9 place-items-center rounded-full border border-border/70 bg-background/70 text-foreground"
+                  >
+                    {speech.speaking ? (
+                      <VolumeX className="size-4" />
+                    ) : spokenRef.current === lastAssistantText ? (
+                      <RotateCcw className="size-4" />
+                    ) : (
+                      <Volume2 className="size-4" />
+                    )}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowVoiceSettings((v) => !v)}
+                  aria-label={copy.voiceSettings[lang]}
+                  aria-expanded={showVoiceSettings}
+                  className="press grid size-9 place-items-center rounded-full border border-border/70 bg-background/70 text-muted-foreground"
+                >
+                  <SlidersHorizontal className="size-4" />
+                </button>
+              </div>
+
               <PromptInput
                 onSubmit={(_message, event) => {
                   event.preventDefault();
@@ -437,6 +553,7 @@ export function MitraAI() {
                 </PromptInputFooter>
               </PromptInput>
             </div>
+
           </div>
         </div>
       )}
