@@ -78,7 +78,36 @@ const copy = {
     mr: "मित्र आत्ता उत्तर देऊ शकला नाही. पुन्हा प्रयत्न करा.",
     hi: "मित्र अभी उत्तर नहीं दे सका. दोबारा कोशिश करें.",
   },
+  micIdle: {
+    en: "Tap the microphone and ask Mitra.",
+    mr: "माइक दाबा आणि मित्रला विचारा.",
+    hi: "माइक दबाएँ और मित्र से पूछें.",
+  },
+  listening: { en: "Listening…", mr: "ऐकत आहे…", hi: "सुन रहा है…" },
+  speaking: { en: "Speaking…", mr: "बोलत आहे…", hi: "बोल रहा है…" },
+  mic: { en: "Speak", mr: "बोला", hi: "बोलें" },
+  stopMic: { en: "Stop recording", mr: "रेकॉर्डिंग थांबवा", hi: "रिकॉर्डिंग रोकें" },
+  cancelMic: { en: "Cancel", mr: "रद्द करा", hi: "रद्द करें" },
+  stopSpeak: { en: "Stop speaking", mr: "बोलणे थांबवा", hi: "बोलना रोकें" },
+  replay: { en: "Replay answer", mr: "उत्तर पुन्हा ऐका", hi: "उत्तर दोबारा सुनें" },
+  voiceSettings: { en: "Voice settings", mr: "आवाज सेटिंग", hi: "आवाज़ सेटिंग" },
+  voiceType: { en: "Voice", mr: "आवाज", hi: "आवाज़" },
+  female: { en: "Female", mr: "स्त्री", hi: "महिला" },
+  male: { en: "Male", mr: "पुरुष", hi: "पुरुष" },
+  speed: { en: "Speed", mr: "वेग", hi: "गति" },
+  autoSpeak: { en: "Speak answers aloud", mr: "उत्तरे मोठ्याने वाचा", hi: "उत्तर बोलकर सुनाएँ" },
+  micUnsupported: {
+    en: "Voice input is not available on this browser. You can type instead.",
+    mr: "या ब्राउझरवर आवाज इनपुट उपलब्ध नाही. तुम्ही टाइप करू शकता.",
+    hi: "इस ब्राउज़र में आवाज़ इनपुट उपलब्ध नहीं है. आप टाइप कर सकते हैं.",
+  },
+  micFailed: {
+    en: "Could not hear that. Please try again or type your question.",
+    mr: "ऐकू आले नाही. पुन्हा प्रयत्न करा किंवा प्रश्न टाइप करा.",
+    hi: "सुनाई नहीं दिया. दोबारा कोशिश करें या प्रश्न टाइप करें.",
+  },
 } as const;
+
 
 const suggestions = {
   en: [
