@@ -47,7 +47,8 @@ export const Route = createFileRoute("/weather")({
       { property: "og:title", content: "Farm weather — MarketMitra" },
       {
         property: "og:description",
-        content: "Plan harvesting and transport around real rainfall probability and UV.",
+        content:
+          "Plan harvesting and transport around real rainfall probability and UV.",
       },
     ],
   }),
@@ -55,8 +56,12 @@ export const Route = createFileRoute("/weather")({
 });
 
 function DayIcon({ day }: { day: WeatherDay }) {
-  if (day.rainChance >= 60) return <CloudRain className="size-5 text-primary" />;
-  if (day.rainChance >= 25) return <CloudSun className="size-5 text-primary" />;
+  if (day.rainChance >= 60)
+    return <CloudRain className="size-5 text-primary" />;
+
+  if (day.rainChance >= 25)
+    return <CloudSun className="size-5 text-primary" />;
+
   return <Sun className="size-5 text-warning" />;
 }
 
@@ -64,20 +69,65 @@ function WeatherPage() {
   const { t } = useLang();
   const { location } = useLocationContext();
 
+  /*
+   * Automatically request the user's real GPS location
+   * when the weather page opens.
+   */
   useEffect(() => {
-    if (location?.latitude != null) track("weather_lookup");
+    if (!navigator.geolocation) {
+      console.warn("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log("Live GPS location:", {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (error) => {
+        console.warn("GPS location permission/error:", error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    );
+  }, []);
+
+  useEffect(() => {
+    if (location?.latitude != null) {
+      track("weather_lookup");
+    }
   }, [location?.latitude, location?.longitude]);
+
+  const hasLocation =
+    location?.latitude != null && location?.longitude != null;
 
   const query = useQuery({
     queryKey: ["weather", location?.latitude, location?.longitude],
-    enabled: Boolean(location?.latitude != null && location?.longitude != null),
-    queryFn: () => getWeather(location!.latitude!, location!.longitude!),
-    staleTime: 15 * 60 * 1000,
-    refetchInterval: 15 * 60 * 1000,
+
+    enabled: hasLocation,
+
+    queryFn: () =>
+      getWeather(location!.latitude!, location!.longitude!),
+
+    staleTime: 5 * 60 * 1000,
+
+    refetchInterval: 10 * 60 * 1000,
+
+    refetchOnWindowFocus: true,
+
+    refetchOnReconnect: true,
   });
 
   const data = query.data?.ok ? query.data : null;
-  const wetDays = data?.days.filter((d) => d.rainChance >= 60) ?? [];
+
+  const wetDays =
+    data?.days.filter((d) => d.rainChance >= 60) ?? [];
 
   return (
     <Screen>
@@ -91,7 +141,11 @@ function WeatherPage() {
             className="press grid size-9 place-items-center rounded-full bg-muted"
             aria-label={t("retry")}
           >
-            <RefreshCw className={`size-4 ${query.isFetching ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-4 ${
+                query.isFetching ? "animate-spin" : ""
+              }`}
+            />
           </button>
         }
       />
@@ -99,14 +153,51 @@ function WeatherPage() {
       <div className="space-y-4 px-5 pt-5 lg:px-0 lg:pt-7">
         <LocationCard />
 
-        {!location?.latitude ? (
+        {!hasLocation ? (
           <div className="card-surface hover-lift flex flex-col items-center gap-3 p-8 text-center">
             <span className="grid size-14 place-items-center rounded-3xl bg-primary/10">
               <MapPin className="size-6 text-primary" />
             </span>
+
             <p className="max-w-md text-sm text-muted-foreground">
-              Allow location access for an automatic forecast, or enter your city, district and
-              state above — that works without GPS and stays saved.
+              Allow location access to get automatic live weather for your
+              current location.
+            </p>
+
+            <button
+              onClick={() => {
+                if (!navigator.geolocation) return;
+
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    console.log(
+                      "GPS permission granted:",
+                      position.coords.latitude,
+                      position.coords.longitude,
+                    );
+
+                    window.location.reload();
+                  },
+                  (error) => {
+                    console.warn(
+                      "Unable to get GPS location:",
+                      error.message,
+                    );
+                  },
+                  {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                  },
+                );
+              }}
+              className="press rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+            >
+              Allow Location
+            </button>
+
+            <p className="text-[11px] text-muted-foreground">
+              Your browser will ask for location permission.
             </p>
           </div>
         ) : query.isPending ? (
@@ -120,9 +211,13 @@ function WeatherPage() {
             <span className="mx-auto grid size-14 place-items-center rounded-3xl bg-destructive/10">
               <AlertTriangle className="size-6 text-destructive" />
             </span>
+
             <p className="mt-3 text-sm font-semibold text-destructive">
-              {query.data && !query.data.ok ? query.data.error : "Weather could not be loaded."}
+              {query.data && !query.data.ok
+                ? query.data.error
+                : "Weather could not be loaded."}
             </p>
+
             <button
               onClick={() => void query.refetch()}
               className="press mt-4 rounded-full bg-muted px-4 py-2 text-xs font-bold"
@@ -139,11 +234,16 @@ function WeatherPage() {
                     <p className="font-display text-6xl font-extrabold leading-none">
                       {data.current.temperature}°
                     </p>
-                    <p className="mt-2 text-sm font-bold">{conditionLabel(data.current.code)}</p>
+
+                    <p className="mt-2 text-sm font-bold">
+                      {conditionLabel(data.current.code)}
+                    </p>
+
                     <p className="text-xs text-muted-foreground">
                       Feels like {data.current.apparent}°
                     </p>
                   </div>
+
                   <CloudSun className="size-16 text-primary lg:size-20" />
                 </div>
 
@@ -153,11 +253,13 @@ function WeatherPage() {
                     label={t("humidity")}
                     value={`${data.current.humidity}%`}
                   />
+
                   <Metric
                     icon={<Wind className="size-4 text-primary" />}
                     label={t("wind")}
                     value={`${data.current.wind} km/h`}
                   />
+
                   <Metric
                     icon={<CloudRain className="size-4 text-primary" />}
                     label={t("rainChance")}
@@ -171,16 +273,19 @@ function WeatherPage() {
                     label="Rain (1h)"
                     value={`${data.current.precipitation} mm`}
                   />
+
                   <Metric
                     icon={<Wind className="size-4 text-primary" />}
                     label="Gusts"
                     value={`${data.current.windGust}`}
                   />
+
                   <Metric
                     icon={<Sunrise className="size-4 text-warning" />}
                     label={t("sunrise")}
                     value={formatIstTime(data.sunrise)}
                   />
+
                   <Metric
                     icon={<Sunset className="size-4 text-warning" />}
                     label={t("sunset")}
@@ -192,10 +297,14 @@ function WeatherPage() {
                   {data.observedAt
                     ? `Observed ${formatIstTime(data.observedAt)} IST · forecast to ${
                         data.days[data.days.length - 1]
-                          ? formatIstWeekday(data.days[data.days.length - 1]!.date)
+                          ? formatIstWeekday(
+                              data.days[data.days.length - 1]!.date,
+                            )
                           : ""
                       }`
-                    : `${t("lastUpdated")}: ${formatIstDateTime(data.updatedAt)} IST`}
+                    : `${t("lastUpdated")}: ${formatIstDateTime(
+                        data.updatedAt,
+                      )} IST`}
                   <br />
                   Source: {data.source} weather API
                 </p>
@@ -209,6 +318,7 @@ function WeatherPage() {
                     value={String(data.current.uvIndex)}
                     hint={uvLabel(data.current.uvIndex)}
                   />
+
                   <TileStat
                     icon={<Gauge className="size-4 text-primary" />}
                     label="Air pressure"
@@ -219,8 +329,10 @@ function WeatherPage() {
 
                 <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
-                    <Lightbulb className="size-4" /> Today's weather insight
+                    <Lightbulb className="size-4" />
+                    Today's weather insight
                   </p>
+
                   <p className="mt-2.5 text-[15px] font-semibold leading-snug">
                     {todayInsight(data)}
                   </p>
@@ -228,11 +340,14 @@ function WeatherPage() {
 
                 <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
-                    <Clock className="size-4" /> Best time for farming today
+                    <Clock className="size-4" />
+                    Best time for farming today
                   </p>
+
                   <p className="mt-2 font-display text-lg font-extrabold">
                     {bestFarmingWindow(data).window}
                   </p>
+
                   <p className="mt-1 text-xs text-muted-foreground">
                     {bestFarmingWindow(data).reason}
                   </p>
@@ -243,12 +358,15 @@ function WeatherPage() {
             {wetDays.length > 0 && (
               <section className="rounded-3xl bg-warning/10 p-5 ring-1 ring-warning/30">
                 <p className="flex items-center gap-2 text-sm font-extrabold text-warning">
-                  <AlertTriangle className="size-4" /> {t("rainAlert")}
+                  <AlertTriangle className="size-4" />
+                  {t("rainAlert")}
                 </p>
+
                 <p className="mt-2 text-[15px] font-semibold leading-snug">
-                  Rain is likely on {wetDays.map((d) => formatIstWeekday(d.date)).join(", ")} — up
-                  to {Math.max(...wetDays.map((d) => d.rainMm))} mm. Cover harvested stock and plan
-                  mandi trips around these days.
+                  Rain is likely on{" "}
+                  {wetDays.map((d) => formatIstWeekday(d.date)).join(", ")} —
+                  up to {Math.max(...wetDays.map((d) => d.rainMm))} mm. Cover
+                  harvested stock and plan mandi trips around these days.
                 </p>
               </section>
             )}
@@ -256,6 +374,7 @@ function WeatherPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <section className="card-surface hover-lift p-5">
                 <p className="text-sm font-bold">{t("sevenDay")}</p>
+
                 <div className="mt-3 space-y-2">
                   {data.days.map((day) => (
                     <div
@@ -263,10 +382,15 @@ function WeatherPage() {
                       className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
                     >
                       <DayIcon day={day} />
-                      <p className="truncate text-sm font-bold">{formatIstWeekday(day.date)}</p>
+
+                      <p className="truncate text-sm font-bold">
+                        {formatIstWeekday(day.date)}
+                      </p>
+
                       <p className="text-xs font-semibold text-muted-foreground">
                         {day.rainChance}%
                       </p>
+
                       <p className="text-sm font-extrabold">
                         {day.max}°{" "}
                         <span className="text-xs font-semibold text-muted-foreground">
@@ -281,8 +405,10 @@ function WeatherPage() {
               <div className="space-y-4">
                 <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-sm font-bold">
-                    <Sprout className="size-4 text-primary" /> {t("harvestAdvice")}
+                    <Sprout className="size-4 text-primary" />
+                    {t("harvestAdvice")}
                   </p>
+
                   <ul className="mt-3 space-y-2 text-[13px] font-semibold leading-snug">
                     {harvestAdvice(data.days).map((line) => (
                       <li key={line} className="flex gap-2">
@@ -295,8 +421,10 @@ function WeatherPage() {
 
                 <section className="card-surface hover-lift p-5">
                   <p className="flex items-center gap-2 text-sm font-bold">
-                    <Lightbulb className="size-4 text-primary" /> Farming tips for these conditions
+                    <Lightbulb className="size-4 text-primary" />
+                    Farming tips for these conditions
                   </p>
+
                   <ul className="mt-3 space-y-2 text-[13px] font-semibold leading-snug">
                     {farmingTips(data).map((tip) => (
                       <li key={tip} className="flex gap-2">
@@ -315,7 +443,15 @@ function WeatherPage() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <div>
       <div className="mx-auto mb-1 w-fit">{icon}</div>
@@ -342,8 +478,14 @@ function TileStat({
         {icon}
         {label}
       </div>
-      <p className="mt-2 font-display text-2xl font-extrabold leading-none">{value}</p>
-      <p className="mt-1 text-[11px] font-semibold text-muted-foreground">{hint}</p>
+
+      <p className="mt-2 font-display text-2xl font-extrabold leading-none">
+        {value}
+      </p>
+
+      <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
+        {hint}
+      </p>
     </div>
   );
 }
