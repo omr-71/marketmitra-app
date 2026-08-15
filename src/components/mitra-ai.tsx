@@ -35,6 +35,8 @@ import { track } from "@/lib/analytics";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
+import { useSpeech, useSpeechRecognition, useVoicePrefs } from "@/lib/voice";
+
 
 const CHAT_STORAGE_KEY = "mm-mitra-chat";
 
