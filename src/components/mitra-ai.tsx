@@ -219,14 +219,76 @@ export function MitraAI() {
     if (open && status === "ready") inputRef.current?.focus();
   }, [open, status]);
 
-  const send = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed || busy) return;
-    setText("");
-    track("mitra_ai_message");
-    void sendMessage({ text: trimmed });
-    requestAnimationFrame(() => inputRef.current?.focus());
-  };
+  /* ---------------------------------------------------------------- voice */
+  const { prefs, update } = useVoicePrefs();
+  const speech = useSpeech(lang, prefs);
+  const mic = useSpeechRecognition(lang);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+
+  const send = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed || busy) return;
+      setText("");
+      speech.stop();
+      track("mitra_ai_message");
+      void sendMessage({ text: trimmed });
+      requestAnimationFrame(() => inputRef.current?.focus());
+    },
+    [busy, sendMessage, speech],
+  );
+
+  // Mirror the live transcript into the composer, then send when speech ends.
+  useEffect(() => {
+    if (mic.listening && mic.transcript) setText(mic.transcript);
+  }, [mic.listening, mic.transcript]);
+
+  const pendingVoice = useRef(false);
+  useEffect(() => {
+    if (mic.listening) {
+      pendingVoice.current = true;
+      return;
+    }
+    if (pendingVoice.current) {
+      pendingVoice.current = false;
+      const spoken = mic.transcript.trim();
+      if (spoken) {
+        mic.setTranscript("");
+        send(spoken);
+      }
+    }
+  }, [mic.listening, mic.transcript, mic.setTranscript, send]);
+
+  const lastAssistantText = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m?.role !== "assistant") continue;
+      const body = m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
+      if (body.trim()) return body;
+    }
+    return "";
+  }, [messages]);
+
+  // Read the finished answer aloud when the farmer asked for spoken replies.
+  const spokenRef = useRef("");
+  useEffect(() => {
+    if (!prefs.autoSpeak || busy || !lastAssistantText) return;
+    if (spokenRef.current === lastAssistantText) return;
+    spokenRef.current = lastAssistantText;
+    speech.speak(lastAssistantText);
+  }, [prefs.autoSpeak, busy, lastAssistantText, speech]);
+
+  const voiceStatus = mic.listening
+    ? copy.listening[lang]
+    : speech.speaking
+      ? copy.speaking[lang]
+      : mic.failed
+        ? copy.micFailed[lang]
+        : mic.supported
+          ? copy.micIdle[lang]
+          : copy.micUnsupported[lang];
+
+
 
   // Pages rendered inside the app shell carry a mobile bottom nav; the landing
   // screen and the admin console do not. Lift the orb above whatever is there
