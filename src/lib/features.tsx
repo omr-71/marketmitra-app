@@ -34,12 +34,16 @@ export function useFeatureFlags() {
     retry: false,
     queryFn: async (): Promise<FeatureFlag[]> => {
       // Missing/unavailable backend must never blank the app: fall back to "all enabled".
-      const { data, error } = await supabase
-        .from("feature_flags")
-        .select("key,label,enabled,maintenance_message")
-        .order("label");
-      if (error) return [];
-      return data ?? [];
+      try {
+        const { data, error } = await supabase
+          .from("feature_flags")
+          .select("key,label,enabled,maintenance_message")
+          .order("label");
+        if (error) return [];
+        return data ?? [];
+      } catch {
+        return [];
+      }
     },
   });
 }
