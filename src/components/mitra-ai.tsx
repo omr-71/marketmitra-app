@@ -451,7 +451,7 @@ export function MitraAI() {
               <ConversationScrollButton />
             </Conversation>
 
-            <div className="space-y-2 border-t border-border/60 bg-card/70 p-3">
+            <div className="space-y-2 border-t border-border/60 bg-card/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3">
               {showVoiceSettings && (
                 <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-xs">
                   <p className="mb-2 font-bold uppercase tracking-wider text-muted-foreground">
