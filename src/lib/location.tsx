@@ -128,17 +128,38 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       setError("This device cannot share its location. Enter your city and district instead.");
       return;
     }
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setStatus("error");
+      setError(
+        "Location needs a secure (https) connection. Open the site over https or choose your location manually.",
+      );
+      return;
+    }
     setStatus("locating");
     setError(null);
 
+    const getPosition = (options: PositionOptions) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      });
+
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
+      let position: GeolocationPosition;
+      try {
+        // Try a precise fix first; fall back to a faster, cached, coarse fix.
+        position = await getPosition({
+          enableHighAccuracy: true,
           timeout: 12000,
+          maximumAge: 60000,
+        });
+      } catch (firstError) {
+        if ((firstError as GeolocationPositionError)?.code === 1) throw firstError;
+        position = await getPosition({
+          enableHighAccuracy: false,
+          timeout: 15000,
           maximumAge: 300000,
         });
-      });
+      }
 
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
@@ -154,16 +175,24 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         source: "gps",
         updatedAt: new Date().toISOString(),
       });
+      if (!place) {
+        setError(
+          "We have your GPS coordinates, but could not name the place. Weather still works; add your district manually if needed.",
+        );
+      }
     } catch (err) {
-      const denied = (err as GeolocationPositionError)?.code === 1;
-      setStatus(denied ? "denied" : "error");
+      const code = (err as GeolocationPositionError)?.code;
+      setStatus(code === 1 ? "denied" : "error");
       setError(
-        denied
-          ? "Location permission is blocked. Enter your city, district and state below — it works without GPS."
-          : "Could not read your location. Enter your city, district and state below.",
+        code === 1
+          ? "Location permission is blocked. Allow location in your browser settings, or enter your city, district and state below — it works without GPS."
+          : code === 3
+            ? "Location is taking too long. Move to an open area and try again, or enter your city, district and state below."
+            : "Could not read your location right now. Try again, or enter your city, district and state below.",
       );
     }
   }, [persist]);
+
 
   const setManual = useCallback(
     async (next: { state: string; district: string; city?: string }) => {
