@@ -75,7 +75,12 @@ export function track(
     lang: lang(),
     props: (opts.props ?? {}) as never,
   };
-  void Promise.resolve(supabase.from("analytics_events").insert(row)).catch(() => undefined);
+  try {
+    // Analytics is best-effort: a missing/unavailable backend must never break the UI.
+    void Promise.resolve(supabase.from("analytics_events").insert(row)).catch(() => undefined);
+  } catch {
+    /* backend not configured */
+  }
 }
 
 let launched = false;
