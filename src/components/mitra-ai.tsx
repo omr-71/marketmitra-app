@@ -319,7 +319,9 @@ export function MitraAI() {
 
   // Never cover a focused page input: hide the orb while the keyboard is open
   // and the assistant itself is closed.
-  const hideOrb = keyboardOpen && !open;
+  // Never cover a focused page input, and step aside for the full-screen panel.
+  const hideOrb = (keyboardOpen && !open) || (open && !isDesktop);
+
 
   // Keep the panel inside the usable viewport, keyboard included.
   const panelMaxHeight = viewportHeight
