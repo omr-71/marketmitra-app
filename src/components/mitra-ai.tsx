@@ -357,21 +357,34 @@ export function MitraAI() {
 
       {open && (
         <div
-          style={{ bottom: `calc(${bottomOffset} + 4.25rem)` }}
-          className="fixed inset-x-2 z-50 lg:inset-x-auto lg:right-8 lg:w-[420px]"
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.title[lang]}
+          style={
+            isDesktop
+              ? { bottom: `calc(${bottomOffset} + 4.25rem)`, maxHeight: panelMaxHeight }
+              : viewportHeight
+                ? { height: `${viewportHeight}px` }
+                : undefined
+          }
+          className="fixed inset-0 z-50 h-[100dvh] lg:inset-auto lg:right-8 lg:h-[600px] lg:max-h-[80vh] lg:w-[420px]"
         >
+          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background lg:rounded-3xl lg:border lg:border-border/70 lg:bg-background/95 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-2xl">
+            <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:pt-3">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={copy.close[lang]}
+                className="press grid size-11 shrink-0 place-items-center rounded-full bg-muted text-foreground lg:hidden"
+              >
+                <ChevronLeft className="size-5" strokeWidth={2.2} />
+              </button>
 
-          <div
-            style={panelMaxHeight ? { maxHeight: panelMaxHeight } : undefined}
-            className="glass flex h-[70vh] max-h-[620px] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background/95 shadow-[var(--shadow-card)] backdrop-blur-2xl lg:h-[600px]"
-          >
-            <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 py-3">
-
-              <span className="grid size-10 place-items-center rounded-2xl bg-primary/15 text-primary">
+              <span className="hidden size-10 place-items-center rounded-2xl bg-primary/15 text-primary lg:grid">
                 <Leaf className="size-5" strokeWidth={2.2} />
               </span>
-              <div className="min-w-0">
-                <p className="font-display text-sm font-bold">{copy.title[lang]}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-sm font-bold lg:text-base">{copy.title[lang]}</p>
                 <p className="truncate text-[11px] text-muted-foreground">
                   {location?.place ? location.place : copy.subtitle[lang]}
                 </p>
@@ -380,11 +393,12 @@ export function MitraAI() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={copy.close[lang]}
-                className="press ml-auto grid size-8 place-items-center rounded-full bg-muted text-muted-foreground"
+                className="press hidden size-9 place-items-center rounded-full bg-muted text-muted-foreground lg:grid"
               >
                 <X className="size-4" />
               </button>
             </header>
+
 
             <Conversation className="min-h-0 flex-1">
               <ConversationContent className="gap-3 px-3 py-4">
