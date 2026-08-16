@@ -31,12 +31,14 @@ export function useFeatureFlags() {
   return useQuery({
     queryKey: ["feature-flags"],
     staleTime: 60_000,
+    retry: false,
     queryFn: async (): Promise<FeatureFlag[]> => {
+      // Missing/unavailable backend must never blank the app: fall back to "all enabled".
       const { data, error } = await supabase
         .from("feature_flags")
         .select("key,label,enabled,maintenance_message")
         .order("label");
-      if (error) throw error;
+      if (error) return [];
       return data ?? [];
     },
   });
