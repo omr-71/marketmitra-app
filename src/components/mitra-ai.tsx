@@ -156,6 +156,20 @@ function useKeyboardInset() {
   return state;
 }
 
+/** Desktop gets an anchored conversation panel; smaller screens go full-screen. */
+function useIsDesktop() {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return desktop;
+}
+
+
 /** Premium floating assistant available on every screen. */
 export function MitraAI() {
   const { lang } = useLang();
