@@ -142,8 +142,9 @@ export const Route = createFileRoute("/api/chat")({
             abortSignal: request.signal,
 
             tools: {
-              browser_search:
-                groq.tools.browserSearch({}),
+              browser_search: groq.tools.browserSearch(
+                {},
+              ) as never,
 
               get_mandi_prices: tool({
                 description:
