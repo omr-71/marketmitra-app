@@ -141,10 +141,16 @@ export function LangProvider({ children }: { children: ReactNode }) {
     if (stored === "en" || stored === "mr" || stored === "hi") setLangState(stored);
   }, []);
 
+  // Keep the document language in sync for screen readers and browser tooling.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const setLang = (l: Lang) => {
     setLangState(l);
     window.localStorage.setItem("mm-lang", l);
   };
+
 
   return (
     <LangContext.Provider value={{ lang, setLang, t: (k) => dict[k][lang] }}>
