@@ -3,7 +3,9 @@ import { useRouterState } from "@tanstack/react-router";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   Leaf,
+  ChevronLeft,
   X,
+
   Sprout,
   CloudSun,
   Landmark,
