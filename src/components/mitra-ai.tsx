@@ -181,6 +181,8 @@ export function MitraAI() {
   const [text, setText] = useState("");
   const initialMessages = useMemo(() => loadSavedMessages(), []);
   const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
+  const isDesktop = useIsDesktop();
+
 
 
   const { messages, sendMessage, status, error } = useChat({
