@@ -510,88 +510,98 @@ function AdminConsole({ email }: { email: string }) {
                   title="Service health"
                   icon={<Activity className="size-4" />}
                 >
-                  <ul className="space-y-2.5">
-                    {overview.data.services.map((s) => (
-                      <li
-                        key={s.name}
-                        className="flex items-start gap-3 text-sm"
-                      >
-                        {s.ok ? (
-                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[oklch(0.75_0.16_150)]" />
-                        ) : (
-                          <XCircle className="mt-0.5 size-4 shrink-0 text-[oklch(0.68_0.18_25)]" />
-                        )}
+                  {health.isLoading ? (
+                    <SkeletonLines rows={3} />
+                  ) : health.isError || !health.data ? (
+                    <p className="text-sm text-[oklch(0.8_0.02_150)]">
+                      Unable to check upstream services right now.
+                    </p>
+                  ) : (
+                    <>
+                      <ul className="space-y-2.5">
+                        {health.data.services.map((s) => (
+                          <li
+                            key={s.name}
+                            className="flex items-start gap-3 text-sm"
+                          >
+                            {s.ok ? (
+                              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[oklch(0.75_0.16_150)]" />
+                            ) : (
+                              <XCircle className="mt-0.5 size-4 shrink-0 text-[oklch(0.68_0.18_25)]" />
+                            )}
 
-                        <div className="min-w-0">
-                          <p className="font-semibold">{s.name}</p>
+                            <div className="min-w-0">
+                              <p className="font-semibold">{s.name}</p>
 
-                          <p className="text-xs text-[oklch(0.75_0.02_150)]">
-                            {s.detail}
-                            {s.latencyMs != null
-                              ? ` · ${s.latencyMs} ms`
-                              : ""}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                              <p className="text-xs text-[oklch(0.75_0.02_150)]">
+                                {s.detail}
+                                {s.latencyMs != null ? ` · ${s.latencyMs} ms` : ""}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
 
-                  <p className="mt-3 text-[11px] text-[oklch(0.68_0.02_150)]">
-                    Checked live at{" "}
-                    {new Date(
-                      overview.data.generatedAt,
-                    ).toLocaleString("en-IN")}
-                  </p>
+                      <p className="mt-3 text-[11px] text-[oklch(0.68_0.02_150)]">
+                        Checked live at{" "}
+                        {new Date(health.data.generatedAt).toLocaleString("en-IN")}
+                      </p>
+                    </>
+                  )}
                 </Panel>
 
                 <Panel
                   title="Market data source"
                   icon={<Database className="size-4" />}
                 >
-                  <dl className="space-y-2 text-sm">
-                    <Row
-                      k="Source"
-                      v={overview.data.marketData.source}
-                    />
+                  {health.isLoading ? (
+                    <SkeletonLines rows={5} />
+                  ) : health.isError || !health.data ? (
+                    <p className="text-sm text-[oklch(0.8_0.02_150)]">
+                      Unable to read the government dataset status right now.
+                    </p>
+                  ) : (
+                    <>
+                      <dl className="space-y-2 text-sm">
+                        <Row k="Source" v={health.data.marketData.source} />
 
-                    <Row
-                      k="Reachable"
-                      v={overview.data.marketData.ok ? "Yes" : "No"}
-                    />
+                        <Row
+                          k="Reachable"
+                          v={health.data.marketData.ok ? "Yes" : "No"}
+                        />
 
-                    <Row
-                      k="Records in dataset"
-                      v={
-                        overview.data.marketData.records?.toLocaleString(
-                          "en-IN",
-                        ) ?? "No data available yet"
-                      }
-                    />
+                        <Row
+                          k="Records in dataset"
+                          v={
+                            health.data.marketData.records?.toLocaleString("en-IN") ??
+                            "No data available yet"
+                          }
+                        />
 
-                    <Row
-                      k="Latest arrival date"
-                      v={
-                        overview.data.marketData.latestArrivalDate ??
-                        "No data available yet"
-                      }
-                    />
+                        <Row
+                          k="Latest arrival date"
+                          v={
+                            health.data.marketData.latestArrivalDate ??
+                            "No data available yet"
+                          }
+                        />
 
-                    <Row
-                      k="Source updated"
-                      v={
-                        overview.data.marketData.sourceUpdatedAt ??
-                        "Not published"
-                      }
-                    />
-                  </dl>
+                        <Row
+                          k="Source updated"
+                          v={health.data.marketData.sourceUpdatedAt ?? "Not published"}
+                        />
+                      </dl>
 
-                  <p className="mt-3 text-[11px] leading-relaxed text-[oklch(0.68_0.02_150)]">
-                    {overview.data.marketData.detail}. Prices are read live
-                    from the government dataset and can never be edited from
-                    this console.
-                  </p>
+                      <p className="mt-3 text-[11px] leading-relaxed text-[oklch(0.68_0.02_150)]">
+                        {health.data.marketData.detail}. Prices are read live from
+                        the government dataset and can never be edited from this
+                        console.
+                      </p>
+                    </>
+                  )}
                 </Panel>
               </section>
+
 
               <Panel
                 title="Feature control"
