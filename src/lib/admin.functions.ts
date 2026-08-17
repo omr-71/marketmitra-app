@@ -49,16 +49,23 @@ export type AdminOverview = {
   users: {
     profiles: number;
   };
-  services: ServiceHealth[];
-  marketData: {
-    source: string;
-    ok: boolean;
-    records: number | null;
-    latestArrivalDate: string | null;
-    sourceUpdatedAt: string | null;
-    detail: string;
-  };
 };
+
+export type AdminMarketData = {
+  source: string;
+  ok: boolean;
+  records: number | null;
+  latestArrivalDate: string | null;
+  sourceUpdatedAt: string | null;
+  detail: string;
+};
+
+export type AdminHealth = {
+  generatedAt: string;
+  services: ServiceHealth[];
+  marketData: AdminMarketData;
+};
+
 
 async function assertAdmin(
   supabase: {
