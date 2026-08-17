@@ -350,15 +350,110 @@ export const getAdminOverview = createServerFn({ method: "GET" })
         profiles: profiles ?? 0,
       },
 
-      services: [
-        weather,
-        aiGateway,
-        marketProbe,
-      ],
+    };
+  });
 
+/**
+ * Upstream service + government dataset health.
+ * Kept separate from the overview so slow third parties never block the
+ * admin dashboard from rendering its own data.
+ */
+export const getAdminHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminHealth> => {
+    await assertAdmin(context.supabase as never, context.userId);
+
+    const weatherApiKey = process.env["WEATHERAPI_KEY"];
+    const weatherUrl = weatherApiKey
+      ? `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(
+          weatherApiKey,
+        )}&q=19.99,73.79&aqi=no`
+      : null;
+
+    const dataGovKey = process.env["DATA_GOV_IN_API_KEY"];
+    const marketUrl = dataGovKey
+      ? `https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24?api-key=${encodeURIComponent(
+          dataGovKey,
+        )}&format=json&limit=1&sort%5BArrival_Date%5D=desc`
+      : null;
+
+    const [weather, aiGateway, marketProbe] = await Promise.all([
+      weatherUrl
+        ? probe(
+            "WeatherAPI.com weather",
+            weatherUrl,
+            "Live WeatherAPI.com weather reachable",
+          )
+        : Promise.resolve<ServiceHealth>({
+            name: "WeatherAPI.com weather",
+            ok: false,
+            status: null,
+            latencyMs: null,
+            detail: "WeatherAPI key is not configured",
+          }),
+
+      probe(
+        "Lovable AI gateway",
+        "https://ai.gateway.lovable.dev/v1/models",
+        "Gateway reachable",
+      ),
+
+      marketUrl
+        ? probe(
+            "AGMARKNET market data",
+            marketUrl,
+            "Government market data reachable",
+          )
+        : Promise.resolve<ServiceHealth>({
+            name: "AGMARKNET market data",
+            ok: false,
+            status: null,
+            latencyMs: null,
+            detail: "Market data key is not configured",
+          }),
+    ]);
+
+    let marketData: AdminMarketData = {
+      source: "AGMARKNET · data.gov.in",
+      ok: false,
+      records: null,
+      latestArrivalDate: null,
+      sourceUpdatedAt: null,
+      detail: marketUrl
+        ? "Could not read the latest record"
+        : "Market data key is not configured",
+    };
+
+    if (marketUrl && marketProbe.ok) {
+      try {
+        const res = await fetch(marketUrl, { signal: AbortSignal.timeout(8000) });
+        const json = (await res.json()) as {
+          total?: number;
+          updated_date?: string;
+          records?: { arrival_date?: string; Arrival_Date?: string }[];
+        };
+        const rec = json.records?.[0];
+
+        marketData = {
+          source: "AGMARKNET · data.gov.in",
+          ok: true,
+          records: typeof json.total === "number" ? json.total : null,
+          latestArrivalDate: rec?.arrival_date ?? rec?.Arrival_Date ?? null,
+          sourceUpdatedAt: json.updated_date ?? null,
+          detail: "Latest record read directly from the government dataset",
+        };
+      } catch {
+        // Keep the failure state above — never fabricate dataset details.
+      }
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      services: [weather, aiGateway, marketProbe],
       marketData,
     };
   });
+
 
 /**
  * Get admin feature switches.
