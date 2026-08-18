@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getAdminAuditLog,
   getAdminFeatureFlags,
+  getAdminHealth,
   getAdminOverview,
   setFeatureFlag,
   type AdminCount,
