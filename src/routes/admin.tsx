@@ -321,6 +321,7 @@ function AdminConsole({ email }: { email: string }) {
   const overviewFn = useServerFn(getAdminOverview);
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
+  const healthFn = useServerFn(getAdminHealth);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
 
