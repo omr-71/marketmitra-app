@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getAdminAuditLog,
   getAdminFeatureFlags,
+  getAdminHealth,
   getAdminOverview,
   setFeatureFlag,
   type AdminCount,
@@ -321,6 +322,7 @@ function AdminConsole({ email }: { email: string }) {
   const overviewFn = useServerFn(getAdminOverview);
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
+  const healthFn = useServerFn(getAdminHealth);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
 
@@ -341,6 +343,13 @@ function AdminConsole({ email }: { email: string }) {
     queryKey: ["admin", "audit"],
     queryFn: () => auditFn(),
     retry: false,
+  });
+
+  const health = useQuery({
+    queryKey: ["admin", "health"],
+    queryFn: () => healthFn(),
+    retry: false,
+    refetchInterval: 120_000,
   });
 
   const toggle = useMutation({
@@ -924,4 +933,16 @@ function UsageList({
   }
 
   return <Bars rows={rows} />;
+}
+function SkeletonLines({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="h-4 animate-pulse rounded-lg bg-[oklch(1_0_0/0.07)]"
+        />
+      ))}
+    </div>
+  );
 }
