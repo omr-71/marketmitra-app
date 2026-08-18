@@ -934,3 +934,15 @@ function UsageList({
 
   return <Bars rows={rows} />;
 }
+function SkeletonLines({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="h-4 animate-pulse rounded-lg bg-[oklch(1_0_0/0.07)]"
+        />
+      ))}
+    </div>
+  );
+}
