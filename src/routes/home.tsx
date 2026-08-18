@@ -44,7 +44,9 @@ export const Route = createFileRoute("/home")({
         property: "og:description",
         content: "Live APMC prices and weather for your district in one place.",
       },
+      { property: "og:url", content: "https://marketmitra.app/home" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/home" }],
   }),
   component: HomePage,
 });

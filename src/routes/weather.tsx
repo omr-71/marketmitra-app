@@ -50,7 +50,9 @@ export const Route = createFileRoute("/weather")({
         content:
           "Plan harvesting and transport around real rainfall probability and UV.",
       },
+      { property: "og:url", content: "https://marketmitra.app/weather" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/weather" }],
   }),
   component: WeatherPage,
 });

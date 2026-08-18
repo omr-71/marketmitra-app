@@ -25,7 +25,9 @@ export const Route = createFileRoute("/crops")({
         property: "og:description",
         content: "Onion, tomato, wheat, cotton, soybean, gram and more — live mandi rates.",
       },
+      { property: "og:url", content: "https://marketmitra.app/crops" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/crops" }],
   }),
   component: CropsPage,
 });

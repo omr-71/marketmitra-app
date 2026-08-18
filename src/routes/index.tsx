@@ -19,7 +19,9 @@ export const Route = createFileRoute("/")({
         content:
           "Compare mandi prices, transport cost and net profit before you sell, with live weather for your farm.",
       },
+      { property: "og:url", content: "https://marketmitra.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/" }],
   }),
   component: Splash,
 });

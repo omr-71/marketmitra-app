@@ -34,7 +34,9 @@ export const Route = createFileRoute("/markets")({
         property: "og:description",
         content: "Rank mandis by net money in hand using government-reported prices.",
       },
+      { property: "og:url", content: "https://marketmitra.app/markets" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/markets" }],
   }),
   component: MarketsPage,
 });

@@ -45,7 +45,9 @@ export const Route = createFileRoute("/diagnose")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://marketmitra.app/diagnose" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/diagnose" }],
   }),
   component: DiagnosePage,
 });

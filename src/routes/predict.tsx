@@ -33,7 +33,9 @@ export const Route = createFileRoute("/predict")({
         property: "og:description",
         content: "Sell-or-hold guidance with a confidence score and the reasoning behind it.",
       },
+      { property: "og:url", content: "https://marketmitra.app/predict" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/predict" }],
   }),
   component: PredictPage,
 });

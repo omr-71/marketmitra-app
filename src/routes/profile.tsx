@@ -21,7 +21,9 @@ export const Route = createFileRoute("/profile")({
       { property: "og:description", content: "Manage your MarketMitra preferences." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "https://marketmitra.app/profile" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/profile" }],
   }),
   component: ProfilePage,
 });

@@ -34,7 +34,9 @@ export const Route = createFileRoute("/about")({
         content:
           "Our story, the problem we solve, and our mission to put real mandi pricing power in every farmer's hands.",
       },
+      { property: "og:url", content: "https://marketmitra.app/about" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/about" }],
   }),
   component: AboutPage,
 });
