@@ -345,6 +345,13 @@ function AdminConsole({ email }: { email: string }) {
     retry: false,
   });
 
+  const health = useQuery({
+    queryKey: ["admin", "health"],
+    queryFn: () => healthFn(),
+    retry: false,
+    refetchInterval: 120_000,
+  });
+
   const toggle = useMutation({
     mutationFn: (vars: { key: string; enabled: boolean }) =>
       updateFlag({ data: vars }),
