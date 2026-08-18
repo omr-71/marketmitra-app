@@ -277,27 +277,31 @@ function AboutPage() {
         {/* Team + contact */}
         <section className="card-surface hover-lift grid gap-6 p-7 lg:grid-cols-[1fr_1fr] lg:items-center lg:p-10">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-primary">Developed by</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">
+              Owner &amp; developer
+            </p>
             <div className="mt-3 flex items-center gap-3">
               <LogoMark className="size-12" />
               <div>
-                <p className="font-display text-xl font-extrabold">Market Mitra Team</p>
+                <p className="font-display text-xl font-extrabold">Om Labhade</p>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Product · Engineering · Field research
+                  Owner &amp; developer, Market Mitra
                 </p>
               </div>
             </div>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              A small independent team building agricultural decision tools for Indian growers, with
-              a bias toward verified public data and interfaces that work on a low-cost phone.
+              Market Mitra is an agriculture-focused digital technology platform owned and developed
+              by Om Labhade. It brings official APMC mandi price data, live farm weather, crop
+              guidance and government scheme information together in English, Marathi and Hindi.
             </p>
           </div>
 
           <div className="rounded-3xl bg-muted/60 p-6">
-            <p className="text-sm font-extrabold">Contact</p>
+            <p className="text-sm font-extrabold">Official contact</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Partnerships, feedback, FPO and district collaborations.
+              Feedback, questions and collaboration.
             </p>
+
             <a
               href="mailto:hello.marketmitra@gmail.com"
               className="press mt-4 flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border transition-shadow hover:shadow-[var(--shadow-card)]"
@@ -312,6 +316,23 @@ function AboutPage() {
                 </span>
               </span>
             </a>
+
+            <a
+              href="tel:+919209517171"
+              className="press mt-3 flex items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border transition-shadow hover:shadow-[var(--shadow-card)]"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10">
+                <Mail className="size-5 text-primary" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-semibold text-muted-foreground">Phone</span>
+                <span className="block truncate text-sm font-extrabold">9209517171</span>
+              </span>
+            </a>
+
+            <p className="mt-3 text-xs font-semibold text-muted-foreground">
+              Website: <span className="text-foreground">marketmitra.app</span>
+            </p>
           </div>
         </section>
       </div>
