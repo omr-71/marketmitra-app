@@ -19,7 +19,9 @@ export const Route = createFileRoute("/schemes")({
         property: "og:description",
         content: "PM-KISAN, PMFBY, Kisan Credit Card, PM-KUSUM, e-NAM and more.",
       },
+      { property: "og:url", content: "https://marketmitra.app/schemes" },
     ],
+    links: [{ rel: "canonical", href: "https://marketmitra.app/schemes" }],
   }),
   component: SchemesPage,
 });
