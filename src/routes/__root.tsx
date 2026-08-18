@@ -128,6 +128,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
 
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "https://marketmitra.app/#organization",
+              name: "Market Mitra",
+              url: "https://marketmitra.app",
+              email: "hello.marketmitra@gmail.com",
+              telephone: "+91-9209517171",
+              description:
+                "Agriculture-focused digital technology platform for Indian farmers: official APMC mandi prices, farm weather, crop guidance and government scheme information.",
+              founder: { "@type": "Person", name: "Om Labhade" },
+            },
+            {
+              "@type": "WebSite",
+              "@id": "https://marketmitra.app/#website",
+              name: "Market Mitra",
+              url: "https://marketmitra.app",
+              inLanguage: ["en", "mr", "hi"],
+              publisher: { "@id": "https://marketmitra.app/#organization" },
+            },
+          ],
+        }),
+      },
+    ],
+
 
   }),
 
