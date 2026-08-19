@@ -74,6 +74,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           enabled: boolean
@@ -146,6 +164,123 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_devices: {
+        Row: {
+          app_version: string | null
+          auth: string | null
+          created_at: string
+          crops: string[]
+          device_id: string
+          disabled: boolean
+          district: string | null
+          endpoint: string
+          id: string
+          lang: string
+          last_seen_at: string
+          latitude: number | null
+          longitude: number | null
+          p256dh: string | null
+          prefs: Json
+          state: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          auth?: string | null
+          created_at?: string
+          crops?: string[]
+          device_id: string
+          disabled?: boolean
+          district?: string | null
+          endpoint: string
+          id?: string
+          lang?: string
+          last_seen_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          p256dh?: string | null
+          prefs?: Json
+          state?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          auth?: string | null
+          created_at?: string
+          crops?: string[]
+          device_id?: string
+          disabled?: boolean
+          district?: string | null
+          endpoint?: string
+          id?: string
+          lang?: string
+          last_seen_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          p256dh?: string | null
+          prefs?: Json
+          state?: string | null
+        }
+        Relationships: []
+      }
+      notification_log: {
+        Row: {
+          created_at: string
+          dedupe_key: string
+          device_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key: string
+          device_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string
+          device_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      notification_outbox: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          delivered_at: string | null
+          device_id: string
+          id: string
+          priority: string
+          tag: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          body: string
+          category: string
+          created_at?: string
+          delivered_at?: string | null
+          device_id: string
+          id?: string
+          priority?: string
+          tag?: string | null
+          title: string
+          url?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          delivered_at?: string | null
+          device_id?: string
+          id?: string
+          priority?: string
+          tag?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -209,6 +344,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      voice_usage: {
+        Row: {
+          characters: number
+          device_id: string
+          id: string
+          updated_at: string
+          usage_date: string
+          used: number
+        }
+        Insert: {
+          characters?: number
+          device_id: string
+          id?: string
+          updated_at?: string
+          usage_date?: string
+          used?: number
+        }
+        Update: {
+          characters?: number
+          device_id?: string
+          id?: string
+          updated_at?: string
+          usage_date?: string
+          used?: number
         }
         Relationships: []
       }
