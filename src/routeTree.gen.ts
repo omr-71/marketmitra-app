@@ -10,23 +10,29 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as CropsRouteImport } from './routes/crops'
-import { Route as DiagnoseRouteImport } from './routes/diagnose'
-import { Route as HomeRouteImport } from './routes/home'
-import { Route as MarketsRouteImport } from './routes/markets'
-import { Route as PredictRouteImport } from './routes/predict'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as SchemesRouteImport } from './routes/schemes'
-import { Route as WeatherRouteImport } from './routes/weather'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCropsRouteImport } from './routes/_authenticated/crops'
+import { Route as AuthenticatedDiagnoseRouteImport } from './routes/_authenticated/diagnose'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
+import { Route as AuthenticatedPredictRouteImport } from './routes/_authenticated/predict'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedSchemesRouteImport } from './routes/_authenticated/schemes'
+import { Route as AuthenticatedWeatherRouteImport } from './routes/_authenticated/weather'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as MarketMarketIdRouteImport } from './routes/market.$marketId'
+import { Route as AuthenticatedMarketMarketIdRouteImport } from './routes/_authenticated/market.$marketId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -39,56 +45,62 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CropsRoute = CropsRouteImport.update({
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCropsRoute = AuthenticatedCropsRouteImport.update({
   id: '/crops',
   path: '/crops',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const DiagnoseRoute = DiagnoseRouteImport.update({
+const AuthenticatedDiagnoseRoute = AuthenticatedDiagnoseRouteImport.update({
   id: '/diagnose',
   path: '/diagnose',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const HomeRoute = HomeRouteImport.update({
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const MarketsRoute = MarketsRouteImport.update({
+const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PredictRoute = PredictRouteImport.update({
+const AuthenticatedPredictRoute = AuthenticatedPredictRouteImport.update({
   id: '/predict',
   path: '/predict',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SchemesRoute = SchemesRouteImport.update({
+const AuthenticatedSchemesRoute = AuthenticatedSchemesRouteImport.update({
   id: '/schemes',
   path: '/schemes',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const WeatherRoute = WeatherRouteImport.update({
+const AuthenticatedWeatherRoute = AuthenticatedWeatherRouteImport.update({
   id: '/weather',
   path: '/weather',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MarketMarketIdRoute = MarketMarketIdRouteImport.update({
-  id: '/market/$marketId',
-  path: '/market/$marketId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedMarketMarketIdRoute =
+  AuthenticatedMarketMarketIdRouteImport.update({
+    id: '/market/$marketId',
+    path: '/market/$marketId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -100,49 +112,53 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/crops': typeof CropsRoute
-  '/diagnose': typeof DiagnoseRoute
-  '/home': typeof HomeRoute
-  '/markets': typeof MarketsRoute
-  '/predict': typeof PredictRoute
-  '/profile': typeof ProfileRoute
-  '/schemes': typeof SchemesRoute
-  '/weather': typeof WeatherRoute
+  '/auth': typeof AuthRoute
+  '/crops': typeof AuthenticatedCropsRoute
+  '/diagnose': typeof AuthenticatedDiagnoseRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/markets': typeof AuthenticatedMarketsRoute
+  '/predict': typeof AuthenticatedPredictRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/schemes': typeof AuthenticatedSchemesRoute
+  '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
-  '/market/$marketId': typeof MarketMarketIdRoute
+  '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/crops': typeof CropsRoute
-  '/diagnose': typeof DiagnoseRoute
-  '/home': typeof HomeRoute
-  '/markets': typeof MarketsRoute
-  '/predict': typeof PredictRoute
-  '/profile': typeof ProfileRoute
-  '/schemes': typeof SchemesRoute
-  '/weather': typeof WeatherRoute
+  '/auth': typeof AuthRoute
+  '/crops': typeof AuthenticatedCropsRoute
+  '/diagnose': typeof AuthenticatedDiagnoseRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/markets': typeof AuthenticatedMarketsRoute
+  '/predict': typeof AuthenticatedPredictRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/schemes': typeof AuthenticatedSchemesRoute
+  '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
-  '/market/$marketId': typeof MarketMarketIdRoute
+  '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/crops': typeof CropsRoute
-  '/diagnose': typeof DiagnoseRoute
-  '/home': typeof HomeRoute
-  '/markets': typeof MarketsRoute
-  '/predict': typeof PredictRoute
-  '/profile': typeof ProfileRoute
-  '/schemes': typeof SchemesRoute
-  '/weather': typeof WeatherRoute
+  '/auth': typeof AuthRoute
+  '/_authenticated/crops': typeof AuthenticatedCropsRoute
+  '/_authenticated/diagnose': typeof AuthenticatedDiagnoseRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/markets': typeof AuthenticatedMarketsRoute
+  '/_authenticated/predict': typeof AuthenticatedPredictRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/schemes': typeof AuthenticatedSchemesRoute
+  '/_authenticated/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
-  '/market/$marketId': typeof MarketMarketIdRoute
+  '/_authenticated/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
@@ -151,6 +167,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/auth'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -167,6 +184,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/auth'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -181,35 +199,30 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/about'
     | '/admin'
-    | '/crops'
-    | '/diagnose'
-    | '/home'
-    | '/markets'
-    | '/predict'
-    | '/profile'
-    | '/schemes'
-    | '/weather'
+    | '/auth'
+    | '/_authenticated/crops'
+    | '/_authenticated/diagnose'
+    | '/_authenticated/home'
+    | '/_authenticated/markets'
+    | '/_authenticated/predict'
+    | '/_authenticated/profile'
+    | '/_authenticated/schemes'
+    | '/_authenticated/weather'
     | '/api/chat'
-    | '/market/$marketId'
+    | '/_authenticated/market/$marketId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
-  CropsRoute: typeof CropsRoute
-  DiagnoseRoute: typeof DiagnoseRoute
-  HomeRoute: typeof HomeRoute
-  MarketsRoute: typeof MarketsRoute
-  PredictRoute: typeof PredictRoute
-  ProfileRoute: typeof ProfileRoute
-  SchemesRoute: typeof SchemesRoute
-  WeatherRoute: typeof WeatherRoute
+  AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
-  MarketMarketIdRoute: typeof MarketMarketIdRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -236,61 +256,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/crops': {
-      id: '/crops'
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/crops': {
+      id: '/_authenticated/crops'
       path: '/crops'
       fullPath: '/crops'
-      preLoaderRoute: typeof CropsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCropsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/diagnose': {
-      id: '/diagnose'
+    '/_authenticated/diagnose': {
+      id: '/_authenticated/diagnose'
       path: '/diagnose'
       fullPath: '/diagnose'
-      preLoaderRoute: typeof DiagnoseRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedDiagnoseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/home': {
-      id: '/home'
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
       path: '/home'
       fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/markets': {
-      id: '/markets'
+    '/_authenticated/markets': {
+      id: '/_authenticated/markets'
       path: '/markets'
       fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedMarketsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/predict': {
-      id: '/predict'
+    '/_authenticated/predict': {
+      id: '/_authenticated/predict'
       path: '/predict'
       fullPath: '/predict'
-      preLoaderRoute: typeof PredictRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPredictRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/profile': {
-      id: '/profile'
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
       path: '/profile'
       fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/schemes': {
-      id: '/schemes'
+    '/_authenticated/schemes': {
+      id: '/_authenticated/schemes'
       path: '/schemes'
       fullPath: '/schemes'
-      preLoaderRoute: typeof SchemesRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSchemesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/weather': {
-      id: '/weather'
+    '/_authenticated/weather': {
+      id: '/_authenticated/weather'
       path: '/weather'
       fullPath: '/weather'
-      preLoaderRoute: typeof WeatherRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedWeatherRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
       id: '/api/chat'
@@ -299,12 +326,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/market/$marketId': {
-      id: '/market/$marketId'
+    '/_authenticated/market/$marketId': {
+      id: '/_authenticated/market/$marketId'
       path: '/market/$marketId'
       fullPath: '/market/$marketId'
-      preLoaderRoute: typeof MarketMarketIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedMarketMarketIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
@@ -316,20 +343,40 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCropsRoute: typeof AuthenticatedCropsRoute
+  AuthenticatedDiagnoseRoute: typeof AuthenticatedDiagnoseRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
+  AuthenticatedPredictRoute: typeof AuthenticatedPredictRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSchemesRoute: typeof AuthenticatedSchemesRoute
+  AuthenticatedWeatherRoute: typeof AuthenticatedWeatherRoute
+  AuthenticatedMarketMarketIdRoute: typeof AuthenticatedMarketMarketIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCropsRoute: AuthenticatedCropsRoute,
+  AuthenticatedDiagnoseRoute: AuthenticatedDiagnoseRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
+  AuthenticatedPredictRoute: AuthenticatedPredictRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSchemesRoute: AuthenticatedSchemesRoute,
+  AuthenticatedWeatherRoute: AuthenticatedWeatherRoute,
+  AuthenticatedMarketMarketIdRoute: AuthenticatedMarketMarketIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
-  CropsRoute: CropsRoute,
-  DiagnoseRoute: DiagnoseRoute,
-  HomeRoute: HomeRoute,
-  MarketsRoute: MarketsRoute,
-  PredictRoute: PredictRoute,
-  ProfileRoute: ProfileRoute,
-  SchemesRoute: SchemesRoute,
-  WeatherRoute: WeatherRoute,
+  AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
-  MarketMarketIdRoute: MarketMarketIdRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport

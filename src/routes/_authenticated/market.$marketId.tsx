@@ -16,7 +16,7 @@ const searchSchema = z.object({
   state: z.string().catch("Maharashtra"),
 });
 
-export const Route = createFileRoute("/market/$marketId")({
+export const Route = createFileRoute("/_authenticated/market/$marketId")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [

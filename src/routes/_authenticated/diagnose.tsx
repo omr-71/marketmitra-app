@@ -28,7 +28,7 @@ import {
   Info,
 } from "lucide-react";
 
-export const Route = createFileRoute("/diagnose")({
+export const Route = createFileRoute("/_authenticated/diagnose")({
   head: () => ({
     meta: [
       { title: "Crop disease identifier — MarketMitra" },

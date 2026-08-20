@@ -30,7 +30,7 @@ import {
   Wind,
 } from "lucide-react";
 
-export const Route = createFileRoute("/home")({
+export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
       { title: "Dashboard — MarketMitra" },

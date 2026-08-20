@@ -12,7 +12,7 @@ import { fetchMandiPrices } from "@/lib/market.functions";
 import { inr } from "@/lib/format";
 import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
 
-export const Route = createFileRoute("/crops")({
+export const Route = createFileRoute("/_authenticated/crops")({
   head: () => ({
     meta: [
       { title: "Select your crop — MarketMitra" },

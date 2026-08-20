@@ -18,7 +18,7 @@ const searchSchema = z.object({
   state: z.string().catch(""),
 });
 
-export const Route = createFileRoute("/predict")({
+export const Route = createFileRoute("/_authenticated/predict")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
