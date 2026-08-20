@@ -9,7 +9,7 @@ import { crops, type Lang } from "@/lib/crops";
 import { themes, useTheme } from "@/lib/theme";
 import { Check, Loader2, MapPin, Palette, Phone, Sprout, User } from "lucide-react";
 
-export const Route = createFileRoute("/profile")({
+export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
       { title: "Farmer profile — MarketMitra" },

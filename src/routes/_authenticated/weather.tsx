@@ -35,7 +35,7 @@ import {
   Wind,
 } from "lucide-react";
 
-export const Route = createFileRoute("/weather")({
+export const Route = createFileRoute("/_authenticated/weather")({
   head: () => ({
     meta: [
       { title: "Farm weather — MarketMitra" },

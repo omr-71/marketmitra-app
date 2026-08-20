@@ -5,7 +5,7 @@ import { track } from "@/lib/analytics";
 import { schemes } from "@/lib/schemes";
 import { ExternalLink, Landmark } from "lucide-react";
 
-export const Route = createFileRoute("/schemes")({
+export const Route = createFileRoute("/_authenticated/schemes")({
   head: () => ({
     meta: [
       { title: "Government schemes — MarketMitra" },

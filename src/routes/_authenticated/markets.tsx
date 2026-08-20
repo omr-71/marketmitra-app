@@ -19,7 +19,7 @@ const searchSchema = z.object({
   qty: z.number().min(1).max(500).catch(20),
 });
 
-export const Route = createFileRoute("/markets")({
+export const Route = createFileRoute("/_authenticated/markets")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
