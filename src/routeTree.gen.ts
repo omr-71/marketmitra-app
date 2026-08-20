@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCropsRouteImport } from './routes/_authenticated/crops'
 import { Route as AuthenticatedDiagnoseRouteImport } from './routes/_authenticated/diagnose'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -42,6 +43,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedCropsRoute = AuthenticatedCropsRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/_authenticated/crops': typeof AuthenticatedCropsRoute
   '/_authenticated/diagnose': typeof AuthenticatedDiagnoseRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/auth'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/auth'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/admin'
+    | '/auth'
     | '/_authenticated/crops'
     | '/_authenticated/diagnose'
     | '/_authenticated/home'
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/crops': {
@@ -355,6 +375,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
