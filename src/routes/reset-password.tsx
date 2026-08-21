@@ -132,7 +132,7 @@ function ResetPasswordPage() {
 
           <button
             type="button"
-            onClick={() => void navigate({ to: "/auth" })}
+            onClick={() => void navigate({ to: "/auth", search: { redirect: undefined } })}
             className="mt-5 text-xs font-semibold text-primary-glow underline-offset-4 hover:underline"
           >
             ← Back to sign in
