@@ -22,6 +22,7 @@ const dict = {
     hi: "सत्यापन के लिए 6 अंकों का कोड आपके ईमेल पर भेजा जाएगा.",
   },
   welcome: { en: "Welcome back", mr: "पुन्हा स्वागत", hi: "पुनः स्वागत" },
+  settings: { en: "Settings", mr: "सेटिंग्ज", hi: "सेटिंग्स" },
   home: { en: "Home", mr: "होम", hi: "होम" },
   markets: { en: "Markets", mr: "बाजार", hi: "मंडी" },
   weather: { en: "Weather", mr: "हवामान", hi: "मौसम" },
