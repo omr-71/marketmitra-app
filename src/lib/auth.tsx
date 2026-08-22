@@ -32,22 +32,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      if (!active) return;
-      setSession(next);
-      setLoading(false);
-    });
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+        if (!active) return;
+        setSession(next);
+        setLoading(false);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
 
-    void supabase.auth.getSession().then(({ data: { session: current } }) => {
-      if (!active) return;
-      setSession(current);
+      void supabase.auth
+        .getSession()
+        .then(({ data: { session: current } }) => {
+          if (!active) return;
+          setSession(current);
+        })
+        .catch((error: unknown) => {
+          console.error("Unable to restore the authentication session", error);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    } catch (error) {
+      console.error("Unable to initialize authentication", error);
       setLoading(false);
-    });
+    }
 
     return () => {
       active = false;
-      data.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
