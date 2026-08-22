@@ -55,7 +55,7 @@ export function BottomNav() {
               >
                 <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
                 <span className="w-full truncate text-center">
-                  t(key)
+                  {t(key)}
                 </span>
               </Link>
             );
@@ -93,7 +93,7 @@ export function SideNav() {
               }`}
             >
               <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
-              {t(key)}
+              {{t(key)}}
             </Link>
           );
         })}
