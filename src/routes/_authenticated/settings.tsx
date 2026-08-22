@@ -1,179 +1,175 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  Bell,
-  Bot,
-  ChevronRight,
-  Info,
-  Languages,
-  LogOut,
-  MessageCircle,
-  Palette,
-  RotateCcw,
-  ShieldCheck,
-  SlidersHorizontal,
+import { createFileRoute } from "@tanstack/react-router";
+import { 
+  Bell, 
+  ChevronRight, 
+  Globe, 
+  LogOut, 
+  Moon, 
+  Palette, 
+  Shield, 
+  User, 
   Volume2,
+  Settings as SettingsIcon,
+  Check
 } from "lucide-react";
+import { Screen, TopBar } from "@/components/app-shell";
+import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
+import { useSettings } from "@/lib/settings";
+import { useTheme, themes } from "@/lib/theme";
+import { langNames, useLang } from "@/lib/i18n";
+import type { Lang } from "@/lib/crops";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-import { Screen, TopBar } from "@/components/app-shell";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { langNames, useLang } from "@/lib/i18n";
-import { DEFAULT_SETTINGS, useSettings } from "@/lib/settings";
-import type { Lang } from "@/lib/crops";
-
 export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({
-    meta: [
-      { title: "Settings — MarketMitra" },
-      { name: "description", content: "Manage your MarketMitra language, assistant, notification and privacy preferences." },
-      { property: "og:title", content: "Settings — MarketMitra" },
-      { property: "og:description", content: "Manage your MarketMitra preferences." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { lang, setLang } = useLang();
-  const { settings, setChat, setVoice, setNotifications, reset } = useSettings();
+  const { signOut } = useAuth();
+  const { t, lang, setLang } = useLang();
+  const { theme, setTheme } = useTheme();
+  const { settings, setNotifications, setAppearance } = useSettings();
+  const { updateProfile } = useSession();
 
-  const signOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    await navigate({ to: "/auth", replace: true });
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
+
+  const changeLanguage = (next: Lang) => {
+    setLang(next);
+    updateProfile({ language: next });
+    toast.success(`Language changed to ${langNames[next]}`);
   };
 
   return (
     <Screen>
-      <TopBar title="Settings" subtitle="Your MarketMitra experience" back="/profile" />
-      <main className="space-y-6 px-5 pt-5 lg:px-0 lg:pt-8">
-        <SettingSection icon={<Languages />} title="Language" description="Used throughout the app">
-          <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(langNames) as Lang[]).map((item) => (
-              <Button
-                key={item}
-                type="button"
-                variant={lang === item ? "default" : "outline"}
-                className="h-11 rounded-xl"
-                onClick={() => setLang(item)}
+      <TopBar title="Settings" back="/profile" />
+
+      <div className="space-y-6 px-5 pt-5 pb-10">
+        {/* Appearance Section */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Palette className="size-4 text-primary" /> Appearance
+          </h3>
+          <div className="card-surface p-4 space-y-4">
+            <div className="space-y-3">
+              <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Theme
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {themes.map((th) => (
+                  <button
+                    key={th.id}
+                    onClick={() => setTheme(th.id)}
+                    className={`press flex items-center gap-2 rounded-xl border p-2.5 text-left transition-colors ${
+                      theme === th.id ? "border-primary bg-primary/10" : "border-border bg-card"
+                    }`}
+                  >
+                    <span className="flex shrink-0 gap-0.5">
+                      {th.swatch.slice(0, 2).map((c) => (
+                        <span
+                          key={c}
+                          className="size-3 rounded-full ring-1 ring-border"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-bold">{th.label}</span>
+                    {theme === th.id && <Check className="size-3.5 shrink-0 text-primary" strokeWidth={3} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-bold">Compact Mode</Label>
+                <p className="text-[11px] text-muted-foreground">Show more content on screen</p>
+              </div>
+              <Switch 
+                checked={settings.appearance.density === "compact"}
+                onCheckedChange={(checked) => setAppearance({ density: checked ? "compact" : "comfortable" })}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Language Section */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Globe className="size-4 text-primary" /> Language
+          </h3>
+          <div className="card-surface p-2">
+            {(Object.keys(langNames) as Lang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => changeLanguage(l)}
+                className={`press flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-bold ${
+                  lang === l ? "bg-primary/10 text-primary" : "text-foreground"
+                }`}
               >
-                {langNames[item]}
-              </Button>
+                {langNames[l]}
+                {lang === l && <Check className="size-4" strokeWidth={3} />}
+              </button>
             ))}
           </div>
-        </SettingSection>
+        </section>
 
-        <SettingSection icon={<Bot />} title="Mitra AI" description="Conversation and voice preferences">
-          <ToggleRow
-            icon={<MessageCircle />}
-            title="Keep chat history"
-            description="Remember conversations on this device"
-            checked={settings.chat.keepHistory}
-            onChange={(checked) => setChat({ keepHistory: checked })}
-          />
-          <ToggleRow
-            icon={<Volume2 />}
-            title="Read replies aloud"
-            description="Automatically play Mitra voice responses"
-            checked={settings.voice.autoPlay}
-            onChange={(checked) => setVoice({ autoPlay: checked })}
-          />
-        </SettingSection>
+        {/* Notifications Section */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Bell className="size-4 text-primary" /> Notifications
+          </h3>
+          <div className="card-surface p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-bold">Market Updates</Label>
+                <p className="text-[11px] text-muted-foreground">Daily price alerts for your crops</p>
+              </div>
+              <Switch 
+                checked={settings.notifications.market}
+                onCheckedChange={(checked) => setNotifications({ market: checked })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-bold">Weather Alerts</Label>
+                <p className="text-[11px] text-muted-foreground">Severe weather warnings for your farm</p>
+              </div>
+              <Switch 
+                checked={settings.notifications.weather}
+                onCheckedChange={(checked) => setNotifications({ weather: checked })}
+              />
+            </div>
+          </div>
+        </section>
 
-        <SettingSection icon={<Bell />} title="Notifications" description="Choose useful alerts">
-          <ToggleRow
-            icon={<SlidersHorizontal />}
-            title="Market movements"
-            description="Important changes in crop prices"
-            checked={settings.notifications.priceMovement}
-            onChange={(checked) => setNotifications({ priceMovement: checked })}
-          />
-          <ToggleRow
-            icon={<Bell />}
-            title="Weather alerts"
-            description="Rain and severe farm-weather updates"
-            checked={settings.notifications.weather}
-            onChange={(checked) => setNotifications({ weather: checked })}
-          />
-        </SettingSection>
+        {/* Account Section */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Shield className="size-4 text-primary" /> Account
+          </h3>
+          <div className="card-surface p-2">
+            <button
+              onClick={handleSignOut}
+              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="size-4" />
+              Sign Out
+            </button>
+          </div>
+        </section>
 
-        <SettingSection icon={<ShieldCheck />} title="Privacy & account" description="Account and local preferences">
-          <button
-            type="button"
-            onClick={() => {
-              reset();
-              toast.success("Settings restored");
-            }}
-            className="flex w-full items-center gap-3 py-3 text-left"
-          >
-            <RotateCcw className="size-4 text-muted-foreground" />
-            <span className="flex-1 text-sm font-semibold">Restore default settings</span>
-          </button>
-          <Button type="button" variant="outline" className="mt-2 h-11 w-full rounded-xl" onClick={() => void signOut()}>
-            <LogOut /> Sign out
-          </Button>
-        </SettingSection>
-
-        <Link
-          to="/about"
-          className="card-surface hover-lift flex items-center gap-4 p-5"
-        >
-          <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary"><Info className="size-5" /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">About Market Mitra</span>
-            <span className="block text-xs text-muted-foreground">Story, mission, data sources and contact</span>
-          </span>
-          <ChevronRight className="size-5 text-muted-foreground" />
-        </Link>
-
-        <p className="pb-3 text-center text-[11px] text-muted-foreground">
-          MarketMitra · Secure account authentication
-        </p>
-      </main>
-    </Screen>
-  );
-}
-
-function SettingSection({ icon, title, description, children }: { icon: React.ReactNode; title: string; description: string; children: React.ReactNode }) {
-  return (
-    <section className="card-surface p-5">
-      <header className="mb-3 flex items-center gap-3 border-b border-border pb-4">
-        <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5">{icon}</span>
-        <div>
-          <h2 className="text-sm font-bold">{title}</h2>
-          <p className="text-xs text-muted-foreground">{description}</p>
+        <div className="text-center pt-4">
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+            Market Mitra v1.0.0
+          </p>
         </div>
-      </header>
-      <div className="divide-y divide-border">{children}</div>
-    </section>
-  );
-}
-
-function ToggleRow({ icon, title, description, checked, onChange }: { icon: React.ReactNode; title: string; description: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <label className="flex cursor-pointer items-center gap-3 py-3">
-      <span className="text-muted-foreground [&_svg]:size-4">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold">{title}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
-      </span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="size-5 accent-primary"
-      />
-    </label>
+      </div>
+    </Screen>
   );
 }

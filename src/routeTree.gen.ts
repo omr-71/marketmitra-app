@@ -22,6 +22,7 @@ import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPredictRouteImport } from './routes/_authenticated/predict'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSchemesRouteImport } from './routes/_authenticated/schemes'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedWeatherRouteImport } from './routes/_authenticated/weather'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedMarketMarketIdRouteImport } from './routes/_authenticated/market.$marketId'
@@ -91,6 +92,11 @@ const AuthenticatedSchemesRoute = AuthenticatedSchemesRouteImport.update({
   path: '/schemes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWeatherRoute = AuthenticatedWeatherRouteImport.update({
   id: '/weather',
   path: '/weather',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schemes': typeof AuthenticatedSchemesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schemes': typeof AuthenticatedSchemesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated/predict': typeof AuthenticatedPredictRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schemes': typeof AuthenticatedSchemesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/predict'
     | '/profile'
     | '/schemes'
+    | '/settings'
     | '/weather'
     | '/api/chat'
     | '/market/$marketId'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/predict'
     | '/profile'
     | '/schemes'
+    | '/settings'
     | '/weather'
     | '/api/chat'
     | '/market/$marketId'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_authenticated/predict'
     | '/_authenticated/profile'
     | '/_authenticated/schemes'
+    | '/_authenticated/settings'
     | '/_authenticated/weather'
     | '/api/chat'
     | '/_authenticated/market/$marketId'
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSchemesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/weather': {
       id: '/_authenticated/weather'
       path: '/weather'
@@ -371,6 +390,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPredictRoute: typeof AuthenticatedPredictRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSchemesRoute: typeof AuthenticatedSchemesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWeatherRoute: typeof AuthenticatedWeatherRoute
   AuthenticatedMarketMarketIdRoute: typeof AuthenticatedMarketMarketIdRoute
 }
@@ -383,6 +403,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPredictRoute: AuthenticatedPredictRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSchemesRoute: AuthenticatedSchemesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWeatherRoute: AuthenticatedWeatherRoute,
   AuthenticatedMarketMarketIdRoute: AuthenticatedMarketMarketIdRoute,
 }
