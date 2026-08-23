@@ -13,16 +13,26 @@ import { loadEnv } from "vite";
 const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
+// These are public browser connection values (not secrets). Keeping the managed
+// project values as a final fallback prevents an otherwise healthy deployment
+// from shipping an empty auth configuration when build-time env forwarding is
+// temporarily unavailable.
+const managedSupabaseUrl = "https://ghzryoakvupugazhxezf.supabase.co";
+const managedSupabasePublishableKey =
+  "sb_publishable_F8NR-8jKb4D6x28q-ffsPw_kvv9lVX1";
+
 // Lovable Cloud provides the canonical backend bindings as SUPABASE_*.
 // The generated browser client intentionally reads VITE_SUPABASE_* instead,
 // so make the URL and publishable (public) key available at bundle time even
 // when a deployment only injects the canonical names.
 const browserSupabaseUrl =
-  process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
+  process.env["VITE_SUPABASE_URL"] ??
+  process.env["SUPABASE_URL"] ??
+  managedSupabaseUrl;
 const browserSupabasePublishableKey =
   process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
   process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-  "";
+  managedSupabasePublishableKey;
 
 export default defineConfig({
   tanstackStart: {
