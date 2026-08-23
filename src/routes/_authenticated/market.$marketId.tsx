@@ -18,15 +18,35 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_authenticated/market/$marketId")({
   validateSearch: searchSchema,
-  head: () => ({
+  head: ({ params }) => ({
     meta: [
-      { title: "Market details — MarketMitra" },
+      { title: `${params.marketId} mandi prices — MarketMitra` },
       {
         name: "description",
         content: "Recorded price range, price history and reporting dates for this APMC mandi.",
       },
-      { property: "og:title", content: "Market details — MarketMitra" },
+      { property: "og:title", content: `${params.marketId} mandi prices — MarketMitra` },
       { property: "og:description", content: "Track how this mandi has been trading day by day." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: `https://marketmitra.app/market/${params.marketId}` },
+    ],
+    links: [{ rel: "canonical", href: `https://marketmitra.app/market/${params.marketId}` }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Dataset",
+          name: `${params.marketId} APMC mandi price records`,
+          description: `Daily minimum, maximum and modal price records reported by the ${params.marketId} APMC mandi.`,
+          url: `https://marketmitra.app/market/${params.marketId}`,
+          license: "https://data.gov.in/government-open-data-license-india",
+          isAccessibleForFree: true,
+          creator: { "@type": "GovernmentOrganization", name: "Directorate of Marketing & Inspection (Agmarknet)" },
+          publisher: { "@id": "https://marketmitra.app/#organization" },
+          spatialCoverage: { "@type": "Place", name: `${params.marketId}, India` },
+        }),
+      },
     ],
   }),
   component: MarketDetailPage,

@@ -140,6 +140,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               "@id": "https://marketmitra.app/#organization",
               name: "Market Mitra",
               url: "https://marketmitra.app",
+              logo: "https://marketmitra.app/icon-512.png",
               email: "hello.marketmitra@gmail.com",
               telephone: "+91-9209517171",
               description:

@@ -22,6 +22,37 @@ export const Route = createFileRoute("/_authenticated/schemes")({
       { property: "og:url", content: "https://marketmitra.app/schemes" },
     ],
     links: [{ rel: "canonical", href: "https://marketmitra.app/schemes" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Government schemes for Indian farmers",
+          url: "https://marketmitra.app/schemes",
+          description:
+            "Central agriculture schemes with published benefits, eligibility criteria and links to the official application portals.",
+          isPartOf: { "@id": "https://marketmitra.app/#website" },
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: schemes.map((scheme, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              item: {
+                "@type": "GovernmentService",
+                name: scheme.name,
+                description: scheme.benefit,
+                url: scheme.url,
+                serviceType: "Agriculture support scheme",
+                areaServed: { "@type": "Country", name: "India" },
+                provider: { "@type": "GovernmentOrganization", name: scheme.dept },
+                eligibleRegion: { "@type": "Country", name: "India" },
+              },
+            })),
+          },
+        }),
+      },
+    ],
   }),
   component: SchemesPage,
 });
