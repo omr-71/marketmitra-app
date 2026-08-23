@@ -93,7 +93,7 @@ export function SideNav() {
               }`}
             >
               <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
-              {{t(key)}}
+              {t(key)}
             </Link>
           );
         })}
