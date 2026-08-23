@@ -13,6 +13,17 @@ import { loadEnv } from "vite";
 const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
+// Lovable Cloud provides the canonical backend bindings as SUPABASE_*.
+// The generated browser client intentionally reads VITE_SUPABASE_* instead,
+// so make the URL and publishable (public) key available at bundle time even
+// when a deployment only injects the canonical names.
+const browserSupabaseUrl =
+  process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? "";
+const browserSupabasePublishableKey =
+  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
+  process.env["SUPABASE_PUBLISHABLE_KEY"] ??
+  "";
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -20,6 +31,12 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(browserSupabaseUrl),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+        browserSupabasePublishableKey,
+      ),
+    },
     resolve: {
       alias: {
         // `entities` v4 has no ./escape or ./decode subpaths (parse5 v8 expects v6),
