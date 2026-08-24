@@ -74,6 +74,48 @@ export type Database = {
         }
         Relationships: []
       }
+      api_fetch_logs: {
+        Row: {
+          commodity: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          latest_data_date: string | null
+          ok: boolean
+          provider: string
+          record_count: number
+          state: string | null
+          status_code: number | null
+        }
+        Insert: {
+          commodity?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          latest_data_date?: string | null
+          ok: boolean
+          provider: string
+          record_count?: number
+          state?: string | null
+          status_code?: number | null
+        }
+        Update: {
+          commodity?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          latest_data_date?: string | null
+          ok?: boolean
+          provider?: string
+          record_count?: number
+          state?: string | null
+          status_code?: number | null
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
