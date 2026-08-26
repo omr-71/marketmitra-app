@@ -281,7 +281,8 @@ function MarketsPage() {
             <div className="mt-4 space-y-3">
               {rows.map((row) => {
                 const isBest = row.record.market === bestPrice?.record.market;
-                const older = row.record.arrivalDate !== comparableDate;
+                const older = row.record.date !== comparableDate;
+                const rowFreshness = computeFreshness({ dataDate: row.record.date });
                 return (
                   <Link
                     key={row.record.market}
@@ -292,11 +293,24 @@ function MarketsPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold">{row.record.market}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {row.record.district} · Updated {formatIstDate(row.record.arrivalDate)}
+                        <p className="truncate text-sm font-extrabold">
+                          {row.record.market}
+                          {row.record.variety ? (
+                            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              {row.record.variety}
+                              {row.record.grade ? ` · ${row.record.grade}` : ""}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <FreshnessBadge freshness={rowFreshness} />
+                          {row.record.district} · {formatIstDate(row.record.date)}
                           {older ? " (older report)" : ""}
                         </p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {row.record.source}
+                        </p>
+                      </div>
                       </div>
                       {isBest && (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
