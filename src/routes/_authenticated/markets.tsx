@@ -61,41 +61,21 @@ function MarketsPage() {
     if (location?.state) track("market_search", { label: crop.commodity });
   }, [crop.commodity, location?.state]);
 
-  const priceQuery = useQuery({
-    queryKey: ["mandi", crop.commodity, location?.state, location?.district],
-    enabled: Boolean(location?.state),
-    queryFn: () =>
-      fetchMandiPrices({
-        data: {
-          commodity: crop.commodity,
-          state: location!.state,
-          ...(location?.district ? { district: location.district } : {}),
-        },
-      }),
-    // AGMARKNET publishes once a day; revalidate on mount but don't spam the API.
-    staleTime: 30 * 60 * 1000,
-    refetchOnMount: "always",
-  });
+  const priceQuery = useQuery(
+    marketPricesQuery({
+      commodity: crop.commodity,
+      ...(location?.state ? { state: location.state } : {}),
+      ...(location?.district ? { district: location.district } : {}),
+    }),
+  );
 
-  const result = priceQuery.data?.ok ? priceQuery.data : null;
+  const result = priceQuery.data ?? null;
 
   /** Latest official record per mandi, newest reporting date first. */
-  const latestPerMarket = useMemo<MandiRecord[]>(() => {
-    if (!result) return [];
-    const byMarket = new Map<string, MandiRecord>();
-    for (const record of result.records) {
-      const existing = byMarket.get(record.market);
-      if (!existing || existing.arrivalDate < record.arrivalDate)
-        byMarket.set(record.market, record);
-    }
-    return [...byMarket.values()].sort((a, b) =>
-      a.arrivalDate === b.arrivalDate
-        ? b.modalPrice - a.modalPrice
-        : a.arrivalDate < b.arrivalDate
-          ? 1
-          : -1,
-    );
-  }, [result]);
+  const latestPerMarket = useMemo<PriceRecord[]>(
+    () => (result ? pickLatestPerMarket(result.records) : []),
+    [result],
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
