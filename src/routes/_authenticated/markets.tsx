@@ -135,8 +135,8 @@ function MarketsPage() {
    * Best choice is only compared inside the newest reporting date group — never
    * across different dates, which would compare last week against today.
    */
-  const comparableDate = visible[0]?.arrivalDate ?? "";
-  const sameDay = rows.filter((r) => r.record.arrivalDate === comparableDate);
+  const comparableDate = visible[0]?.date ?? "";
+  const sameDay = rows.filter((r) => r.record.date === comparableDate);
   const bestPrice = [...sameDay].sort((a, b) => b.record.modalPrice - a.record.modalPrice)[0];
   const withTransport = sameDay.filter((r) => r.transport);
   const bestPractical =
@@ -235,20 +235,17 @@ function MarketsPage() {
               <Loader2 className="size-4 animate-spin" /> {t("loading")}
             </p>
           </div>
-        ) : priceQuery.data && !priceQuery.data.ok ? (
-          <div className="card-surface hover-lift mt-5 p-5">
-            <p className="text-sm font-semibold text-destructive">{priceQuery.data.error}</p>
-            <button
-              onClick={() => void priceQuery.refetch()}
-              className="press mt-3 rounded-full bg-muted px-4 py-2 text-xs font-bold"
-            >
-              {t("retry")}
-            </button>
+        ) : priceQuery.isError ? (
+          <div className="mt-5">
+            <UnavailableState
+              onRetry={() => void priceQuery.refetch()}
+              message="The official market price service could not be reached."
+            />
           </div>
         ) : rows.length === 0 ? (
-          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
-            {t("noPrices")}
-          </p>
+          <div className="mt-5">
+            <UnavailableState onRetry={() => void priceQuery.refetch()} />
+          </div>
         ) : (
           <>
             {bestPrice && result && (
@@ -262,9 +259,12 @@ function MarketsPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {t("perQuintal")} · {t("modalPrice")}
+                  {bestPrice.record.variety ? ` · ${bestPrice.record.variety}` : ""}
+                  {bestPrice.record.grade ? ` · ${bestPrice.record.grade}` : ""}
                 </p>
-                <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
-                  Updated: {formatIstDate(bestPrice.record.arrivalDate)} ·{" "}
+                <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                  <FreshnessBadge freshness={result.freshness} />
+                  Market data date: {formatIstDate(bestPrice.record.date)} ·{" "}
                   {bestPrice.record.district}
                 </p>
 
