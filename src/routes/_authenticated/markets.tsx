@@ -3,12 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
-import { SourceNote } from "@/components/source-note";
+import { DataProvenance, FreshnessBadge, UnavailableState } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops, findCrop } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
-import { fetchMandiPrices, type MandiRecord } from "@/lib/market.functions";
+import { latestPerMarket as pickLatestPerMarket, marketPricesQuery } from "@/lib/market-queries";
+import { computeFreshness } from "@/lib/market-freshness";
+import type { PriceRecord } from "@/lib/market-types";
 import { locateMarket } from "@/lib/market-geo";
 import { DEFAULT_RATE_PER_KM, estimateTransport, roadDistanceKm } from "@/lib/transport";
 import { formatIstDate, inr } from "@/lib/format";
@@ -59,41 +61,21 @@ function MarketsPage() {
     if (location?.state) track("market_search", { label: crop.commodity });
   }, [crop.commodity, location?.state]);
 
-  const priceQuery = useQuery({
-    queryKey: ["mandi", crop.commodity, location?.state, location?.district],
-    enabled: Boolean(location?.state),
-    queryFn: () =>
-      fetchMandiPrices({
-        data: {
-          commodity: crop.commodity,
-          state: location!.state,
-          ...(location?.district ? { district: location.district } : {}),
-        },
-      }),
-    // AGMARKNET publishes once a day; revalidate on mount but don't spam the API.
-    staleTime: 30 * 60 * 1000,
-    refetchOnMount: "always",
-  });
+  const priceQuery = useQuery(
+    marketPricesQuery({
+      commodity: crop.commodity,
+      ...(location?.state ? { state: location.state } : {}),
+      ...(location?.district ? { district: location.district } : {}),
+    }),
+  );
 
-  const result = priceQuery.data?.ok ? priceQuery.data : null;
+  const result = priceQuery.data ?? null;
 
   /** Latest official record per mandi, newest reporting date first. */
-  const latestPerMarket = useMemo<MandiRecord[]>(() => {
-    if (!result) return [];
-    const byMarket = new Map<string, MandiRecord>();
-    for (const record of result.records) {
-      const existing = byMarket.get(record.market);
-      if (!existing || existing.arrivalDate < record.arrivalDate)
-        byMarket.set(record.market, record);
-    }
-    return [...byMarket.values()].sort((a, b) =>
-      a.arrivalDate === b.arrivalDate
-        ? b.modalPrice - a.modalPrice
-        : a.arrivalDate < b.arrivalDate
-          ? 1
-          : -1,
-    );
-  }, [result]);
+  const latestPerMarket = useMemo<PriceRecord[]>(
+    () => (result ? pickLatestPerMarket(result.records) : []),
+    [result],
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -153,8 +135,8 @@ function MarketsPage() {
    * Best choice is only compared inside the newest reporting date group — never
    * across different dates, which would compare last week against today.
    */
-  const comparableDate = visible[0]?.arrivalDate ?? "";
-  const sameDay = rows.filter((r) => r.record.arrivalDate === comparableDate);
+  const comparableDate = visible[0]?.date ?? "";
+  const sameDay = rows.filter((r) => r.record.date === comparableDate);
   const bestPrice = [...sameDay].sort((a, b) => b.record.modalPrice - a.record.modalPrice)[0];
   const withTransport = sameDay.filter((r) => r.transport);
   const bestPractical =
@@ -253,20 +235,17 @@ function MarketsPage() {
               <Loader2 className="size-4 animate-spin" /> {t("loading")}
             </p>
           </div>
-        ) : priceQuery.data && !priceQuery.data.ok ? (
-          <div className="card-surface hover-lift mt-5 p-5">
-            <p className="text-sm font-semibold text-destructive">{priceQuery.data.error}</p>
-            <button
-              onClick={() => void priceQuery.refetch()}
-              className="press mt-3 rounded-full bg-muted px-4 py-2 text-xs font-bold"
-            >
-              {t("retry")}
-            </button>
+        ) : priceQuery.isError ? (
+          <div className="mt-5">
+            <UnavailableState
+              onRetry={() => void priceQuery.refetch()}
+              message="The official market price service could not be reached."
+            />
           </div>
         ) : rows.length === 0 ? (
-          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
-            {t("noPrices")}
-          </p>
+          <div className="mt-5">
+            <UnavailableState onRetry={() => void priceQuery.refetch()} />
+          </div>
         ) : (
           <>
             {bestPrice && result && (
@@ -280,9 +259,12 @@ function MarketsPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {t("perQuintal")} · {t("modalPrice")}
+                  {bestPrice.record.variety ? ` · ${bestPrice.record.variety}` : ""}
+                  {bestPrice.record.grade ? ` · ${bestPrice.record.grade}` : ""}
                 </p>
-                <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
-                  Updated: {formatIstDate(bestPrice.record.arrivalDate)} ·{" "}
+                <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                  <FreshnessBadge freshness={result.freshness} />
+                  Market data date: {formatIstDate(bestPrice.record.date)} ·{" "}
                   {bestPrice.record.district}
                 </p>
 
@@ -299,7 +281,8 @@ function MarketsPage() {
             <div className="mt-4 space-y-3">
               {rows.map((row) => {
                 const isBest = row.record.market === bestPrice?.record.market;
-                const older = row.record.arrivalDate !== comparableDate;
+                const older = row.record.date !== comparableDate;
+                const rowFreshness = computeFreshness({ dataDate: row.record.date });
                 return (
                   <Link
                     key={row.record.market}
@@ -310,11 +293,24 @@ function MarketsPage() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold">{row.record.market}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {row.record.district} · Updated {formatIstDate(row.record.arrivalDate)}
+                        <p className="truncate text-sm font-extrabold">
+                          {row.record.market}
+                          {row.record.variety ? (
+                            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                              {row.record.variety}
+                              {row.record.grade ? ` · ${row.record.grade}` : ""}
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <FreshnessBadge freshness={rowFreshness} />
+                          {row.record.district} · {formatIstDate(row.record.date)}
                           {older ? " (older report)" : ""}
                         </p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {row.record.source}
+                        </p>
+                      </div>
                       </div>
                       {isBest && (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
