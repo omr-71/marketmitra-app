@@ -62,9 +62,11 @@ function SettingsPage() {
     toast.success(`Language changed to ${langNames[next]}`);
   };
 
+  const status = useQuery(marketStatusQuery);
+
   return (
     <Screen>
-      <TopBar title="Settings" back="/profile" />
+      <TopBar title="Settings" back="/profile" settings={false} />
 
       <div className="space-y-6 px-5 pt-5 pb-10">
         {/* Appearance Section */}
