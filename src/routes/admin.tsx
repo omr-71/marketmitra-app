@@ -32,6 +32,7 @@ import {
   setFeatureFlag,
   type AdminCount,
 } from "@/lib/admin.functions";
+import { getProviderDiagnostics } from "@/lib/market-prices.functions";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -323,6 +324,7 @@ function AdminConsole({ email }: { email: string }) {
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
   const healthFn = useServerFn(getAdminHealth);
+  const diagnosticsFn = useServerFn(getProviderDiagnostics);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
 
