@@ -311,7 +311,6 @@ function MarketsPage() {
                           {row.record.source}
                         </p>
                       </div>
-                      </div>
                       {isBest && (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
                           <Award className="size-3" /> {t("bestChoice")}
