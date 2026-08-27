@@ -356,7 +356,7 @@ function MarketsPage() {
 
         {result && (
           <div className="mt-4">
-            <SourceNote result={result} />
+            <DataProvenance result={result} />
             <p className="mt-1 text-[11px] text-muted-foreground">
               Transport is an estimate from road distance × your ₹/km rate, not an official freight
               rate. Commission is the % you set.
