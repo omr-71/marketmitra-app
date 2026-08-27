@@ -1,29 +1,46 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { 
-  Bell, 
-  ChevronRight, 
-  Globe, 
-  LogOut, 
-  Moon, 
-  Palette, 
-  Shield, 
-  User, 
-  Volume2,
-  Settings as SettingsIcon,
-  Check
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Activity,
+  Bell,
+  ChevronRight,
+  Globe,
+  Info,
+  LogOut,
+  Palette,
+  Shield,
+  Check,
 } from "lucide-react";
 import { Screen, TopBar } from "@/components/app-shell";
+import { FreshnessBadge } from "@/components/market-meta";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
 import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
+import { marketStatusQuery } from "@/lib/market-queries";
+import { formatIstDate, formatIstDateTime } from "@/lib/format";
 import type { Lang } from "@/lib/crops";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({
+    meta: [
+      { title: "Settings — MarketMitra" },
+      {
+        name: "description",
+        content:
+          "Manage your MarketMitra language, theme, alerts and check live market data source health.",
+      },
+      { property: "og:title", content: "Settings — MarketMitra" },
+      {
+        property: "og:description",
+        content: "Language, theme, alerts and official market data source status.",
+      },
+    ],
+  }),
   component: SettingsPage,
 });
 
@@ -45,9 +62,11 @@ function SettingsPage() {
     toast.success(`Language changed to ${langNames[next]}`);
   };
 
+  const status = useQuery(marketStatusQuery);
+
   return (
     <Screen>
-      <TopBar title="Settings" back="/profile" />
+      <TopBar title="Settings" back="/profile" settings={false} />
 
       <div className="space-y-6 px-5 pt-5 pb-10">
         {/* Appearance Section */}
@@ -147,6 +166,87 @@ function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Data & API status */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Activity className="size-4 text-primary" /> Data &amp; API status
+          </h3>
+          <div className="card-surface space-y-3 p-4">
+            {status.isLoading ? (
+              <p className="text-xs text-muted-foreground">Checking official data sources…</p>
+            ) : status.isError || !status.data ? (
+              <p className="text-xs text-muted-foreground">
+                Source health is unavailable right now.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold capitalize">
+                      Overall: {status.data.overall.replace("_", " ")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {status.data.latestDataDate
+                        ? `Latest official market date: ${formatIstDate(status.data.latestDataDate)}`
+                        : "No official market date recorded yet"}
+                    </p>
+                  </div>
+                  <FreshnessBadge freshness={status.data.freshness} />
+                </div>
+
+                <ul className="space-y-2 border-t border-border pt-3">
+                  {status.data.providers.map((p) => (
+                    <li key={p.id} className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold">{p.name}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {p.coverage}
+                          {p.requiresKey ? (p.configured ? " · key configured" : " · key missing") : ""}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
+                          p.status === "healthy"
+                            ? "bg-primary/10 text-primary ring-primary/25"
+                            : p.status === "degraded"
+                              ? "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400"
+                              : p.status === "down"
+                                ? "bg-destructive/10 text-destructive ring-destructive/25"
+                                : "bg-muted text-muted-foreground ring-border"
+                        }`}
+                      >
+                        {p.status.replace("_", " ")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-[10px] text-muted-foreground">
+                  Checked {formatIstDateTime(status.data.generatedAt)} IST · MarketMitra never shows
+                  an estimated or generated price.
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* About */}
+        <section className="space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Info className="size-4 text-primary" /> About
+          </h3>
+          <div className="card-surface p-2">
+            <Link
+              to="/about"
+              className="press flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm font-bold"
+            >
+              About MarketMitra
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          </div>
+        </section>
+
 
         {/* Account Section */}
         <section className="space-y-3">

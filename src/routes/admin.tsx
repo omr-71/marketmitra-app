@@ -32,6 +32,7 @@ import {
   setFeatureFlag,
   type AdminCount,
 } from "@/lib/admin.functions";
+import { getProviderDiagnostics } from "@/lib/market-prices.functions";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -323,6 +324,7 @@ function AdminConsole({ email }: { email: string }) {
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
   const healthFn = useServerFn(getAdminHealth);
+  const diagnosticsFn = useServerFn(getProviderDiagnostics);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
 
@@ -348,6 +350,13 @@ function AdminConsole({ email }: { email: string }) {
   const health = useQuery({
     queryKey: ["admin", "health"],
     queryFn: () => healthFn(),
+    retry: false,
+    refetchInterval: 120_000,
+  });
+
+  const diagnostics = useQuery({
+    queryKey: ["admin", "provider-diagnostics"],
+    queryFn: () => diagnosticsFn(),
     retry: false,
     refetchInterval: 120_000,
   });
@@ -666,6 +675,72 @@ function AdminConsole({ email }: { email: string }) {
                   </p>
                 )}
               </Panel>
+
+              <Panel
+                title="Market data providers"
+                icon={<Database className="size-4" />}
+              >
+                {diagnostics.isLoading ? (
+                  <SkeletonLines rows={3} />
+                ) : diagnostics.isError || !diagnostics.data ? (
+                  <p className="text-sm text-[oklch(0.8_0.02_150)]">
+                    Provider diagnostics are unavailable right now.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mb-3 text-[11px] text-[oklch(0.72_0.02_150)]">
+                      Overall {diagnostics.data.overall.replace("_", " ")} ·{" "}
+                      {diagnostics.data.latestDataDate
+                        ? `latest official data date ${diagnostics.data.latestDataDate}`
+                        : "no official data date recorded"}
+                    </p>
+
+                    <ul className="space-y-2.5">
+                      {diagnostics.data.providers.map((p) => (
+                        <li
+                          key={p.id}
+                          className="rounded-2xl bg-[oklch(1_0_0/0.05)] p-3"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-xs font-bold">
+                              {p.name}
+                            </span>
+
+                            <span className="ml-auto shrink-0 rounded-full bg-[oklch(1_0_0/0.08)] px-2 py-0.5 text-[10px] font-bold uppercase">
+                              {p.status.replace("_", " ")}
+                            </span>
+                          </div>
+
+                          <p className="mt-1 text-[11px] text-[oklch(0.72_0.02_150)]">
+                            priority {p.priority} · {p.coverage}
+                            {p.requiresKey
+                              ? p.configured
+                                ? " · key configured"
+                                : " · key missing"
+                              : ""}
+                          </p>
+
+                          <p className="mt-1 text-[11px] text-[oklch(0.72_0.02_150)]">
+                            {p.successes24h}/{p.attempts24h} calls ok · 24h ·{" "}
+                            {p.lastDurationMs === null
+                              ? "no latency yet"
+                              : `${p.lastDurationMs} ms last call`}
+                            {p.lastRecordCount === null
+                              ? ""
+                              : ` · ${p.lastRecordCount} rows`}
+                          </p>
+
+                          <p className="mt-1 text-[11px] text-[oklch(0.65_0.02_150)]">
+                            last success {p.lastSuccessAt ?? "—"}
+                            {p.lastError ? ` · last error: ${p.lastError}` : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </Panel>
+
 
               <section className="grid gap-5 lg:grid-cols-2">
                 <Panel

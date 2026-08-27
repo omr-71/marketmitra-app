@@ -157,11 +157,14 @@ export function TopBar({
   subtitle,
   back,
   action,
+  settings = true,
 }: {
   title: string;
   subtitle?: string;
   back?: string;
   action?: ReactNode;
+  /** Show the top-right settings shortcut (hidden on the settings screen). */
+  settings?: boolean;
 }) {
   return (
     <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-xl lg:rounded-b-3xl lg:px-6 lg:py-5">
@@ -180,7 +183,18 @@ export function TopBar({
         <h1 className="truncate font-display text-base font-bold lg:text-2xl">{title}</h1>
         {subtitle && <p className="truncate text-xs text-muted-foreground lg:text-sm">{subtitle}</p>}
       </div>
-      <div className="grid min-w-9 shrink-0 place-items-center">{action}</div>
+      <div className="flex min-w-9 shrink-0 items-center justify-end gap-2">
+        {action}
+        {settings && (
+          <Link
+            to="/settings"
+            className="press grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground"
+            aria-label="Settings"
+          >
+            <Settings className="size-4.5" />
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

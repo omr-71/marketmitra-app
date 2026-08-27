@@ -311,7 +311,6 @@ function MarketsPage() {
                           {row.record.source}
                         </p>
                       </div>
-                      </div>
                       {isBest && (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
                           <Award className="size-3" /> {t("bestChoice")}
@@ -357,7 +356,7 @@ function MarketsPage() {
 
         {result && (
           <div className="mt-4">
-            <SourceNote result={result} />
+            <DataProvenance result={result} />
             <p className="mt-1 text-[11px] text-muted-foreground">
               Transport is an estimate from road distance × your ₹/km rate, not an official freight
               rate. Commission is the % you set.
