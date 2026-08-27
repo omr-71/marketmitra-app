@@ -1,29 +1,46 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { 
-  Bell, 
-  ChevronRight, 
-  Globe, 
-  LogOut, 
-  Moon, 
-  Palette, 
-  Shield, 
-  User, 
-  Volume2,
-  Settings as SettingsIcon,
-  Check
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Activity,
+  Bell,
+  ChevronRight,
+  Globe,
+  Info,
+  LogOut,
+  Palette,
+  Shield,
+  Check,
 } from "lucide-react";
 import { Screen, TopBar } from "@/components/app-shell";
+import { FreshnessBadge } from "@/components/market-meta";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
 import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
+import { marketStatusQuery } from "@/lib/market-queries";
+import { formatIstDate, formatIstDateTime } from "@/lib/format";
 import type { Lang } from "@/lib/crops";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({
+    meta: [
+      { title: "Settings — MarketMitra" },
+      {
+        name: "description",
+        content:
+          "Manage your MarketMitra language, theme, alerts and check live market data source health.",
+      },
+      { property: "og:title", content: "Settings — MarketMitra" },
+      {
+        property: "og:description",
+        content: "Language, theme, alerts and official market data source status.",
+      },
+    ],
+  }),
   component: SettingsPage,
 });
 
