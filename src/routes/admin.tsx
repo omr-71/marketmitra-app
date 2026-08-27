@@ -352,6 +352,13 @@ function AdminConsole({ email }: { email: string }) {
     refetchInterval: 120_000,
   });
 
+  const diagnostics = useQuery({
+    queryKey: ["admin", "provider-diagnostics"],
+    queryFn: () => diagnosticsFn(),
+    retry: false,
+    refetchInterval: 120_000,
+  });
+
   const toggle = useMutation({
     mutationFn: (vars: { key: string; enabled: boolean }) =>
       updateFlag({ data: vars }),
