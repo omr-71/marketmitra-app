@@ -48,6 +48,8 @@ export type NotificationSettings = {
 export type AppearanceSettings = {
   textSize: TextSize;
   density: Density;
+  reduceMotion: boolean;
+  highContrast: boolean;
 };
 
 export type Settings = {
