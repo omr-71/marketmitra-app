@@ -48,6 +48,8 @@ export type NotificationSettings = {
 export type AppearanceSettings = {
   textSize: TextSize;
   density: Density;
+  reduceMotion: boolean;
+  highContrast: boolean;
 };
 
 export type Settings = {
@@ -84,7 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
     important: true,
     minPriority: "normal",
   },
-  appearance: { textSize: "md", density: "comfortable" },
+  appearance: { textSize: "md", density: "comfortable", reduceMotion: false, highContrast: false },
 };
 
 const STORAGE_KEY = "mm-settings-v1";
@@ -144,6 +146,8 @@ function applyAppearance(appearance: AppearanceSettings) {
   const root = document.documentElement;
   root.setAttribute("data-text-size", appearance.textSize);
   root.setAttribute("data-density", appearance.density);
+  root.setAttribute("data-motion", appearance.reduceMotion ? "reduced" : "full");
+  root.setAttribute("data-contrast", appearance.highContrast ? "high" : "normal");
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {

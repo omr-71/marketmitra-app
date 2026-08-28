@@ -1,26 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
-  Activity,
+  Accessibility,
   Bell,
   ChevronRight,
+  Check,
   Globe,
   Info,
   LogOut,
+  MapPin,
   Palette,
+  Phone,
+  RotateCcw,
   Shield,
-  Check,
+  Sprout,
+  User,
 } from "lucide-react";
 import { Screen, TopBar } from "@/components/app-shell";
-import { FreshnessBadge } from "@/components/market-meta";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
 import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
-import { marketStatusQuery } from "@/lib/market-queries";
-import { formatIstDate, formatIstDateTime } from "@/lib/format";
-import type { Lang } from "@/lib/crops";
+import { crops, type Lang } from "@/lib/crops";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -32,60 +34,252 @@ export const Route = createFileRoute("/_authenticated/settings")({
       {
         name: "description",
         content:
-          "Manage your MarketMitra language, theme, alerts and check live market data source health.",
+          "Manage your MarketMitra profile, language, theme, accessibility and alert preferences in one place.",
       },
       { property: "og:title", content: "Settings — MarketMitra" },
       {
         property: "og:description",
-        content: "Language, theme, alerts and official market data source status.",
+        content: "Profile, language, theme, accessibility and alert preferences.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: SettingsPage,
 });
 
+function Section({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof Bell;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <h3 className="flex items-center gap-2 text-sm font-bold">
+        <Icon className="size-4 text-primary" /> {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function Toggle({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0 space-y-0.5">
+        <Label className="text-sm font-bold">{label}</Label>
+        {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
 function SettingsPage() {
   const { signOut } = useAuth();
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
-  const { settings, setNotifications, setAppearance } = useSettings();
-  const { updateProfile } = useSession();
+  const { settings, setNotifications, setAppearance, reset } = useSettings();
+  const { profile, updateProfile } = useSession();
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [village, setVillage] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+
+  useEffect(() => {
+    setName(profile.full_name ?? "");
+    setPhone(profile.phone ?? "");
+    setVillage(profile.village ?? "");
+  }, [profile.full_name, profile.phone, profile.village]);
+
+  useEffect(() => {
+    setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
+  }, []);
+
+  const msg = {
+    nameRequired: {
+      en: "Full name is required.",
+      mr: "पूर्ण नाव आवश्यक आहे.",
+      hi: "पूरा नाम आवश्यक है.",
+    },
+    phoneRequired: {
+      en: "Mobile number is required.",
+      mr: "मोबाइल नंबर आवश्यक आहे.",
+      hi: "मोबाइल नंबर आवश्यक है.",
+    },
+    phoneInvalid: {
+      en: "Enter a valid 10-digit Indian mobile number.",
+      mr: "वैध १० अंकी मोबाइल नंबर टाका.",
+      hi: "मान्य 10 अंकों का मोबाइल नंबर डालें.",
+    },
+  } as const;
+
+  const saveProfile = () => {
+    const next: { name?: string; phone?: string } = {};
+    if (!name.trim()) next.name = msg.nameRequired[lang];
+    if (!phone.trim()) next.phone = msg.phoneRequired[lang];
+    else if (!/^[6-9]\d{9}$/.test(phone.trim())) next.phone = msg.phoneInvalid[lang];
+    setErrors(next);
+    if (next.name || next.phone) return;
+
+    updateProfile({
+      full_name: name.trim(),
+      phone: phone.trim(),
+      village: village.trim() || null,
+    });
+    toast.success(t("save"));
+  };
+
+  const changeLanguage = (next: Lang) => {
+    setLang(next);
+    updateProfile({ language: next });
+    toast.success(`${langNames[next]}`);
+  };
+
+  /** Requests browser permission once, only when a farmer turns an alert on. */
+  const enableAlerts = async (key: "market" | "weather" | "updates", value: boolean) => {
+    setNotifications({ [key]: value } as never);
+    if (!value) return;
+    if (permission === "unsupported") {
+      toast.info("Your browser does not support push alerts. In-app alerts still work.");
+      return;
+    }
+    if (permission === "granted") return;
+    if (permission === "denied") {
+      toast.info("Notifications are blocked in your browser settings. Allow them there to get alerts.");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    if (result === "granted") toast.success("Alerts enabled on this device");
+    else toast.info("You can enable alerts later from your browser settings.");
+  };
+
+  const previewNotification = () => {
+    if (permission !== "granted") {
+      toast.info("Allow notifications first to see a preview.");
+      return;
+    }
+    new Notification("MarketMitra", {
+      body: "This is how your market and weather alerts will look.",
+      icon: "/icon-192.png",
+    });
+  };
+
+  const saved = profile.saved_crops ?? [];
+  const toggleCrop = (id: string) => {
+    const next = saved.includes(id) ? saved.filter((c) => c !== id) : [...saved, id];
+    updateProfile({ saved_crops: next });
+  };
+
+  const handleReset = () => {
+    if (!window.confirm("Reset all app settings to their defaults? Your profile data is kept.")) return;
+    reset();
+    setTheme("emerald");
+    toast.success("Settings reset");
+  };
 
   const handleSignOut = async () => {
     await signOut();
     toast.success("Signed out successfully");
   };
 
-  const changeLanguage = (next: Lang) => {
-    setLang(next);
-    updateProfile({ language: next });
-    toast.success(`Language changed to ${langNames[next]}`);
-  };
-
-  const status = useQuery(marketStatusQuery);
-
   return (
     <Screen>
-      <TopBar title="Settings" back="/profile" settings={false} />
+      <TopBar title={t("settings")} back="/profile" settings={false} />
 
-      <div className="space-y-6 px-5 pt-5 pb-10">
-        {/* Appearance Section */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Palette className="size-4 text-primary" /> Appearance
-          </h3>
-          <div className="card-surface p-4 space-y-4">
+      <div className="space-y-6 px-5 pt-5 pb-10 lg:mx-auto lg:max-w-3xl">
+        {/* Personal information */}
+        <Section icon={User} title="Personal information">
+          <div className="card-surface hover-lift space-y-3 p-4">
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("fullName")} *
+              </span>
+              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                <User className="size-4 text-muted-foreground" />
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-invalid={!!errors.name}
+                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
+                />
+              </div>
+              {errors.name && <p className="mt-1 text-[11px] font-semibold text-destructive">{errors.name}</p>}
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("phone")} *
+              </span>
+              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                <Phone className="size-4 text-muted-foreground" />
+                <input
+                  value={phone}
+                  inputMode="numeric"
+                  maxLength={10}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  aria-invalid={!!errors.phone}
+                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
+                />
+              </div>
+              {errors.phone && (
+                <p className="mt-1 text-[11px] font-semibold text-destructive">{errors.phone}</p>
+              )}
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("village")}
+              </span>
+              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                <MapPin className="size-4 text-muted-foreground" />
+                <input
+                  value={village}
+                  onChange={(e) => setVillage(e.target.value)}
+                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
+                />
+              </div>
+            </label>
+            <button
+              onClick={saveProfile}
+              className="press grad-primary flex h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground"
+            >
+              {t("save")}
+            </button>
+          </div>
+        </Section>
+
+        {/* Appearance */}
+        <Section icon={Palette} title="Appearance">
+          <div className="card-surface hover-lift space-y-4 p-4">
             <div className="space-y-3">
               <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Theme
               </Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                 {themes.map((th) => (
                   <button
                     key={th.id}
                     onClick={() => setTheme(th.id)}
-                    className={`press flex items-center gap-2 rounded-xl border p-2.5 text-left transition-colors ${
-                      theme === th.id ? "border-primary bg-primary/10" : "border-border bg-card"
+                    className={`press flex items-center gap-2 rounded-xl border p-2.5 text-left transition-all duration-300 ${
+                      theme === th.id
+                        ? "border-primary bg-primary/10 shadow-[var(--shadow-card)]"
+                        : "border-border bg-card"
                     }`}
                   >
                     <span className="flex shrink-0 gap-0.5">
@@ -98,36 +292,54 @@ function SettingsPage() {
                       ))}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-xs font-bold">{th.label}</span>
-                    {theme === th.id && <Check className="size-3.5 shrink-0 text-primary" strokeWidth={3} />}
+                    {theme === th.id && (
+                      <Check className="size-3.5 shrink-0 text-primary" strokeWidth={3} />
+                    )}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold">Compact Mode</Label>
-                <p className="text-[11px] text-muted-foreground">Show more content on screen</p>
-              </div>
-              <Switch 
-                checked={settings.appearance.density === "compact"}
-                onCheckedChange={(checked) => setAppearance({ density: checked ? "compact" : "comfortable" })}
-              />
-            </div>
           </div>
-        </section>
+        </Section>
 
-        {/* Language Section */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Globe className="size-4 text-primary" /> Language
-          </h3>
+        {/* Accessibility */}
+        <Section icon={Accessibility} title="Accessibility">
+          <div className="card-surface hover-lift space-y-4 p-4">
+            <Toggle
+              label="Compact Mode"
+              hint="Tighter spacing so more fits on screen"
+              checked={settings.appearance.density === "compact"}
+              onChange={(v) => setAppearance({ density: v ? "compact" : "comfortable" })}
+            />
+            <Toggle
+              label="Larger Text"
+              hint="Increase text size across the app"
+              checked={settings.appearance.textSize === "lg"}
+              onChange={(v) => setAppearance({ textSize: v ? "lg" : "md" })}
+            />
+            <Toggle
+              label="Reduce Motion"
+              hint="Minimise animations and transitions"
+              checked={settings.appearance.reduceMotion}
+              onChange={(v) => setAppearance({ reduceMotion: v })}
+            />
+            <Toggle
+              label="High Contrast"
+              hint="Stronger borders and text contrast"
+              checked={settings.appearance.highContrast}
+              onChange={(v) => setAppearance({ highContrast: v })}
+            />
+          </div>
+        </Section>
+
+        {/* Language */}
+        <Section icon={Globe} title={t("language")}>
           <div className="card-surface p-2">
             {(Object.keys(langNames) as Lang[]).map((l) => (
               <button
                 key={l}
                 onClick={() => changeLanguage(l)}
-                className={`press flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-bold ${
+                className={`press flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-bold transition-colors duration-300 ${
                   lang === l ? "bg-primary/10 text-primary" : "text-foreground"
                 }`}
               >
@@ -136,106 +348,114 @@ function SettingsPage() {
               </button>
             ))}
           </div>
-        </section>
+        </Section>
 
-        {/* Notifications Section */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Bell className="size-4 text-primary" /> Notifications
-          </h3>
-          <div className="card-surface p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold">Market Updates</Label>
-                <p className="text-[11px] text-muted-foreground">Daily price alerts for your crops</p>
-              </div>
-              <Switch 
-                checked={settings.notifications.market}
-                onCheckedChange={(checked) => setNotifications({ market: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-bold">Weather Alerts</Label>
-                <p className="text-[11px] text-muted-foreground">Severe weather warnings for your farm</p>
-              </div>
-              <Switch 
-                checked={settings.notifications.weather}
-                onCheckedChange={(checked) => setNotifications({ weather: checked })}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Data & API status */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Activity className="size-4 text-primary" /> Data &amp; API status
-          </h3>
-          <div className="card-surface space-y-3 p-4">
-            {status.isLoading ? (
-              <p className="text-xs text-muted-foreground">Checking official data sources…</p>
-            ) : status.isError || !status.data ? (
-              <p className="text-xs text-muted-foreground">
-                Source health is unavailable right now.
+        {/* Notifications */}
+        <Section icon={Bell} title="Notifications">
+          <div className="card-surface hover-lift space-y-4 p-4">
+            <Toggle
+              label="Market Updates"
+              hint="New official mandi prices for your saved crops"
+              checked={settings.notifications.market}
+              onChange={(v) => void enableAlerts("market", v)}
+            />
+            <Toggle
+              label="Weather Alerts"
+              hint="Severe weather warnings for your farm location"
+              checked={settings.notifications.weather}
+              onChange={(v) => void enableAlerts("weather", v)}
+            />
+            <Toggle
+              label="System Notifications"
+              hint="App updates and important announcements"
+              checked={settings.notifications.updates}
+              onChange={(v) => void enableAlerts("updates", v)}
+            />
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+              <p className="text-[11px] text-muted-foreground">
+                {permission === "granted"
+                  ? "Alerts are allowed on this device."
+                  : permission === "denied"
+                    ? "Alerts are blocked in your browser settings."
+                    : permission === "unsupported"
+                      ? "This browser does not support push alerts."
+                      : "Turn an alert on to allow notifications."}
               </p>
-            ) : (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold capitalize">
-                      Overall: {status.data.overall.replace("_", " ")}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {status.data.latestDataDate
-                        ? `Latest official market date: ${formatIstDate(status.data.latestDataDate)}`
-                        : "No official market date recorded yet"}
-                    </p>
-                  </div>
-                  <FreshnessBadge freshness={status.data.freshness} />
-                </div>
-
-                <ul className="space-y-2 border-t border-border pt-3">
-                  {status.data.providers.map((p) => (
-                    <li key={p.id} className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-bold">{p.name}</p>
-                        <p className="truncate text-[10px] text-muted-foreground">
-                          {p.coverage}
-                          {p.requiresKey ? (p.configured ? " · key configured" : " · key missing") : ""}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
-                          p.status === "healthy"
-                            ? "bg-primary/10 text-primary ring-primary/25"
-                            : p.status === "degraded"
-                              ? "bg-amber-500/10 text-amber-600 ring-amber-500/25 dark:text-amber-400"
-                              : p.status === "down"
-                                ? "bg-destructive/10 text-destructive ring-destructive/25"
-                                : "bg-muted text-muted-foreground ring-border"
-                        }`}
-                      >
-                        {p.status.replace("_", " ")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="text-[10px] text-muted-foreground">
-                  Checked {formatIstDateTime(status.data.generatedAt)} IST · MarketMitra never shows
-                  an estimated or generated price.
-                </p>
-              </>
-            )}
+              <button
+                onClick={previewNotification}
+                className="press shrink-0 rounded-xl border border-border px-3 py-2 text-xs font-bold"
+              >
+                Preview
+              </button>
+            </div>
           </div>
-        </section>
+        </Section>
+
+        {/* Farming preferences */}
+        <Section icon={Sprout} title="Farming preferences">
+          <div className="card-surface space-y-3 p-4">
+            <div>
+              <Label className="text-sm font-bold">{t("savedCrops")}</Label>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Saved crops decide what your dashboard and alerts track.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {crops.map((c) => {
+                const active = saved.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleCrop(c.id)}
+                    className={`press inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold transition-colors duration-300 ${
+                      active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"
+                    }`}
+                  >
+                    <span className="text-base">{c.emoji}</span>
+                    {c.name[lang]}
+                    {active ? (
+                      <Check className="size-3.5" strokeWidth={3} />
+                    ) : (
+                      <Sprout className="size-3.5" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <Link
+              to="/weather"
+              className="press flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm font-bold"
+            >
+              <span className="flex items-center gap-2">
+                <MapPin className="size-4 text-primary" /> Farm location &amp; weather
+              </span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+          </div>
+        </Section>
+
+        {/* Privacy */}
+        <Section icon={Shield} title="Privacy">
+          <div className="card-surface p-2">
+            <button
+              onClick={handleReset}
+              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold"
+            >
+              <RotateCcw className="size-4 text-primary" />
+              Reset app settings
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="size-4" />
+              Sign Out
+            </button>
+          </div>
+        </Section>
 
         {/* About */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Info className="size-4 text-primary" /> About
-          </h3>
+        <Section icon={Info} title="About">
           <div className="card-surface p-2">
             <Link
               to="/about"
@@ -245,27 +465,10 @@ function SettingsPage() {
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
           </div>
-        </section>
+        </Section>
 
-
-        {/* Account Section */}
-        <section className="space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Shield className="size-4 text-primary" /> Account
-          </h3>
-          <div className="card-surface p-2">
-            <button
-              onClick={handleSignOut}
-              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="size-4" />
-              Sign Out
-            </button>
-          </div>
-        </section>
-
-        <div className="text-center pt-4">
-          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+        <div className="pt-2 text-center">
+          <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             Market Mitra v1.0.0
           </p>
         </div>

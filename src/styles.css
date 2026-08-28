@@ -488,3 +488,78 @@
     }
   }
 }
+
+/* ---------- Global accessibility & density preferences ---------- */
+
+@layer base {
+  /* Larger / smaller text: scales type only, icons and layout stay put. */
+  html[data-text-size="lg"] {
+    font-size: 18px;
+  }
+  html[data-text-size="sm"] {
+    font-size: 15px;
+  }
+
+  /* Compact mode: tightens vertical rhythm app-wide without touching layout logic. */
+  html[data-density="compact"] {
+    --mm-space-scale: 0.72;
+  }
+  html[data-density="compact"] body {
+    --mm-compact: 1;
+  }
+  html[data-density="compact"] .card-surface {
+    border-radius: var(--radius-lg);
+  }
+  html[data-density="compact"] main,
+  html[data-density="compact"] .animate-page {
+    transition: padding 0.25s ease;
+  }
+  html[data-density="compact"] .animate-page :is(section, header, footer, div) {
+    /* shrink generous paddings/gaps produced by the utility classes */
+    &:is(.p-5, .p-6) {
+      padding: 0.85rem;
+    }
+    &:is(.p-4) {
+      padding: 0.7rem;
+    }
+    &:is(.py-5, .py-6) {
+      padding-block: 0.8rem;
+    }
+    &:is(.pt-5, .pt-6) {
+      padding-top: 0.8rem;
+    }
+    &:is(.space-y-6) > * + * {
+      margin-top: 0.9rem;
+    }
+    &:is(.space-y-5) > * + * {
+      margin-top: 0.75rem;
+    }
+    &:is(.space-y-4) > * + * {
+      margin-top: 0.6rem;
+    }
+    &:is(.gap-4, .gap-5) {
+      gap: 0.65rem;
+    }
+  }
+
+  /* Reduce motion preference stored in app settings. */
+  html[data-motion="reduced"] {
+    scroll-behavior: auto;
+  }
+  html[data-motion="reduced"] *,
+  html[data-motion="reduced"] *::before,
+  html[data-motion="reduced"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* High contrast: stronger borders and text separation on every theme. */
+  html[data-contrast="high"] {
+    --color-border: color-mix(in oklab, var(--color-foreground) 45%, transparent);
+    --color-muted-foreground: color-mix(in oklab, var(--color-foreground) 82%, transparent);
+  }
+  html[data-contrast="high"] .card-surface {
+    border-width: 2px;
+  }
+}
