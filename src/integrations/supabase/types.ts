@@ -161,6 +161,299 @@ export type Database = {
         }
         Relationships: []
       }
+      link_cluster_members: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          estimated_hours: number | null
+          farmer_id: string
+          id: string
+          request_id: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          estimated_hours?: number | null
+          farmer_id: string
+          id?: string
+          request_id: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          estimated_hours?: number | null
+          farmer_id?: string
+          id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_cluster_members_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "link_clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_cluster_members_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "link_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_clusters: {
+        Row: {
+          created_at: string
+          district: string | null
+          id: string
+          listing_id: string | null
+          provider_id: string | null
+          resource_type: string
+          state: string | null
+          status: string
+          updated_at: string
+          window_date: string
+        }
+        Insert: {
+          created_at?: string
+          district?: string | null
+          id?: string
+          listing_id?: string | null
+          provider_id?: string | null
+          resource_type: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          window_date: string
+        }
+        Update: {
+          created_at?: string
+          district?: string | null
+          id?: string
+          listing_id?: string | null
+          provider_id?: string | null
+          resource_type?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          window_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_clusters_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "link_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_listings: {
+        Row: {
+          available_from: string
+          available_to: string
+          category: string
+          condition: string | null
+          created_at: string
+          description: string | null
+          district: string | null
+          id: string
+          last_confirmed_at: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          negotiable: boolean
+          owner_id: string
+          photos: string[]
+          price: number | null
+          pricing_model: string
+          quantity: number | null
+          resource_type: string
+          service_area: string | null
+          state: string | null
+          status: string
+          terms: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          available_from: string
+          available_to: string
+          category: string
+          condition?: string | null
+          created_at?: string
+          description?: string | null
+          district?: string | null
+          id?: string
+          last_confirmed_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          negotiable?: boolean
+          owner_id: string
+          photos?: string[]
+          price?: number | null
+          pricing_model: string
+          quantity?: number | null
+          resource_type: string
+          service_area?: string | null
+          state?: string | null
+          status?: string
+          terms?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          available_from?: string
+          available_to?: string
+          category?: string
+          condition?: string | null
+          created_at?: string
+          description?: string | null
+          district?: string | null
+          id?: string
+          last_confirmed_at?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          negotiable?: boolean
+          owner_id?: string
+          photos?: string[]
+          price?: number | null
+          pricing_model?: string
+          quantity?: number | null
+          resource_type?: string
+          service_area?: string | null
+          state?: string | null
+          status?: string
+          terms?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      link_matches: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          provider_id: string
+          reason: string | null
+          request_id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          provider_id: string
+          reason?: string | null
+          request_id: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          provider_id?: string
+          reason?: string | null
+          request_id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "link_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_matches_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "link_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_requests: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          budget_mode: string
+          budget_unit: string | null
+          category: string
+          created_at: string
+          district: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          needed_date: string
+          note: string | null
+          quantity: number | null
+          requester_id: string
+          resource_type: string
+          state: string | null
+          status: string
+          time_from: string | null
+          time_to: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_mode?: string
+          budget_unit?: string | null
+          category: string
+          created_at?: string
+          district?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          needed_date: string
+          note?: string | null
+          quantity?: number | null
+          requester_id: string
+          resource_type: string
+          state?: string | null
+          status?: string
+          time_from?: string | null
+          time_to?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_mode?: string
+          budget_unit?: string | null
+          category?: string
+          created_at?: string
+          district?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          needed_date?: string
+          note?: string | null
+          quantity?: number | null
+          requester_id?: string
+          resource_type?: string
+          state?: string | null
+          status?: string
+          time_from?: string | null
+          time_to?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_prices: {
         Row: {
           arrival_date: string
@@ -333,6 +626,8 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           phone: string | null
+          phone_verified: boolean
+          phone_verified_at: string | null
           saved_crops: string[]
           state: string | null
           updated_at: string
@@ -347,6 +642,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           saved_crops?: string[]
           state?: string | null
           updated_at?: string
@@ -361,6 +658,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           saved_crops?: string[]
           state?: string | null
           updated_at?: string
@@ -427,6 +726,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      link_provider_contact: {
+        Args: { _match_id: string }
+        Returns: {
+          full_name: string
+          phone: string
+          phone_verified: boolean
+          phone_verified_at: string
+        }[]
       }
     }
     Enums: {
