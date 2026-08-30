@@ -110,7 +110,7 @@ export const getLinkOverview = createServerFn({ method: "GET" })
         .select("id, status, requester_id, provider_id, created_at, link_listings(name, resource_type), link_requests(needed_date)")
         .order("created_at", { ascending: false })
         .limit(20),
-      supabase.rpc("link_cluster_opportunities", { _state: null, _district: null }),
+      supabase.rpc("link_cluster_opportunities", {}),
     ]);
 
     const listings = ((listingsRes.data ?? []) as unknown as LinkListing[]);
