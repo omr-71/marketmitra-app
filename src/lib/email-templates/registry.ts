@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { template as phoneCodeTemplate } from './phone-code'
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -18,8 +19,5 @@ export interface TemplateEntry {
  *   // then add to TEMPLATES: 'welcome': welcomeTemplate
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  get 'phone-code'() {
-    // Lazily required to keep the registry import cheap for other callers.
-    return (require('./phone-code') as { template: TemplateEntry }).template
-  },
+  'phone-code': phoneCodeTemplate,
 }
