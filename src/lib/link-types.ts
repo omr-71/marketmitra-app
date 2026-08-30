@@ -210,3 +210,44 @@ export function approxDistance(km: number | null) {
   if (km < 1) return "< 1 km";
   return `~ ${km.toFixed(km < 10 ? 1 : 0)} km`;
 }
+
+/** Human labels for the V1 vocabulary — no invented catalogue entries. */
+export const TYPE_LABELS: Record<string, string> = {
+  tractor: "Tractor",
+  harvester: "Harvester",
+  rotavator: "Rotavator",
+  sprayer: "Sprayer (water only)",
+  seed_drill: "Seed drill",
+  thresher: "Thresher",
+  plough: "Plough",
+  water_pump: "Water pump",
+  other_machine: "Other machine",
+  crates: "Crates",
+  tarpaulin: "Tarpaulin",
+  hand_tools: "Hand tools",
+  implements: "Implements",
+  weighing_equipment: "Weighing equipment",
+  irrigation_pipes: "Irrigation pipes",
+  storage_bags: "Storage bags",
+  other_resource: "Other resource",
+};
+
+export const PRICING_LABELS: Record<PricingModel, string> = {
+  free: "Free",
+  per_hour: "Per hour",
+  per_day: "Per day",
+  per_acre: "Per acre",
+  per_unit: "Per unit",
+  fixed: "Fixed total",
+  negotiable: "Negotiable",
+};
+
+export function typeLabel(type: string) {
+  return TYPE_LABELS[type] ?? type.replace(/_/g, " ");
+}
+
+/** Transparent equal split of a provider-stated price among cluster members. */
+export function shareCost(price: number | null, farmers: number) {
+  if (price == null || farmers < 2) return null;
+  return Math.round((price / farmers) * 100) / 100;
+}
