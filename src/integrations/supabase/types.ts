@@ -760,6 +760,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_cluster_opportunities: {
+        Args: { _district?: string; _state?: string }
+        Returns: {
+          district: string
+          farmer_count: number
+          resource_type: string
+          state: string
+          window_date: string
+        }[]
+      }
       link_provider_contact: {
         Args: { _match_id: string }
         Returns: {
