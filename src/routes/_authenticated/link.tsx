@@ -65,7 +65,7 @@ export const Route = createFileRoute("/_authenticated/link")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: LinkPage;
+  component: LinkPage,
 });
 
 /* ------------------------------- small parts ------------------------------ */
