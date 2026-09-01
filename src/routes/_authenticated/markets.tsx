@@ -308,8 +308,9 @@ function MarketsPage() {
                           {older ? " (older report)" : ""}
                         </p>
                         <p className="truncate text-[10px] text-muted-foreground">
-                          {row.record.source}
+                          {row.record.marketName ?? ""}
                         </p>
+
                       </div>
                       {isBest && (
                         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
