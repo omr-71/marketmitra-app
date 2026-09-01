@@ -1,4 +1,4 @@
-import { formatIstDate, formatIstDateTime } from "@/lib/format";
+import { formatIstDate } from "@/lib/format";
 import { freshnessTone, type Freshness } from "@/lib/market-freshness";
 import type { AggregateResult } from "@/lib/market-types";
 
@@ -22,8 +22,8 @@ export function FreshnessBadge({
 }
 
 /**
- * One provenance line for an aggregated result: data date, source, fetch time
- * and, when relevant, an explicit archive warning.
+ * Farmer-facing update line for an aggregated result. Shows the official
+ * reporting date only — provider/source names stay internal.
  */
 export function DataProvenance({
   result,
@@ -39,16 +39,7 @@ export function DataProvenance({
     <div className={`space-y-1 text-[11px] leading-relaxed text-muted-foreground ${className}`}>
       <p>
         {date ? <>Market data date: {formatIstDate(date)}</> : <>No market data date available</>}
-        {result.sourceUpdatedAt ? (
-          <> · Source published {formatIstDateTime(result.sourceUpdatedAt)} IST</>
-        ) : null}
       </p>
-      <p>
-        Source: {result.source ?? "—"} · Fetched {formatIstDateTime(result.fetchedAt)} IST
-      </p>
-      {result.corroboratedBy.length > 0 && (
-        <p>Also reported the same date: {result.corroboratedBy.join(", ")}</p>
-      )}
       {result.archive && (
         <p className="font-semibold text-amber-600 dark:text-amber-400">
           Last stored official record — this is not today&apos;s price.
@@ -57,6 +48,7 @@ export function DataProvenance({
     </div>
   );
 }
+
 
 export function UnavailableState({
   onRetry,

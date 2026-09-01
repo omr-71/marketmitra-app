@@ -307,8 +307,6 @@ function WeatherPage() {
                     : `${t("lastUpdated")}: ${formatIstDateTime(
                         data.updatedAt,
                       )} IST`}
-                  <br />
-                  Source: {data.source} weather API
                 </p>
               </section>
 
