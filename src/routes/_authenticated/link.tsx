@@ -121,7 +121,7 @@ function Empty({ text }: { text: string }) {
   );
 }
 
-function Photo({ url, className = "" }: { url?: string; className?: string }) {
+function Photo({ url, className = "" }: { url?: string | undefined; className?: string }) {
   if (!url) {
     return (
       <div
