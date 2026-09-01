@@ -2,9 +2,9 @@ import type { MandiPricesResult } from "@/lib/market.functions";
 import { formatIstDate, formatIstDateTime } from "@/lib/format";
 
 /**
- * One clean provenance line. The price date always comes from the official
- * record's reporting date and the publish time from the data.gov.in dataset —
- * MarketMitra's own fetch time is never shown as the price date.
+ * One clean update line. The price date always comes from the official
+ * record's reporting date — MarketMitra's own fetch time is never shown as the
+ * price date. Provider/source names are intentionally not shown to farmers.
  */
 export function SourceNote({
   result,
@@ -16,14 +16,11 @@ export function SourceNote({
   className?: string;
 }) {
   const date = priceDate || result.latestDate;
+  if (!date) return null;
   return (
     <p className={`text-[11px] leading-relaxed text-muted-foreground ${className}`}>
-      {date ? <>Updated: {formatIstDate(date)}</> : null}
-      {result.sourceUpdatedAt ? (
-        <> · Source published {formatIstDateTime(result.sourceUpdatedAt)} IST</>
-      ) : null}
-      <br />
-      Source: {result.source}
+      Updated: {formatIstDate(date)}
     </p>
   );
 }
+
