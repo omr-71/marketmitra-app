@@ -68,7 +68,7 @@ const values = [
   {
     icon: <ShieldCheck className="size-5 text-primary" />,
     title: "Real data only",
-    body: "Prices come from official APMC / Agmarknet reporting and weather from Open-Meteo. Nothing is estimated or invented.",
+    body: "Prices come from official APMC mandi reporting and weather from verified meteorological data. Nothing is estimated or invented.",
   },
   {
     icon: <Compass className="size-5 text-primary" />,
@@ -91,7 +91,7 @@ const whyUs = [
   {
     icon: <Gauge className="size-5 text-primary" />,
     title: "Live, verified sources",
-    body: "Official APMC / Agmarknet price feeds and Open-Meteo weather, timestamped in IST on every screen.",
+    body: "Official APMC mandi price feeds and verified weather data, timestamped in IST on every screen.",
   },
   {
     icon: <Languages className="size-5 text-primary" />,

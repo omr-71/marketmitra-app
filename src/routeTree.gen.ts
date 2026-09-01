@@ -15,6 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedCropsRouteImport } from './routes/_authenticated/crops'
 import { Route as AuthenticatedDiagnoseRouteImport } from './routes/_authenticated/diagnose'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -56,6 +57,11 @@ const AuthRoute = AuthRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedCropsRoute = AuthenticatedCropsRouteImport.update({
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/crops': typeof AuthenticatedCropsRoute
   '/_authenticated/diagnose': typeof AuthenticatedDiagnoseRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/reset-password'
+    | '/terms'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/reset-password'
+    | '/terms'
     | '/crops'
     | '/diagnose'
     | '/home'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/reset-password'
+    | '/terms'
     | '/_authenticated/crops'
     | '/_authenticated/diagnose'
     | '/_authenticated/home'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TermsRoute: typeof TermsRoute
   ApiChatRoute: typeof ApiChatRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/crops': {
@@ -439,6 +459,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TermsRoute: TermsRoute,
   ApiChatRoute: ApiChatRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
