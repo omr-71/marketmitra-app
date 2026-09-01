@@ -29,6 +29,7 @@ const dict = {
   schemes: { en: "Schemes", mr: "योजना", hi: "योजनाएँ" },
   profile: { en: "Profile", mr: "प्रोफाइल", hi: "प्रोफ़ाइल" },
   diagnose: { en: "Diagnose", mr: "रोग ओळख", hi: "रोग पहचान" },
+  mitraLink: { en: "Mitra Link", mr: "मित्र लिंक", hi: "मित्र लिंक" },
 
   todayPrices: { en: "Today's crop prices", mr: "आजचे पीक दर", hi: "आज के फसल भाव" },
   quickActions: { en: "Quick actions", mr: "झटपट क्रिया", hi: "क्विक एक्शन" },

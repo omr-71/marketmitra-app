@@ -9,6 +9,7 @@ import {
   Info,
   Mail,
   Stethoscope,
+  Handshake,
   Settings,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -20,6 +21,7 @@ import { BrandLockup, LogoMark, Wordmark } from "./brand";
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
   { to: "/crops", icon: Store, key: "markets" as const },
+  { to: "/link", icon: Handshake, key: "mitraLink" as const },
   { to: "/diagnose", icon: Stethoscope, key: "diagnose" as const },
   { to: "/weather", icon: CloudSun, key: "weather" as const },
   { to: "/schemes", icon: Landmark, key: "schemes" as const },
@@ -108,7 +110,7 @@ export function SideNav() {
       </Link>
 
       <p className="mt-3 px-3 text-[11px] leading-relaxed text-muted-foreground">
-        Official APMC / Agmarknet prices · WeatherAPI.com weather
+        Official APMC mandi prices · Verified weather data
         <br />
         English · मराठी · हिंदी
       </p>
@@ -206,6 +208,9 @@ export function SiteFooter() {
       <div className="flex flex-col items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:justify-center sm:gap-5">
         <p>© 2026 Market Mitra.All rights reserved</p>
         <p>Developed by Om Labhade</p>
+        <Link to="/terms" className="transition-colors hover:text-primary">
+          Terms &amp; Conditions
+        </Link>
         <a
           href="mailto:hello.marketmitra@gmail.com"
           className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
