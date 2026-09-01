@@ -9,6 +9,7 @@ import {
   Info,
   Mail,
   Stethoscope,
+  Handshake,
   Settings,
 } from "lucide-react";
 import type { ReactNode } from "react";
