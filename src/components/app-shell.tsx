@@ -208,6 +208,9 @@ export function SiteFooter() {
       <div className="flex flex-col items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:justify-center sm:gap-5">
         <p>© 2026 Market Mitra.All rights reserved</p>
         <p>Developed by Om Labhade</p>
+        <Link to="/terms" className="transition-colors hover:text-primary">
+          Terms &amp; Conditions
+        </Link>
         <a
           href="mailto:hello.marketmitra@gmail.com"
           className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
