@@ -20,6 +20,7 @@ import { BrandLockup, LogoMark, Wordmark } from "./brand";
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
   { to: "/crops", icon: Store, key: "markets" as const },
+  { to: "/link", icon: Handshake, key: "mitraLink" as const },
   { to: "/diagnose", icon: Stethoscope, key: "diagnose" as const },
   { to: "/weather", icon: CloudSun, key: "weather" as const },
   { to: "/schemes", icon: Landmark, key: "schemes" as const },
