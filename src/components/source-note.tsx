@@ -1,5 +1,5 @@
 import type { MandiPricesResult } from "@/lib/market.functions";
-import { formatIstDate, formatIstDateTime } from "@/lib/format";
+import { formatIstDate } from "@/lib/format";
 
 /**
  * One clean update line. The price date always comes from the official
