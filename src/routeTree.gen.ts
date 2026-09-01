@@ -18,6 +18,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedCropsRouteImport } from './routes/_authenticated/crops'
 import { Route as AuthenticatedDiagnoseRouteImport } from './routes/_authenticated/diagnose'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedLinkRouteImport } from './routes/_authenticated/link'
 import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
 import { Route as AuthenticatedPredictRouteImport } from './routes/_authenticated/predict'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -70,6 +71,11 @@ const AuthenticatedDiagnoseRoute = AuthenticatedDiagnoseRouteImport.update({
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLinkRoute = AuthenticatedLinkRouteImport.update({
+  id: '/link',
+  path: '/link',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/link': typeof AuthenticatedLinkRoute
   '/markets': typeof AuthenticatedMarketsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/link': typeof AuthenticatedLinkRoute
   '/markets': typeof AuthenticatedMarketsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/crops': typeof AuthenticatedCropsRoute
   '/_authenticated/diagnose': typeof AuthenticatedDiagnoseRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/link': typeof AuthenticatedLinkRoute
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
   '/_authenticated/predict': typeof AuthenticatedPredictRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/crops'
     | '/diagnose'
     | '/home'
+    | '/link'
     | '/markets'
     | '/predict'
     | '/profile'
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/crops'
     | '/diagnose'
     | '/home'
+    | '/link'
     | '/markets'
     | '/predict'
     | '/profile'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/_authenticated/crops'
     | '/_authenticated/diagnose'
     | '/_authenticated/home'
+    | '/_authenticated/link'
     | '/_authenticated/markets'
     | '/_authenticated/predict'
     | '/_authenticated/profile'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/link': {
+      id: '/_authenticated/link'
+      path: '/link'
+      fullPath: '/link'
+      preLoaderRoute: typeof AuthenticatedLinkRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/markets': {
       id: '/_authenticated/markets'
       path: '/markets'
@@ -386,6 +405,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCropsRoute: typeof AuthenticatedCropsRoute
   AuthenticatedDiagnoseRoute: typeof AuthenticatedDiagnoseRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedLinkRoute: typeof AuthenticatedLinkRoute
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedPredictRoute: typeof AuthenticatedPredictRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -399,6 +419,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCropsRoute: AuthenticatedCropsRoute,
   AuthenticatedDiagnoseRoute: AuthenticatedDiagnoseRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedLinkRoute: AuthenticatedLinkRoute,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedPredictRoute: AuthenticatedPredictRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
