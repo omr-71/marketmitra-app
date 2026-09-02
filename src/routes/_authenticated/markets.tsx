@@ -307,9 +307,6 @@ function MarketsPage() {
                           {row.record.district} · {formatIstDate(row.record.date)}
                           {older ? " (older report)" : ""}
                         </p>
-                        <p className="truncate text-[10px] text-muted-foreground">
-                          {row.record.marketName ?? ""}
-                        </p>
 
                       </div>
                       {isBest && (
