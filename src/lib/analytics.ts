@@ -22,6 +22,7 @@ export type AnalyticsEvent =
   | "mitra_ai_opened"
   | "mitra_ai_message"
   | "mitra_ai_error"
+  | "mitra_ai_retry"
   | "scheme_viewed"
   | "prediction_viewed";
 

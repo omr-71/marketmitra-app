@@ -15,7 +15,7 @@ import {
   Volume2,
   VolumeX,
   RotateCcw,
-  SlidersHorizontal,
+  RefreshCw,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -37,7 +37,8 @@ import { track } from "@/lib/analytics";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
-import { useSpeech, useSpeechRecognition, useVoicePrefs } from "@/lib/voice";
+import { resolveLang, useSettings } from "@/lib/settings";
+import { useSpeech, useSpeechRecognition } from "@/lib/voice";
 
 
 const CHAT_STORAGE_KEY = "mm-mitra-chat";
@@ -187,7 +188,7 @@ export function MitraAI() {
 
 
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, regenerate, status, error } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -237,11 +238,19 @@ export function MitraAI() {
     if (open && status === "ready") inputRef.current?.focus();
   }, [open, status]);
 
-  /* ---------------------------------------------------------------- voice */
-  const { prefs, update } = useVoicePrefs();
-  const speech = useSpeech(lang, prefs);
+  /* ------------------------------------------- voice (configured in Settings) */
+  const { settings } = useSettings();
+  const voicePrefs = useMemo(
+    () => ({
+      voiceId: settings.voice.voiceId,
+      rate: settings.voice.speed,
+      volume: settings.voice.volume,
+      expressive: settings.voice.emotional,
+    }),
+    [settings.voice],
+  );
+  const speech = useSpeech(resolveLang(settings.voice.lang, lang), voicePrefs);
   const mic = useSpeechRecognition(lang);
-  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
 
   const send = useCallback(
     (value: string) => {
@@ -290,11 +299,30 @@ export function MitraAI() {
   // Read the finished answer aloud when the farmer asked for spoken replies.
   const spokenRef = useRef("");
   useEffect(() => {
-    if (!prefs.autoSpeak || busy || !lastAssistantText) return;
+    if (!settings.voice.autoPlay || busy || !lastAssistantText) return;
     if (spokenRef.current === lastAssistantText) return;
     spokenRef.current = lastAssistantText;
     speech.speak(lastAssistantText);
-  }, [prefs.autoSpeak, busy, lastAssistantText, speech]);
+  }, [settings.voice.autoPlay, busy, lastAssistantText, speech]);
+
+  /* Regenerate the latest answer without duplicating the farmer's question. */
+  const lastAssistantId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i]?.role === "assistant") return messages[i]!.id;
+    }
+    return null;
+  }, [messages]);
+
+  const retry = useCallback(
+    (messageId: string) => {
+      if (busy) return;
+      speech.stop();
+      spokenRef.current = "";
+      track("mitra_ai_retry");
+      void regenerate({ messageId });
+    },
+    [busy, regenerate, speech],
+  );
 
   const voiceStatus = mic.listening
     ? copy.listening[lang]
