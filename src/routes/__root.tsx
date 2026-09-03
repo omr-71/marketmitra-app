@@ -16,6 +16,7 @@ import { SessionProvider } from "../lib/session";
 import { LocationProvider } from "../lib/location";
 import { ThemeProvider } from "../lib/theme";
 import { AuthProvider } from "../lib/auth";
+import { SettingsProvider } from "../lib/settings";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
