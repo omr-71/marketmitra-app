@@ -193,12 +193,14 @@ function RootComponent() {
       <SessionProvider>
         <LocationProvider>
         <LangProvider>
+        <SettingsProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <SplashOverlay />
           <Outlet />
           <MitraAI />
           <Toaster position="top-center" richColors />
 
+        </SettingsProvider>
         </LangProvider>
         </LocationProvider>
       </SessionProvider>
