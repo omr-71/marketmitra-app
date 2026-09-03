@@ -92,6 +92,7 @@ const copy = {
   stopMic: { en: "Stop recording", mr: "रेकॉर्डिंग थांबवा", hi: "रिकॉर्डिंग रोकें" },
   cancelMic: { en: "Cancel", mr: "रद्द करा", hi: "रद्द करें" },
   stopSpeak: { en: "Stop speaking", mr: "बोलणे थांबवा", hi: "बोलना रोकें" },
+  retry: { en: "Retry", mr: "पुन्हा", hi: "फिर से" },
   replay: { en: "Replay answer", mr: "उत्तर पुन्हा ऐका", hi: "उत्तर दोबारा सुनें" },
   voiceSettings: { en: "Voice settings", mr: "आवाज सेटिंग", hi: "आवाज़ सेटिंग" },
   voiceType: { en: "Voice", mr: "आवाज", hi: "आवाज़" },
