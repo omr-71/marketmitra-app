@@ -69,7 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
     keepHistory: true,
   },
   voice: {
-    voiceId: "aarohi",
+    voiceId: "warm-female",
     lang: "auto",
     speed: 1,
     volume: 1,
