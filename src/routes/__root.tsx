@@ -16,6 +16,7 @@ import { SessionProvider } from "../lib/session";
 import { LocationProvider } from "../lib/location";
 import { ThemeProvider } from "../lib/theme";
 import { AuthProvider } from "../lib/auth";
+import { SettingsProvider } from "../lib/settings";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
@@ -193,12 +194,14 @@ function RootComponent() {
       <SessionProvider>
         <LocationProvider>
         <LangProvider>
+        <SettingsProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <SplashOverlay />
           <Outlet />
           <MitraAI />
           <Toaster position="top-center" richColors />
 
+        </SettingsProvider>
         </LangProvider>
         </LocationProvider>
       </SessionProvider>
