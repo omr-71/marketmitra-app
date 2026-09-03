@@ -15,11 +15,13 @@ import {
   Shield,
   Sprout,
   User,
+  Volume2,
 } from "lucide-react";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
+import { VOICE_PERSONALITIES } from "@/lib/voice";
 import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
 import { crops, type Lang } from "@/lib/crops";
@@ -93,7 +95,7 @@ function SettingsPage() {
   const { signOut } = useAuth();
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
-  const { settings, setNotifications, setAppearance, reset } = useSettings();
+  const { settings, setNotifications, setAppearance, setVoice, reset } = useSettings();
   const { profile, updateProfile } = useSession();
 
   const [name, setName] = useState("");
@@ -347,6 +349,74 @@ function SettingsPage() {
                 {lang === l && <Check className="size-4" strokeWidth={3} />}
               </button>
             ))}
+          </div>
+        </Section>
+
+        {/* Mitra voice */}
+        <Section icon={Volume2} title="Mitra voice">
+          <div className="card-surface hover-lift space-y-4 p-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Voice personality
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {VOICE_PERSONALITIES.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVoice({ voiceId: v.id })}
+                    className={`press rounded-xl border px-3 py-2.5 text-left text-[13px] font-bold transition-colors ${
+                      settings.voice.voiceId === v.id
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border/70 text-foreground"
+                    }`}
+                  >
+                    {v.label[lang]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-center justify-between gap-3 text-sm font-semibold">
+              <span>Speaking speed</span>
+              <input
+                type="range"
+                min={0.7}
+                max={1.4}
+                step={0.1}
+                value={settings.voice.speed}
+                onChange={(e) => setVoice({ speed: Number(e.currentTarget.value) })}
+                className="w-36 accent-[var(--color-primary)]"
+                aria-label="Speaking speed"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-3 text-sm font-semibold">
+              <span>Volume</span>
+              <input
+                type="range"
+                min={0.2}
+                max={1}
+                step={0.1}
+                value={settings.voice.volume}
+                onChange={(e) => setVoice({ volume: Number(e.currentTarget.value) })}
+                className="w-36 accent-[var(--color-primary)]"
+                aria-label="Volume"
+              />
+            </label>
+
+            <Toggle
+              label="Expressive delivery"
+              hint="Mitra matches the tone of the answer — calm, caring or cheerful."
+              checked={settings.voice.emotional}
+              onChange={(v) => setVoice({ emotional: v })}
+            />
+            <Toggle
+              label="Speak answers aloud"
+              hint="Mitra reads every reply automatically."
+              checked={settings.voice.autoPlay}
+              onChange={(v) => setVoice({ autoPlay: v })}
+            />
           </div>
         </Section>
 
