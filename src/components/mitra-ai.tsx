@@ -587,15 +587,6 @@ export function MitraAI() {
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setShowVoiceSettings((v) => !v)}
-                  aria-label={copy.voiceSettings[lang]}
-                  aria-expanded={showVoiceSettings}
-                  className="press grid size-9 place-items-center rounded-full border border-border/70 bg-background/70 text-muted-foreground"
-                >
-                  <SlidersHorizontal className="size-4" />
-                </button>
               </div>
 
               <PromptInput
