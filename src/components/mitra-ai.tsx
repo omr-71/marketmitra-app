@@ -471,8 +471,22 @@ export function MitraAI() {
                       >
                         <MessageResponse>{body}</MessageResponse>
                       </MessageContent>
+                      {message.role === "assistant" &&
+                        message.id === lastAssistantId &&
+                        !busy && (
+                          <button
+                            type="button"
+                            onClick={() => retry(message.id)}
+                            aria-label={copy.retry[lang]}
+                            className="press flex w-fit items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                          >
+                            <RefreshCw className="size-3.5" strokeWidth={2.2} />
+                            {copy.retry[lang]}
+                          </button>
+                        )}
                     </Message>
                   );
+
                 })}
 
                 {busy && <Shimmer className="px-1 text-sm">{copy.thinking[lang]}</Shimmer>}
