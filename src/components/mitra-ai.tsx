@@ -482,54 +482,8 @@ export function MitraAI() {
             </Conversation>
 
             <div className="space-y-2 border-t border-border/60 bg-card/70 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3">
-              {showVoiceSettings && (
-                <div className="rounded-2xl border border-border/60 bg-background/70 p-3 text-xs">
-                  <p className="mb-2 font-bold uppercase tracking-wider text-muted-foreground">
-                    {copy.voiceSettings[lang]}
-                  </p>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{copy.voiceType[lang]}</span>
-                    <div className="flex overflow-hidden rounded-full border border-border/70">
-                      {(["female", "male"] as const).map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => update({ gender: g })}
-                          className={`px-3 py-1 font-semibold ${
-                            prefs.gender === g ? "bg-primary text-primary-foreground" : "bg-transparent"
-                          }`}
-                        >
-                          {copy[g][lang]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <label className="mt-3 flex items-center justify-between gap-3">
-                    <span className="font-semibold">{copy.speed[lang]}</span>
-                    <input
-                      type="range"
-                      min={0.7}
-                      max={1.4}
-                      step={0.1}
-                      value={prefs.rate}
-                      onChange={(e) => update({ rate: Number(e.currentTarget.value) })}
-                      className="w-32 accent-[var(--color-primary)]"
-                    />
-                  </label>
-                  <label className="mt-3 flex items-center justify-between gap-3">
-                    <span className="font-semibold">{copy.autoSpeak[lang]}</span>
-                    <input
-                      type="checkbox"
-                      checked={prefs.autoSpeak}
-                      onChange={(e) => update({ autoSpeak: e.currentTarget.checked })}
-                      className="size-4 accent-[var(--color-primary)]"
-                    />
-                  </label>
-                  {!speech.supported && (
-                    <p className="mt-2 text-muted-foreground">{copy.micUnsupported[lang]}</p>
-                  )}
-                </div>
-              )}
+
+
 
               <div className="flex items-center gap-2">
                 <button
@@ -587,15 +541,6 @@ export function MitraAI() {
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setShowVoiceSettings((v) => !v)}
-                  aria-label={copy.voiceSettings[lang]}
-                  aria-expanded={showVoiceSettings}
-                  className="press grid size-9 place-items-center rounded-full border border-border/70 bg-background/70 text-muted-foreground"
-                >
-                  <SlidersHorizontal className="size-4" />
-                </button>
               </div>
 
               <PromptInput
