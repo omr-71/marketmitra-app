@@ -49,14 +49,19 @@ export function BottomNav() {
               <Link
                 key={to}
                 to={to}
-                className={`press flex flex-1 flex-col items-center gap-1 rounded-2xl px-0.5 py-2 text-[9.5px] font-semibold ${
+                className={`press nav-pill flex flex-1 flex-col items-center gap-1 rounded-2xl px-0.5 py-2 text-[9.5px] font-semibold ${
                   active
-                    ? "bg-primary/12 text-primary"
+                    ? "nav-pill-active text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
-                <span className="w-full truncate text-center">
+                <Icon
+                  className={`relative size-5 transition-transform duration-300 ${
+                    active ? "-translate-y-px scale-110" : ""
+                  }`}
+                  strokeWidth={active ? 2.4 : 1.9}
+                />
+                <span className="relative w-full truncate text-center">
                   {t(key)}
                 </span>
               </Link>
