@@ -501,27 +501,6 @@ export function MitraAI() {
 
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={!mic.supported}
-                  onClick={() => (mic.listening ? mic.stop() : mic.start())}
-                  aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
-                  className={`press relative grid size-10 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-40 ${
-                    mic.listening
-                      ? "border-primary/40 bg-primary text-primary-foreground"
-                      : "border-border/70 bg-background/70 text-foreground"
-                  }`}
-                >
-                  {mic.listening && (
-                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
-                  )}
-                  {mic.listening ? (
-                    <Square className="relative size-4" strokeWidth={2.4} />
-                  ) : (
-                    <Mic className="relative size-4" strokeWidth={2.2} />
-                  )}
-                </button>
-
                 <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
                   {voiceStatus}
                 </p>
@@ -570,7 +549,27 @@ export function MitraAI() {
                   onChange={(event) => setText(event.currentTarget.value)}
                   placeholder={copy.placeholder[lang]}
                 />
-                <PromptInputFooter className="justify-end">
+                <PromptInputFooter className="justify-end gap-1.5">
+                  <button
+                    type="button"
+                    disabled={!mic.supported}
+                    onClick={() => (mic.listening ? mic.stop() : mic.start())}
+                    aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
+                    className={`press relative grid size-9 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-40 ${
+                      mic.listening
+                        ? "border-primary/40 bg-primary text-primary-foreground"
+                        : "border-border/70 bg-background/70 text-foreground"
+                    }`}
+                  >
+                    {mic.listening && (
+                      <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                    )}
+                    {mic.listening ? (
+                      <Square className="relative size-4" strokeWidth={2.4} />
+                    ) : (
+                      <Mic className="relative size-4" strokeWidth={2.2} />
+                    )}
+                  </button>
                   <PromptInputSubmit status={status} disabled={!text.trim() && !busy} />
                 </PromptInputFooter>
               </PromptInput>
