@@ -218,16 +218,67 @@
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 10px, 0) scale(0.988);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes page-child-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @utility animate-page {
   animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+
+  /* Staggered entrance for the page's top-level blocks. */
+  & > * {
+    animation: page-child-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  & > *:nth-child(1) { animation-delay: 0.02s; }
+  & > *:nth-child(2) { animation-delay: 0.07s; }
+  & > *:nth-child(3) { animation-delay: 0.12s; }
+  & > *:nth-child(4) { animation-delay: 0.17s; }
+  & > *:nth-child(5) { animation-delay: 0.22s; }
+  & > *:nth-child(n + 6) { animation-delay: 0.26s; }
+}
+
+/* Bottom-nav selection pill that morphs between tabs. */
+@utility nav-pill {
+  position: relative;
+  transition:
+    color 0.24s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+    opacity: 0;
+    transform: scale(0.8);
+    transition:
+      opacity 0.24s ease,
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@utility nav-pill-active {
+  &::before {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes shimmer {
