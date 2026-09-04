@@ -7,6 +7,8 @@ export type FeatureFlag = {
   key: string;
   label: string;
   enabled: boolean;
+  status?: string | null;
+  reason?: string | null;
   maintenance_message: string | null;
 };
 
@@ -20,6 +22,8 @@ const ROUTE_FEATURE: Array<[string, string]> = [
   ["/diagnose", "diagnose"],
   ["/schemes", "schemes"],
   ["/profile", "profile"],
+  ["/link", "link"],
+  ["/settings", "profile"],
 ];
 
 export function featureKeyForPath(pathname: string): string | null {
@@ -37,7 +41,7 @@ export function useFeatureFlags() {
       try {
         const { data, error } = await supabase
           .from("feature_flags")
-          .select("key,label,enabled,maintenance_message")
+          .select("key,label,enabled,status,reason,maintenance_message")
           .order("label");
         if (error) return [];
         return data ?? [];
@@ -63,6 +67,11 @@ export function MaintenanceNotice({ flag }: { flag: FeatureFlag }) {
           <Wrench className="size-7" strokeWidth={2.1} />
         </span>
         <h2 className="mt-4 font-display text-lg font-bold">{flag.label} is under maintenance</h2>
+        {flag.reason?.trim() && (
+          <p className="mt-2 inline-block rounded-full bg-muted px-3 py-1 text-xs font-bold">
+            {flag.reason}
+          </p>
+        )}
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {flag.maintenance_message?.trim() ||
             "We are improving this section right now. Everything else in MarketMitra keeps working — please check back a little later."}

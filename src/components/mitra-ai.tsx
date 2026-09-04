@@ -1,5 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { useRouterState } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   Leaf,
@@ -37,6 +39,7 @@ import { track } from "@/lib/analytics";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
+import { latestDiagnosisContext } from "@/lib/diagnose.functions";
 import { resolveLang, useSettings } from "@/lib/settings";
 import { useSpeech, useSpeechRecognition } from "@/lib/voice";
 
@@ -57,6 +60,7 @@ function loadSavedMessages(): UIMessage[] {
 }
 
 const copy = {
+  contextLabel: { en: "Recent crop check", mr: "अलीकडील पीक तपासणी", hi: "हाल की फ़सल जाँच" },
   title: { en: "Mitra AI", mr: "मित्र AI", hi: "मित्र AI" },
   subtitle: {
     en: "Your farming companion",
@@ -187,6 +191,17 @@ export function MitraAI() {
   const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
   const isDesktop = useIsDesktop();
 
+  // Compact crop-check context only (one recent diagnosis), never the whole history.
+  const diagnosisFn = useServerFn(latestDiagnosisContext);
+  const diagnosis = useQuery({
+    queryKey: ["mitra-diagnosis-context"],
+    queryFn: () => diagnosisFn(),
+    enabled: open,
+    retry: false,
+    staleTime: 120_000,
+  });
+  const diagnosisCtx = diagnosis.data ?? null;
+
 
 
   const { messages, sendMessage, regenerate, status, error } = useChat({
@@ -207,6 +222,7 @@ export function MitraAI() {
                 longitude: location.longitude,
               }
             : null,
+          diagnosis: diagnosisCtx,
         },
       }),
     }),
@@ -431,6 +447,20 @@ export function MitraAI() {
                 <X className="size-4" />
               </button>
             </header>
+
+            {diagnosisCtx?.condition && (
+              <div className="mx-3 mt-2 flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary/8 px-3 py-2">
+                <Stethoscope className="size-4 shrink-0 text-primary" />
+                <p className="min-w-0 truncate text-[11px] leading-relaxed">
+                  <span className="font-bold">{copy.contextLabel[lang]}: </span>
+                  {diagnosisCtx.crop ? `${diagnosisCtx.crop} — ` : ""}
+                  {diagnosisCtx.condition}
+                  {diagnosisCtx.confidence ? ` (${diagnosisCtx.confidence}%)` : ""}
+                </p>
+              </div>
+            )}
+
+
 
 
             <Conversation className="min-h-0 flex-1">

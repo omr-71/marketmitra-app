@@ -23,6 +23,13 @@ type ChatBody = {
     latitude?: number | null;
     longitude?: number | null;
   } | null;
+  diagnosis?: {
+    crop?: string | null;
+    condition?: string | null;
+    confidence?: number | null;
+    severity?: string | null;
+    checkedAt?: string | null;
+  } | null;
 };
 
 const LANG_NAME: Record<string, string> = {
@@ -34,6 +41,7 @@ const LANG_NAME: Record<string, string> = {
 function systemPrompt(
   lang: string,
   location: ChatBody["location"],
+  diagnosis: ChatBody["diagnosis"],
 ) {
   const langName = LANG_NAME[lang] ?? "English";
 
@@ -46,6 +54,16 @@ function systemPrompt(
         .filter(Boolean)
         .join(", ")}.`
     : "The farmer has not shared a location yet.";
+
+  const dx = diagnosis?.condition
+    ? `RECENT CROP PHOTO CHECK (from this farmer's own saved diagnosis history):
+Crop: ${diagnosis.crop ?? "not identified"}; visible condition: ${diagnosis.condition}${
+        diagnosis.confidence ? `; AI confidence ${diagnosis.confidence}%` : ""
+      }${diagnosis.severity ? `; severity ${diagnosis.severity}` : ""}${
+        diagnosis.checkedAt ? `; checked on ${diagnosis.checkedAt.slice(0, 10)}` : ""
+      }.
+Use this ONLY when the farmer's question relates to that crop, its symptoms or its treatment, and say plainly that it comes from their earlier photo check, which is not a laboratory confirmation. Do not bring it up in unrelated conversations and never treat it as certain.`
+    : "The farmer has no recent crop photo check saved. If they describe symptoms, suggest the in-app crop disease photo check.";
 
   return `You are Mitra AI, the intelligent farming assistant inside MarketMitra.
 
@@ -106,6 +124,8 @@ Never claim 100% accuracy or guaranteed results.
 CROPS AVAILABLE IN MARKETMITRA:
 ${crops.map((c) => c.commodity).join(", ")}
 
+${dx}
+
 SCHEMES AVAILABLE IN MARKETMITRA:
 ${schemes.map((s) => `${s.name} (${s.url})`).join("; ")}
 `;
@@ -152,6 +172,7 @@ export const Route = createFileRoute("/api/chat")({
             system: systemPrompt(
               lang,
               location,
+              body.diagnosis ?? null,
             ),
 
             messages:

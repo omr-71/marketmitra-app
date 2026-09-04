@@ -1,19 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
 import {
+  deleteCropDiagnosis,
   diagnoseCropImage,
+  listCropDiagnoses,
   type DiagnosisOk,
   type DiagnosisResult,
+  type SavedDiagnosis,
 } from "@/lib/diagnose.functions";
 import {
   AlertTriangle,
   Camera,
   Eye,
   FlaskConical,
+  History as HistoryIcon,
   ImageIcon,
   Leaf,
   Loader2,
@@ -173,6 +179,14 @@ const L = {
     mr: "विश्लेषण पूर्ण होऊ शकले नाही. कृपया इंटरनेट तपासून पुन्हा प्रयत्न करा.",
     hi: "विश्लेषण पूरा नहीं हो सका. कृपया कनेक्शन जाँचकर फिर कोशिश करें.",
   },
+  historyTitle: { en: "Your earlier checks", mr: "तुमच्या आधीच्या तपासण्या", hi: "आपकी पिछली जाँचें" },
+  historyLoading: { en: "Loading your saved checks…", mr: "तुमच्या तपासण्या उघडत आहे…", hi: "आपकी जाँचें खुल रही हैं…" },
+  historyEmpty: {
+    en: "Your successful crop checks are saved here privately, so you can compare them later.",
+    mr: "तुमच्या यशस्वी तपासण्या येथे खासगीरित्या जतन होतात, नंतर तुलना करता येते.",
+    hi: "आपकी सफल जाँचें यहाँ निजी रूप से सुरक्षित रहती हैं, बाद में तुलना कर सकते हैं.",
+  },
+  historyDelete: { en: "Delete this check", mr: "ही तपासणी हटवा", hi: "यह जाँच हटाएँ" },
 } as const;
 
 const langLabel = { en: "English", mr: "मराठी", hi: "हिंदी" } as const;
@@ -310,8 +324,51 @@ function DiagnosePage() {
     }
   }, [lang]);
 
+  /* -------------------------------------------------- saved history */
+  const qc = useQueryClient();
+  const listFn = useServerFn(listCropDiagnoses);
+  const deleteFn = useServerFn(deleteCropDiagnosis);
+
+  const history = useQuery({
+    queryKey: ["crop-diagnoses"],
+    queryFn: () => listFn(),
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const remove = useMutation({
+    mutationFn: (vars: { id: string }) => deleteFn({ data: vars }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["crop-diagnoses"] }),
+  });
+
+  const openSaved = (h: SavedDiagnosis) => {
+    setError(null);
+    setPreview(h.imageUrl);
+    setTab("diagnosis");
+    setResult({
+      ok: true,
+      usable: true,
+      crop: h.crop ?? "",
+      condition: h.condition ?? "",
+      confidence: h.confidence ?? 0,
+      severity: h.severity,
+      symptoms: h.symptoms,
+      causes: h.causes,
+      conditionsFavouring: [],
+      whatItIs: h.whatItIs ?? "",
+      whyItHappens: h.whyItHappens ?? "",
+      whatToDoNow: h.whatToDoNow,
+      prevention: h.prevention,
+      monitoring: h.monitoring,
+      uncertaintyNote: h.uncertaintyNote,
+      analysedAt: h.createdAt,
+      model: "saved",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const run = async () => {
-    if (!preview) return;
+    if (!preview || !preview.startsWith("data:")) return;
     setBusy(true);
     setError(null);
     setResult(null);
@@ -324,6 +381,7 @@ function DiagnosePage() {
       setTab("diagnosis");
       track(data.ok ? "diagnose_completed" : "diagnose_failed", { label: cropHint || null });
       if (!data.ok) setError(data.message);
+      else void qc.invalidateQueries({ queryKey: ["crop-diagnoses"] });
     } catch {
       track("diagnose_failed");
       setError(L.networkError[lang]);
@@ -813,6 +871,62 @@ function DiagnosePage() {
             )}
           </div>
         </div>
+
+        {/* ---------------------------------------------- saved history */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2">
+            <HistoryIcon className="size-4 text-primary" />
+            <h2 className="font-display text-base font-bold">{s("historyTitle")}</h2>
+          </div>
+          {history.isLoading ? (
+            <p className="mt-2 text-sm text-muted-foreground">{s("historyLoading")}</p>
+          ) : (history.data?.length ?? 0) === 0 ? (
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s("historyEmpty")}</p>
+          ) : (
+            <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {history.data?.map((h) => (
+                <li
+                  key={h.id}
+                  className="group flex items-center gap-3 rounded-3xl border border-border/70 bg-card/40 p-3"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openSaved(h)}
+                    className="press flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    {h.imageUrl ? (
+                      <img
+                        src={h.imageUrl}
+                        alt={h.condition ?? s("historyTitle")}
+                        loading="lazy"
+                        className="size-14 shrink-0 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-muted">
+                        <Leaf className="size-5 text-primary/70" />
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{h.condition}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {h.crop} · {new Date(h.createdAt).toLocaleDateString()}
+                        {h.confidence ? ` · ${h.confidence}%` : ""}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={s("historyDelete")}
+                    onClick={() => remove.mutate({ id: h.id })}
+                    className="press grid size-8 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </Screen>
   );

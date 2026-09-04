@@ -134,12 +134,92 @@ export type Database = {
         }
         Relationships: []
       }
+      crop_diagnoses: {
+        Row: {
+          advice: string | null
+          causes: string[]
+          condition: string | null
+          confidence: number | null
+          created_at: string
+          crop: string | null
+          crop_hint: string | null
+          id: string
+          image_issues: string[]
+          image_path: string | null
+          lang: string
+          monitoring: string[]
+          prevention: string[]
+          provider: string | null
+          severity: string | null
+          symptoms: string[]
+          uncertainty_note: string | null
+          updated_at: string
+          usable: boolean
+          user_id: string
+          what_it_is: string | null
+          what_to_do_now: string[]
+          why_it_happens: string | null
+        }
+        Insert: {
+          advice?: string | null
+          causes?: string[]
+          condition?: string | null
+          confidence?: number | null
+          created_at?: string
+          crop?: string | null
+          crop_hint?: string | null
+          id?: string
+          image_issues?: string[]
+          image_path?: string | null
+          lang?: string
+          monitoring?: string[]
+          prevention?: string[]
+          provider?: string | null
+          severity?: string | null
+          symptoms?: string[]
+          uncertainty_note?: string | null
+          updated_at?: string
+          usable?: boolean
+          user_id: string
+          what_it_is?: string | null
+          what_to_do_now?: string[]
+          why_it_happens?: string | null
+        }
+        Update: {
+          advice?: string | null
+          causes?: string[]
+          condition?: string | null
+          confidence?: number | null
+          created_at?: string
+          crop?: string | null
+          crop_hint?: string | null
+          id?: string
+          image_issues?: string[]
+          image_path?: string | null
+          lang?: string
+          monitoring?: string[]
+          prevention?: string[]
+          provider?: string | null
+          severity?: string | null
+          symptoms?: string[]
+          uncertainty_note?: string | null
+          updated_at?: string
+          usable?: boolean
+          user_id?: string
+          what_it_is?: string | null
+          what_to_do_now?: string[]
+          why_it_happens?: string | null
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           enabled: boolean
           key: string
           label: string
           maintenance_message: string | null
+          reason: string | null
+          status: string
           updated_at: string
           updated_by: string | null
         }
@@ -148,6 +228,8 @@ export type Database = {
           key: string
           label: string
           maintenance_message?: string | null
+          reason?: string | null
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -156,6 +238,8 @@ export type Database = {
           key?: string
           label?: string
           maintenance_message?: string | null
+          reason?: string | null
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
