@@ -368,7 +368,7 @@ function DiagnosePage() {
   };
 
   const run = async () => {
-    if (!preview) return;
+    if (!preview || !preview.startsWith("data:")) return;
     setBusy(true);
     setError(null);
     setResult(null);
