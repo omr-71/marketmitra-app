@@ -34,6 +34,14 @@ import {
 } from "@/lib/admin.functions";
 import { getProviderDiagnostics } from "@/lib/market-prices.functions";
 
+/** Professional, farmer-readable maintenance reasons. */
+const MAINTENANCE_REASONS = [
+  "Scheduled maintenance",
+  "Upstream data source unavailable",
+  "Performance issue under investigation",
+  "Accuracy verification in progress",
+];
+
 export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
@@ -362,8 +370,12 @@ function AdminConsole({ email }: { email: string }) {
   });
 
   const toggle = useMutation({
-    mutationFn: (vars: { key: string; enabled: boolean }) =>
-      updateFlag({ data: vars }),
+    mutationFn: (vars: {
+      key: string;
+      enabled: boolean;
+      reason?: string | null;
+      message?: string | null;
+    }) => updateFlag({ data: vars }),
 
     onSuccess: () => {
       void qc.invalidateQueries({
@@ -642,19 +654,37 @@ function AdminConsole({ email }: { email: string }) {
                           <p className="text-xs text-[oklch(0.72_0.02_150)]">
                             {f.enabled
                               ? "Live for all farmers"
-                              : "Showing maintenance message"}
+                              : `Maintenance${f.reason ? ` — ${f.reason}` : ""}`}
                           </p>
                         </div>
 
                         <button
                           type="button"
                           disabled={toggle.isPending}
-                          onClick={() =>
+                          onClick={() => {
+                            if (f.enabled) {
+                              const reason =
+                                window.prompt(
+                                  `Why is ${f.label} going into maintenance? (shown to farmers)`,
+                                  MAINTENANCE_REASONS[0],
+                                );
+                              if (reason === null) return;
+                              toggle.mutate({
+                                key: f.key,
+                                enabled: false,
+                                reason: reason.trim() || MAINTENANCE_REASONS[0]!,
+                                message:
+                                  "We are improving this section right now. Everything else in MarketMitra keeps working — please check back a little later.",
+                              });
+                              return;
+                            }
                             toggle.mutate({
                               key: f.key,
-                              enabled: !f.enabled,
-                            })
-                          }
+                              enabled: true,
+                              reason: null,
+                              message: null,
+                            });
+                          }}
                           className="press ml-auto shrink-0"
                           aria-label={`${
                             f.enabled ? "Disable" : "Enable"
