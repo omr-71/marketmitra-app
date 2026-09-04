@@ -1,19 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Screen, TopBar } from "@/components/app-shell";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
 import {
+  deleteCropDiagnosis,
   diagnoseCropImage,
+  listCropDiagnoses,
   type DiagnosisOk,
   type DiagnosisResult,
+  type SavedDiagnosis,
 } from "@/lib/diagnose.functions";
 import {
   AlertTriangle,
   Camera,
   Eye,
   FlaskConical,
+  History as HistoryIcon,
   ImageIcon,
   Leaf,
   Loader2,
