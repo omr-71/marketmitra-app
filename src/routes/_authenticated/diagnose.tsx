@@ -173,6 +173,14 @@ const L = {
     mr: "विश्लेषण पूर्ण होऊ शकले नाही. कृपया इंटरनेट तपासून पुन्हा प्रयत्न करा.",
     hi: "विश्लेषण पूरा नहीं हो सका. कृपया कनेक्शन जाँचकर फिर कोशिश करें.",
   },
+  historyTitle: { en: "Your earlier checks", mr: "तुमच्या आधीच्या तपासण्या", hi: "आपकी पिछली जाँचें" },
+  historyLoading: { en: "Loading your saved checks…", mr: "तुमच्या तपासण्या उघडत आहे…", hi: "आपकी जाँचें खुल रही हैं…" },
+  historyEmpty: {
+    en: "Your successful crop checks are saved here privately, so you can compare them later.",
+    mr: "तुमच्या यशस्वी तपासण्या येथे खासगीरित्या जतन होतात, नंतर तुलना करता येते.",
+    hi: "आपकी सफल जाँचें यहाँ निजी रूप से सुरक्षित रहती हैं, बाद में तुलना कर सकते हैं.",
+  },
+  historyDelete: { en: "Delete this check", mr: "ही तपासणी हटवा", hi: "यह जाँच हटाएँ" },
 } as const;
 
 const langLabel = { en: "English", mr: "मराठी", hi: "हिंदी" } as const;
