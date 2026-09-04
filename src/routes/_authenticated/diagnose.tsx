@@ -831,7 +831,7 @@ function DiagnosePage() {
         {/* ---------------------------------------------- saved history */}
         <section className="mt-8">
           <div className="flex items-center gap-2">
-            <History className="size-4 text-primary" />
+            <HistoryIcon className="size-4 text-primary" />
             <h2 className="font-display text-base font-bold">{s("historyTitle")}</h2>
           </div>
           {history.isLoading ? (
