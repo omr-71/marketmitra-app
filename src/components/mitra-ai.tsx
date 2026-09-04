@@ -60,6 +60,7 @@ function loadSavedMessages(): UIMessage[] {
 }
 
 const copy = {
+  contextLabel: { en: "Recent crop check", mr: "अलीकडील पीक तपासणी", hi: "हाल की फ़सल जाँच" },
   title: { en: "Mitra AI", mr: "मित्र AI", hi: "मित्र AI" },
   subtitle: {
     en: "Your farming companion",
