@@ -75,7 +75,8 @@ export const diagnoseCropImage = createServerFn({ method: "POST" })
         .from("crop-photos")
         .upload(path, bytes, { contentType: mime, upsert: false });
 
-      const row: Record<string, unknown> = result.usable
+      type Row = Database["public"]["Tables"]["crop_diagnoses"]["Insert"];
+      const row: Row = result.usable
         ? {
             user_id: context.userId,
             image_path: upload.error ? null : path,
