@@ -111,13 +111,14 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       } catch {
         /* storage may be unavailable in private mode */
       }
-      updateProfile({
+      void updateProfile({
         state: next.state,
         district: next.district,
         village: next.city || null,
         latitude: next.latitude,
         longitude: next.longitude,
-      });
+      }).catch((cause: unknown) => console.error("Unable to save the farm location", cause));
+
     },
     [updateProfile],
   );
