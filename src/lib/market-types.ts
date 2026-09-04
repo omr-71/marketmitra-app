@@ -58,6 +58,8 @@ export type AggregateResult = {
   freshness: Freshness;
   /** Other sources that also reported the same latest date, for transparency. */
   corroboratedBy: string[];
+  /** Internal cross-source confidence signal. Never rendered as technical text. */
+  consensus: "single" | "corroborated" | "conflict";
 };
 
 export type ProviderStatus = "healthy" | "degraded" | "down" | "not_configured" | "unknown";
