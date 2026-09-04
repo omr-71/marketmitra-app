@@ -134,6 +134,84 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          lang: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          lang?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          lang?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          diagnosis_id: string | null
+          id: string
+          metadata: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          diagnosis_id?: string | null
+          id?: string
+          metadata?: Json
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          diagnosis_id?: string | null
+          id?: string
+          metadata?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_diagnosis_id_fkey"
+            columns: ["diagnosis_id"]
+            isOneToOne: false
+            referencedRelation: "crop_diagnoses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crop_diagnoses: {
         Row: {
           advice: string | null
@@ -749,6 +827,9 @@ export type Database = {
           state: string | null
           updated_at: string
           village: string | null
+          voice_id: string | null
+          voice_lang: string | null
+          voice_provider: string | null
         }
         Insert: {
           created_at?: string
@@ -765,6 +846,9 @@ export type Database = {
           state?: string | null
           updated_at?: string
           village?: string | null
+          voice_id?: string | null
+          voice_lang?: string | null
+          voice_provider?: string | null
         }
         Update: {
           created_at?: string
@@ -781,6 +865,9 @@ export type Database = {
           state?: string | null
           updated_at?: string
           village?: string | null
+          voice_id?: string | null
+          voice_lang?: string | null
+          voice_provider?: string | null
         }
         Relationships: []
       }
