@@ -813,6 +813,62 @@ function DiagnosePage() {
             )}
           </div>
         </div>
+
+        {/* ---------------------------------------------- saved history */}
+        <section className="mt-8">
+          <div className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            <h2 className="font-display text-base font-bold">{s("historyTitle")}</h2>
+          </div>
+          {history.isLoading ? (
+            <p className="mt-2 text-sm text-muted-foreground">{s("historyLoading")}</p>
+          ) : (history.data?.length ?? 0) === 0 ? (
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s("historyEmpty")}</p>
+          ) : (
+            <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {history.data?.map((h) => (
+                <li
+                  key={h.id}
+                  className="group flex items-center gap-3 rounded-3xl border border-border/70 bg-card/40 p-3"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openSaved(h)}
+                    className="press flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    {h.imageUrl ? (
+                      <img
+                        src={h.imageUrl}
+                        alt={h.condition ?? s("historyTitle")}
+                        loading="lazy"
+                        className="size-14 shrink-0 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-muted">
+                        <Leaf className="size-5 text-primary/70" />
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{h.condition}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {h.crop} · {new Date(h.createdAt).toLocaleDateString()}
+                        {h.confidence ? ` · ${h.confidence}%` : ""}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={s("historyDelete")}
+                    onClick={() => remove.mutate({ id: h.id })}
+                    className="press grid size-8 shrink-0 place-items-center rounded-xl text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </Screen>
   );
