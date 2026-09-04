@@ -324,6 +324,49 @@ function DiagnosePage() {
     }
   }, [lang]);
 
+  /* -------------------------------------------------- saved history */
+  const qc = useQueryClient();
+  const listFn = useServerFn(listCropDiagnoses);
+  const deleteFn = useServerFn(deleteCropDiagnosis);
+
+  const history = useQuery({
+    queryKey: ["crop-diagnoses"],
+    queryFn: () => listFn(),
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const remove = useMutation({
+    mutationFn: (vars: { id: string }) => deleteFn({ data: vars }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["crop-diagnoses"] }),
+  });
+
+  const openSaved = (h: SavedDiagnosis) => {
+    setError(null);
+    setPreview(h.imageUrl);
+    setTab("diagnosis");
+    setResult({
+      ok: true,
+      usable: true,
+      crop: h.crop ?? "",
+      condition: h.condition ?? "",
+      confidence: h.confidence ?? 0,
+      severity: h.severity,
+      symptoms: h.symptoms,
+      causes: h.causes,
+      conditionsFavouring: [],
+      whatItIs: h.whatItIs ?? "",
+      whyItHappens: h.whyItHappens ?? "",
+      whatToDoNow: h.whatToDoNow,
+      prevention: h.prevention,
+      monitoring: h.monitoring,
+      uncertaintyNote: h.uncertaintyNote,
+      analysedAt: h.createdAt,
+      model: "saved",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const run = async () => {
     if (!preview) return;
     setBusy(true);
@@ -338,6 +381,7 @@ function DiagnosePage() {
       setTab("diagnosis");
       track(data.ok ? "diagnose_completed" : "diagnose_failed", { label: cropHint || null });
       if (!data.ok) setError(data.message);
+      else void qc.invalidateQueries({ queryKey: ["crop-diagnoses"] });
     } catch {
       track("diagnose_failed");
       setError(L.networkError[lang]);
