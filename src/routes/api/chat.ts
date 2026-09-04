@@ -28,8 +28,11 @@ type ChatBody = {
     condition?: string | null;
     confidence?: number | null;
     severity?: string | null;
+    treatment?: string[] | null;
+    prevention?: string[] | null;
     checkedAt?: string | null;
   } | null;
+
 };
 
 const LANG_NAME: Record<string, string> = {
