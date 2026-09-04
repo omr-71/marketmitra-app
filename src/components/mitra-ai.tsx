@@ -37,6 +37,7 @@ import { track } from "@/lib/analytics";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
+import { latestDiagnosisContext } from "@/lib/diagnose.functions";
 import { resolveLang, useSettings } from "@/lib/settings";
 import { useSpeech, useSpeechRecognition } from "@/lib/voice";
 
@@ -187,6 +188,17 @@ export function MitraAI() {
   const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
   const isDesktop = useIsDesktop();
 
+  // Compact crop-check context only (one recent diagnosis), never the whole history.
+  const diagnosisFn = useServerFn(latestDiagnosisContext);
+  const diagnosis = useQuery({
+    queryKey: ["mitra-diagnosis-context"],
+    queryFn: () => diagnosisFn(),
+    enabled: open,
+    retry: false,
+    staleTime: 120_000,
+  });
+  const diagnosisCtx = diagnosis.data ?? null;
+
 
 
   const { messages, sendMessage, regenerate, status, error } = useChat({
@@ -207,6 +219,7 @@ export function MitraAI() {
                 longitude: location.longitude,
               }
             : null,
+          diagnosis: diagnosisCtx,
         },
       }),
     }),
