@@ -447,6 +447,20 @@ export function MitraAI() {
               </button>
             </header>
 
+            {diagnosisCtx?.condition && (
+              <div className="mx-3 mt-2 flex items-center gap-2 rounded-2xl border border-primary/25 bg-primary/8 px-3 py-2">
+                <Stethoscope className="size-4 shrink-0 text-primary" />
+                <p className="min-w-0 truncate text-[11px] leading-relaxed">
+                  <span className="font-bold">{copy.contextLabel[lang]}: </span>
+                  {diagnosisCtx.crop ? `${diagnosisCtx.crop} — ` : ""}
+                  {diagnosisCtx.condition}
+                  {diagnosisCtx.confidence ? ` (${diagnosisCtx.confidence}%)` : ""}
+                </p>
+              </div>
+            )}
+
+
+
 
             <Conversation className="min-h-0 flex-1">
               <ConversationContent className="gap-3 px-3 py-4">
