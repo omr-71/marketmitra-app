@@ -190,6 +190,9 @@ export type DiagnosisContext = {
   condition: string | null;
   confidence: number | null;
   severity: string | null;
+  /** Immediate actions saved with the check, including any spray guidance. */
+  treatment: string[];
+  prevention: string[];
   checkedAt: string;
 } | null;
 
@@ -202,7 +205,7 @@ export const latestDiagnosisContext = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<DiagnosisContext> => {
     const { data } = await context.supabase
       .from("crop_diagnoses")
-      .select("id,crop,condition,confidence,severity,created_at")
+      .select("id,crop,condition,confidence,severity,what_to_do_now,prevention,created_at")
       .eq("user_id", context.userId)
       .eq("usable", true)
       .order("created_at", { ascending: false })
@@ -216,6 +219,9 @@ export const latestDiagnosisContext = createServerFn({ method: "GET" })
       condition: data.condition,
       confidence: data.confidence,
       severity: data.severity,
+      treatment: (data.what_to_do_now ?? []).slice(0, 4),
+      prevention: (data.prevention ?? []).slice(0, 3),
       checkedAt: data.created_at,
     };
   });
+
