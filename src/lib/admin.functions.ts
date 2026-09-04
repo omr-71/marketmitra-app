@@ -471,7 +471,7 @@ export const getAdminFeatureFlags =
         await context.supabase
           .from("feature_flags")
           .select(
-            "key,label,enabled,maintenance_message,updated_at",
+            "key,label,enabled,status,reason,maintenance_message,updated_at",
           )
           .order("label");
 
@@ -496,6 +496,7 @@ export const setFeatureFlag =
           key: string;
           enabled: boolean;
           message?: string | null;
+          reason?: string | null;
         },
       ) =>
         z
@@ -512,6 +513,12 @@ export const setFeatureFlag =
               .max(400)
               .nullable()
               .optional(),
+
+            reason: z
+              .string()
+              .max(120)
+              .nullable()
+              .optional(),
           })
           .parse(input),
     )
@@ -526,8 +533,16 @@ export const setFeatureFlag =
           .from("feature_flags")
           .update({
             enabled: data.enabled,
+            status: data.enabled
+              ? "operational"
+              : "maintenance",
+            reason: data.enabled
+              ? null
+              : (data.reason ?? null),
             maintenance_message:
-              data.message ?? null,
+              data.enabled
+                ? null
+                : (data.message ?? null),
             updated_by: context.userId,
           })
           .eq("key", data.key);
@@ -552,6 +567,7 @@ export const setFeatureFlag =
             : "feature_disabled",
           detail: {
             key: data.key,
+            reason: data.reason ?? null,
             message:
               data.message ?? null,
           } as never,
