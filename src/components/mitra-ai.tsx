@@ -195,8 +195,7 @@ export function MitraAI() {
 
 
 
-  const { messages, sendMessage, regenerate, status, error } = useChat({
-    messages: initialMessages,
+  const { messages, setMessages, sendMessage, regenerate, status, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ messages: msgs }) => ({
@@ -221,18 +220,65 @@ export function MitraAI() {
 
   const busy = status === "submitted" || status === "streaming";
 
-  // Persist the thread for this browser session only.
+  // Restore the farmer's saved conversation so it survives reload and restart.
   useEffect(() => {
-    if (messages.length === 0) return;
-    try {
-      window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-40)));
-    } catch {
-      /* storage full or blocked — chat still works in memory */
+    if (!user) {
+      conversationIdRef.current = null;
+      savedIdsRef.current = new Set();
+      return;
     }
-  }, [messages]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const thread = await loadLatestThread(user.id);
+        if (cancelled || !thread) return;
+        conversationIdRef.current = thread.id;
+        savedIdsRef.current = new Set(thread.messages.map((m) => m.id));
+        setMessages(thread.messages);
+      } catch (cause) {
+        console.error("Unable to load your saved chat", cause);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, setMessages]);
+
+  // Save each completed message once; the database is the source of truth.
+  useEffect(() => {
+    if (!user || busy || messages.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const message of messages) {
+        if (cancelled) return;
+        if (message.role !== "user" && message.role !== "assistant") continue;
+        if (savedIdsRef.current.has(message.id)) continue;
+        try {
+          if (!conversationIdRef.current) {
+            conversationIdRef.current = await createThread(user.id, lang);
+          }
+          await saveMessage({
+            conversationId: conversationIdRef.current,
+            userId: user.id,
+            role: message.role,
+            message,
+          });
+          savedIdsRef.current.add(message.id);
+          if (message.role === "user") await titleThread(conversationIdRef.current, message);
+        } catch (cause) {
+          console.error("Unable to save this message", cause);
+          return;
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, busy, user, lang]);
 
   useEffect(() => {
     if (error) track("mitra_ai_error");
+
   }, [error]);
 
   // Keep the composer focused during normal chat use.
