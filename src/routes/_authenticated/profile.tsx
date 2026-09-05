@@ -88,19 +88,7 @@ function ProfilePage() {
   return (
     <Screen>
       <div className="page-enter">
-        <TopBar
-          title={t("profile")}
-          back="/home"
-          actions={
-            <Link
-              to="/settings"
-              aria-label="Settings"
-              className="press grid size-10 place-items-center rounded-full border border-border bg-card text-muted-foreground"
-            >
-              <SettingsIcon className="size-4.5" />
-            </Link>
-          }
-        />
+        <TopBar title={t("profile")} back="/home" />
 
         <div className="mx-auto w-full max-w-lg space-y-5 px-5 pt-6">
           {/* Identity */}
