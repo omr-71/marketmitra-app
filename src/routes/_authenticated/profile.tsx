@@ -120,11 +120,11 @@ function ProfilePage() {
               </div>
               <button
                 onClick={() => setEditing(true)}
-                aria-label={t("edit")}
+                aria-label="Edit profile"
                 className="press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground"
               >
                 <PenLine className="size-3.5 text-primary" />
-                {t("edit")}
+                Edit
               </button>
             </div>
           </div>
