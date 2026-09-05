@@ -150,10 +150,15 @@
 }
 
 @utility glass {
-  background-color: color-mix(in oklab, var(--color-card) 65%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
+  background-color: color-mix(in oklab, var(--color-card) 82%, transparent);
+  backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  @media (min-width: 1024px) {
+    background-color: color-mix(in oklab, var(--color-card) 65%, transparent);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
 }
+
 
 @utility glass-dark {
   background-color: oklch(1 0 0 / 0.1);
