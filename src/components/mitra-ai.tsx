@@ -175,7 +175,10 @@ export function MitraAI() {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState("");
-  const initialMessages = useMemo(() => loadSavedMessages(), []);
+  const { user } = useAuth();
+  const conversationIdRef = useRef<string | null>(null);
+  const savedIdsRef = useRef<Set<string>>(new Set());
+
   const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
   const isDesktop = useIsDesktop();
 
