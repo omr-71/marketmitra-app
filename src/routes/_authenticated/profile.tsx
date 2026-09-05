@@ -1,13 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
-import { langNames, useLang } from "@/lib/i18n";
+import { useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
-import { crops, type Lang } from "@/lib/crops";
-import { themes, useTheme } from "@/lib/theme";
-import { Check, Loader2, MapPin, Palette, Phone, Sprout, User } from "lucide-react";
+import { useLocationContext } from "@/lib/location";
+import { Loader2, MapPin, PenLine, Settings as SettingsIcon, User } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
@@ -15,10 +14,10 @@ export const Route = createFileRoute("/_authenticated/profile")({
       { title: "Farmer profile — MarketMitra" },
       {
         name: "description",
-        content: "Your farm location, saved crops and language preference for mandi price tracking.",
+        content: "Your farm location and personal details for MarketMitra.",
       },
       { property: "og:title", content: "Farmer profile — MarketMitra" },
-      { property: "og:description", content: "Manage your MarketMitra preferences." },
+      { property: "og:description", content: "Manage your MarketMitra profile." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:url", content: "https://marketmitra.app/profile" },
@@ -29,56 +28,50 @@ export const Route = createFileRoute("/_authenticated/profile")({
 });
 
 function ProfilePage() {
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   const { profile, loading, updateProfile } = useSession();
-  const { theme, setTheme } = useTheme();
+  const { location } = useLocationContext();
 
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [village, setVillage] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setName(profile.full_name ?? "");
-    setPhone(profile.phone ?? "");
-    setVillage(profile.village ?? "");
-  }, [profile.full_name, profile.phone, profile.village]);
-
-  const saved = profile.saved_crops ?? [];
-  const displayName = profile.full_name?.trim() || t("profile");
+  const displayName = profile.full_name?.trim() || "";
   const initials =
-    (profile.full_name ?? "")
+    displayName
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("") || "MM";
 
-  const dirty =
-    name.trim() !== (profile.full_name ?? "") ||
-    phone.trim() !== (profile.phone ?? "") ||
-    village.trim() !== (profile.village ?? "");
+  const locationText =
+    [profile.village, profile.district, profile.state].filter(Boolean).join(", ") ||
+    (location
+      ? [location.city, location.district, location.state].filter(Boolean).join(", ")
+      : "");
 
-  const saveDetails = () => {
-    if (phone.trim() && !/^[6-9]\d{9}$/.test(phone.trim())) {
-      toast.error("Enter a valid 10-digit Indian mobile number.");
-      return;
+  useEffect(() => {
+    if (!editing) return;
+    setName(profile.full_name ?? "");
+    setVillage(profile.village ?? "");
+  }, [editing, profile.full_name, profile.village]);
+
+  const saveDetails = async () => {
+    setSaving(true);
+    try {
+      await updateProfile({
+        full_name: name.trim() || null,
+        village: village.trim() || null,
+      });
+      toast.success(t("save"));
+      setEditing(false);
+    } catch {
+      toast.error("Your change could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    updateProfile({
-      full_name: name.trim() || null,
-      phone: phone.trim() || null,
-      village: village.trim() || null,
-    });
-    toast.success(t("save"));
-  };
-
-  const toggleCrop = (id: string) => {
-    const next = saved.includes(id) ? saved.filter((c) => c !== id) : [...saved, id];
-    updateProfile({ saved_crops: next });
-  };
-
-  const changeLanguage = (next: Lang) => {
-    setLang(next);
-    updateProfile({ language: next });
   };
 
   if (loading) {
@@ -94,159 +87,157 @@ function ProfilePage() {
 
   return (
     <Screen>
-      <TopBar title={t("profile")} back="/home" />
+      <div className="page-enter">
+        <TopBar title={t("profile")} back="/home" />
 
-      <div className="space-y-5 px-5 pt-5">
-        <div className="card-surface hover-lift p-5">
-          <div className="flex items-center gap-4">
-            <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground">
-              {initials}
-            </span>
-            <div className="min-w-0">
-              <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
-              {profile.phone && (
-                <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                  <Phone className="size-3.5" /> +91 {profile.phone}
+        <div className="mx-auto w-full max-w-lg space-y-5 px-5 pt-6">
+          {/* Identity */}
+          <div className="page-item card-surface relative overflow-hidden p-6">
+            <span className="grad-primary pointer-events-none absolute -right-10 -top-10 size-32 rounded-full opacity-15 blur-2xl" />
+            <div className="flex items-center gap-4">
+              <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground shadow-lg shadow-primary/25">
+                {initials}
+              </span>
+              <div className="min-w-0 flex-1">
+                {displayName ? (
+                  <h2 className="truncate text-lg font-extrabold">{displayName}</h2>
+                ) : (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="text-left text-lg font-extrabold text-primary"
+                  >
+                    Add your name
+                  </button>
+                )}
+                <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                  <MapPin className="size-3.5 shrink-0 text-primary" />
+                  {locationText || (
+                    <button onClick={() => setEditing(true)} className="text-primary">
+                      Add your location
+                    </button>
+                  )}
                 </p>
-              )}
-              <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                <MapPin className="size-3.5" />
-                {[profile.village, profile.district, profile.state].filter(Boolean).join(", ") ||
-                  t("locationNeeded")}
-              </p>
+              </div>
+              <button
+                onClick={() => setEditing(true)}
+                aria-label="Edit profile"
+                className="press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-bold text-foreground"
+              >
+                <PenLine className="size-3.5 text-primary" />
+                Edit
+              </button>
             </div>
           </div>
 
-          <div className="mt-5 space-y-3 border-t border-border pt-4">
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("fullName")}
-              </span>
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <User className="size-4 text-muted-foreground" />
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
+          {/* Personal information */}
+          <section className="page-item card-surface p-5">
+            <h3 className="text-sm font-bold">Personal information</h3>
+            <div className="mt-4 divide-y divide-border">
+              <div className="flex items-center gap-3 py-3 first:pt-0">
+                <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                  <User className="size-4 text-primary" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("fullName")}
+                  </p>
+                  <p className="truncate text-sm font-semibold">
+                    {displayName || <span className="font-normal text-muted-foreground">Not added yet</span>}
+                  </p>
+                </div>
               </div>
-            </label>
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("phone")}
-              </span>
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <Phone className="size-4 text-muted-foreground" />
-                <input
-                  value={phone}
-                  inputMode="numeric"
-                  maxLength={10}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
+              <div className="flex items-center gap-3 py-3 last:pb-0">
+                <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                  <MapPin className="size-4 text-primary" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Location
+                  </p>
+                  <p className="truncate text-sm font-semibold">
+                    {locationText || <span className="font-normal text-muted-foreground">Not added yet</span>}
+                  </p>
+                </div>
               </div>
-            </label>
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("village")}
-              </span>
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <MapPin className="size-4 text-muted-foreground" />
-                <input
-                  value={village}
-                  onChange={(e) => setVillage(e.target.value)}
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
-              </div>
-            </label>
-            <button
-              onClick={saveDetails}
-              disabled={!dirty}
-              className="press grad-primary flex h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-50"
-            >
-              {t("save")}
-            </button>
+            </div>
+          </section>
+
+          {/* Farm location: GPS + manual, reuses the existing location system */}
+          <div className="page-item">
+            <LocationCard />
           </div>
         </div>
 
-        <LocationCard />
+        {/* Edit sheet */}
+        {editing && (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+            onClick={() => !saving && setEditing(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Edit profile"
+              className="w-full max-w-md rounded-t-[2rem] border border-border bg-background p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[2rem]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" />
+              <h2 className="text-base font-extrabold">Edit profile</h2>
 
-        <section>
-          <h3 className="text-sm font-bold">{t("savedCrops")}</h3>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Saved crops decide what your dashboard tracks.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {crops.map((c) => {
-              const active = saved.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => toggleCrop(c.id)}
-                  className={`press inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold ${
-                    active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"
-                  }`}
-                >
-                  <span className="text-base">{c.emoji}</span>
-                  {c.name[lang]}
-                  {active ? <Check className="size-3.5" strokeWidth={3} /> : <Sprout className="size-3.5" />}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="text-sm font-bold">{t("language")}</h3>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {(Object.keys(langNames) as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => changeLanguage(l)}
-                className={`press rounded-2xl border py-3.5 text-sm font-bold ${
-                  lang === l
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-card text-muted-foreground"
-                }`}
-              >
-                {langNames[l]}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <h3 className="flex items-center gap-2 text-sm font-bold">
-            <Palette className="size-4 text-primary" /> Theme
-          </h3>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Your choice is saved on this device.
-          </p>
-          <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            {themes.map((th) => (
-              <button
-                key={th.id}
-                onClick={() => setTheme(th.id)}
-                className={`press hover-lift flex items-center gap-3 rounded-2xl border p-3.5 text-left ${
-                  theme === th.id ? "border-primary bg-primary/10" : "border-border bg-card"
-                }`}
-              >
-                <span className="flex shrink-0 gap-1">
-                  {th.swatch.map((c) => (
-                    <span
-                      key={c}
-                      className="size-5 rounded-full ring-1 ring-border"
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
+              <label className="mt-5 block">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("fullName")}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-xs font-bold">{th.label}</span>
-                {theme === th.id && <Check className="size-4 shrink-0 text-primary" strokeWidth={3} />}
-              </button>
-            ))}
-          </div>
-        </section>
+                <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                  <User className="size-4 text-muted-foreground" />
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoFocus
+                    placeholder="Add your name"
+                    className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
+                  />
+                </div>
+              </label>
 
+              <label className="mt-3 block">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("village")}
+                </span>
+                <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
+                  <MapPin className="size-4 text-muted-foreground" />
+                  <input
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                    placeholder="Village or town"
+                    className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
+                  />
+                </div>
+              </label>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                For a precise farm location, use the GPS option on the profile page.
+              </p>
+
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="press h-12 flex-1 rounded-2xl border border-border bg-card text-sm font-bold disabled:opacity-50"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  onClick={saveDetails}
+                  disabled={saving}
+                  className="press grad-primary flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {saving && <Loader2 className="size-4 animate-spin" />}
+                  {t("save")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Screen>
   );
