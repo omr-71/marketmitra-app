@@ -174,7 +174,7 @@ export function TopBar({
   settings?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-xl lg:rounded-b-3xl lg:px-6 lg:py-5">
+    <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bg-background/85 lg:rounded-b-3xl lg:px-6 lg:py-5 lg:backdrop-blur-xl">
       {back ? (
         <Link
           to={back}
