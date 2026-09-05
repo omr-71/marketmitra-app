@@ -42,22 +42,10 @@ import { useLocationContext } from "@/lib/location";
 import { latestDiagnosisContext } from "@/lib/diagnose.functions";
 import { resolveLang, useSettings } from "@/lib/settings";
 import { useSpeech, useSpeechRecognition } from "@/lib/voice";
+import { useAuth } from "@/lib/auth";
+import { createThread, loadLatestThread, saveMessage, titleThread } from "@/lib/chat-history";
 
 
-const CHAT_STORAGE_KEY = "mm-mitra-chat";
-
-/** Session-scoped chat memory: survives closing the panel, cleared with the tab. */
-function loadSavedMessages(): UIMessage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as UIMessage[];
-    return Array.isArray(parsed) ? parsed.slice(-40) : [];
-  } catch {
-    return [];
-  }
-}
 
 const copy = {
   contextLabel: { en: "Recent crop check", mr: "अलीकडील पीक तपासणी", hi: "हाल की फ़सल जाँच" },
