@@ -150,10 +150,15 @@
 }
 
 @utility glass {
-  background-color: color-mix(in oklab, var(--color-card) 65%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
+  background-color: color-mix(in oklab, var(--color-card) 82%, transparent);
+  backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  @media (min-width: 1024px) {
+    background-color: color-mix(in oklab, var(--color-card) 65%, transparent);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
 }
+
 
 @utility glass-dark {
   background-color: oklch(1 0 0 / 0.1);
@@ -218,18 +223,18 @@
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.988);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes page-child-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 12px, 0);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
@@ -238,20 +243,19 @@
 }
 
 @utility animate-page {
-  animation: page-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: page-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-  /* Staggered entrance for the page's top-level blocks. */
-  & > * {
-    animation: page-child-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Short, GPU-cheap staggered entrance for the first blocks only, so the
+     rest of a long page paints immediately instead of waiting its turn. */
+  & > *:nth-child(-n + 4) {
+    animation: page-child-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  & > *:nth-child(1) { animation-delay: 0.02s; }
-  & > *:nth-child(2) { animation-delay: 0.07s; }
-  & > *:nth-child(3) { animation-delay: 0.12s; }
-  & > *:nth-child(4) { animation-delay: 0.17s; }
-  & > *:nth-child(5) { animation-delay: 0.22s; }
-  & > *:nth-child(n + 6) { animation-delay: 0.26s; }
+  & > *:nth-child(1) { animation-delay: 0s; }
+  & > *:nth-child(2) { animation-delay: 0.04s; }
+  & > *:nth-child(3) { animation-delay: 0.08s; }
+  & > *:nth-child(4) { animation-delay: 0.12s; }
 }
+
 
 /* Bottom-nav selection pill that morphs between tabs. */
 @utility nav-pill {
