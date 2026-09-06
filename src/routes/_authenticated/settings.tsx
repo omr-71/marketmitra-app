@@ -21,13 +21,26 @@ import { Screen, TopBar } from "@/components/app-shell";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
-import { VOICE_PERSONALITIES } from "@/lib/voice";
+import { MITRA_VOICES } from "@/lib/voices";
+import { useMitraSpeech } from "@/lib/mitra-speech";
 import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
 import { crops, type Lang } from "@/lib/crops";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+
+const previewLine: Record<Lang, string> = {
+  en: "Namaste, I am Mitra. I can read your answers aloud like this.",
+  mr: "नमस्ते, मी मित्र. मी तुमची उत्तरे अशी वाचून दाखवू शकतो.",
+  hi: "नमस्ते, मैं मित्र हूँ। मैं आपके उत्तर इस तरह पढ़कर सुना सकता हूँ।",
+};
+
+const previewCopy = {
+  play: { en: "Hear this voice", mr: "हा आवाज ऐका", hi: "यह आवाज़ सुनें" },
+  loading: { en: "Preparing…", mr: "तयार करत आहे…", hi: "तैयार हो रहा है…" },
+  playing: { en: "Speaking…", mr: "बोलत आहे…", hi: "बोल रहा है…" },
+} as const;
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -96,6 +109,15 @@ function SettingsPage() {
   const { t, lang, setLang } = useLang();
   const { theme, setTheme } = useTheme();
   const { settings, setNotifications, setAppearance, setVoice, reset } = useSettings();
+  const preview = useMitraSpeech(
+    {
+      voiceId: settings.voice.voiceId,
+      speed: settings.voice.speed,
+      volume: settings.voice.volume,
+      expressive: settings.voice.emotional,
+    },
+    lang,
+  );
   const { profile, updateProfile } = useSession();
 
   const [name, setName] = useState("");
@@ -360,7 +382,7 @@ function SettingsPage() {
                 Voice personality
               </Label>
               <div className="grid grid-cols-2 gap-2">
-                {VOICE_PERSONALITIES.map((v) => (
+                {MITRA_VOICES.map((v) => (
                   <button
                     key={v.id}
                     type="button"
@@ -371,10 +393,28 @@ function SettingsPage() {
                         : "border-border/70 text-foreground"
                     }`}
                   >
-                    {v.label[lang]}
+                    <span className="block">{v.name}</span>
+                    <span className="block text-[11px] font-semibold text-muted-foreground">
+                      {v.style[lang]}
+                    </span>
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => preview.speak(previewLine[lang])}
+                disabled={preview.loading || preview.speaking}
+                className="press rounded-xl border border-border/70 px-3 py-2 text-[13px] font-bold disabled:opacity-60"
+              >
+                {preview.loading
+                  ? previewCopy.loading[lang]
+                  : preview.speaking
+                    ? previewCopy.playing[lang]
+                    : previewCopy.play[lang]}
+              </button>
+              {preview.error && (
+                <p className="text-[12px] font-semibold text-destructive">{preview.error}</p>
+              )}
             </div>
 
             <label className="flex items-center justify-between gap-3 text-sm font-semibold">
