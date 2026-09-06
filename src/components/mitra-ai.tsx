@@ -600,7 +600,7 @@ export function MitraAI() {
                   </button>
                 )}
 
-                {speech.supported && lastAssistantText && !mic.listening && (
+                {lastAssistantText && !mic.listening && (
                   <button
                     type="button"
                     onClick={() =>
