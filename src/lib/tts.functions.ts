@@ -13,7 +13,12 @@ const schema = z.object({
     .default("informative"),
   /** Farmer speed preference (0.7–1.4). */
   speed: z.number().min(0.7).max(1.4).default(1),
+  /** UI language so Hindi/Marathi answers are phonemised natively, not as English. */
+  lang: z.enum(["en", "hi", "mr"]).default("en"),
 });
+
+/** ElevenLabs phonemisation hint. Marathi shares Hindi's Devanagari engine. */
+const LANG_CODE: Record<string, string> = { en: "en", hi: "hi", mr: "hi" };
 
 export type MitraSpeech = { audio: string; mime: string; voiceId: string };
 
@@ -41,6 +46,7 @@ export const synthesizeMitraSpeech = createServerFn({ method: "POST" })
         body: JSON.stringify({
           text: data.text,
           model_id: "eleven_multilingual_v2",
+          language_code: LANG_CODE[data.lang],
           voice_settings: {
             stability: mood.stability,
             similarity_boost: mood.similarity_boost,
