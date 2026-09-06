@@ -80,7 +80,7 @@ export function useMitraSpeech(prefs: MitraSpeechPrefs, lang: Lang) {
         if (token === requestRef.current) setLoading(false);
       }
     },
-    [prefs.expressive, prefs.speed, prefs.voiceId, prefs.volume, stop, synth],
+    [prefs.expressive, prefs.speed, prefs.voiceId, prefs.volume, lang, stop, synth],
   );
 
   return { speak, stop, speaking, loading, error, clearError: () => setError(null) };
