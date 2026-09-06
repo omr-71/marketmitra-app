@@ -20,7 +20,7 @@ export type MitraSpeechPrefs = {
  * configured speech provider. Failures surface as a message — the app never
  * pretends the chosen voice was used when it was not.
  */
-export function useMitraSpeech(prefs: MitraSpeechPrefs, _lang: Lang) {
+export function useMitraSpeech(prefs: MitraSpeechPrefs, lang: Lang) {
   const synth = useServerFn(synthesizeMitraSpeech);
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,6 +58,7 @@ export function useMitraSpeech(prefs: MitraSpeechPrefs, _lang: Lang) {
             voiceId: voice.id,
             mood: prefs.expressive ? detectMood(clean) : "informative",
             speed: prefs.speed,
+            lang,
           },
         });
         if (token !== requestRef.current) return;
@@ -79,7 +80,7 @@ export function useMitraSpeech(prefs: MitraSpeechPrefs, _lang: Lang) {
         if (token === requestRef.current) setLoading(false);
       }
     },
-    [prefs.expressive, prefs.speed, prefs.voiceId, prefs.volume, stop, synth],
+    [prefs.expressive, prefs.speed, prefs.voiceId, prefs.volume, lang, stop, synth],
   );
 
   return { speak, stop, speaking, loading, error, clearError: () => setError(null) };
