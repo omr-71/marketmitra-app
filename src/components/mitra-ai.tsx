@@ -41,7 +41,8 @@ import { useLang } from "@/lib/i18n";
 import { useLocationContext } from "@/lib/location";
 import { latestDiagnosisContext } from "@/lib/diagnose.functions";
 import { resolveLang, useSettings } from "@/lib/settings";
-import { useSpeech, useSpeechRecognition } from "@/lib/voice";
+import { useSpeechRecognition } from "@/lib/voice";
+import { useMitraSpeech } from "@/lib/mitra-speech";
 import { useAuth } from "@/lib/auth";
 import { createThread, loadLatestThread, saveMessage, titleThread } from "@/lib/chat-history";
 
@@ -297,13 +298,13 @@ export function MitraAI() {
   const voicePrefs = useMemo(
     () => ({
       voiceId: settings.voice.voiceId,
-      rate: settings.voice.speed,
+      speed: settings.voice.speed,
       volume: settings.voice.volume,
       expressive: settings.voice.emotional,
     }),
     [settings.voice],
   );
-  const speech = useSpeech(resolveLang(settings.voice.lang, lang), voicePrefs);
+  const speech = useMitraSpeech(voicePrefs, resolveLang(settings.voice.lang, lang));
   const mic = useSpeechRecognition(lang);
 
   const send = useCallback(
@@ -378,7 +379,9 @@ export function MitraAI() {
     [busy, regenerate, speech],
   );
 
-  const voiceStatus = mic.listening
+  const voiceStatus = speech.error
+    ? speech.error
+    : mic.listening
     ? copy.listening[lang]
     : speech.speaking
       ? copy.speaking[lang]

@@ -30,6 +30,18 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+const previewLine: Record<Lang, string> = {
+  en: "Namaste, I am Mitra. I can read your answers aloud like this.",
+  mr: "नमस्ते, मी मित्र. मी तुमची उत्तरे अशी वाचून दाखवू शकतो.",
+  hi: "नमस्ते, मैं मित्र हूँ। मैं आपके उत्तर इस तरह पढ़कर सुना सकता हूँ।",
+};
+
+const previewCopy = {
+  play: { en: "Hear this voice", mr: "हा आवाज ऐका", hi: "यह आवाज़ सुनें" },
+  loading: { en: "Preparing…", mr: "तयार करत आहे…", hi: "तैयार हो रहा है…" },
+  playing: { en: "Speaking…", mr: "बोलत आहे…", hi: "बोल रहा है…" },
+} as const;
+
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
