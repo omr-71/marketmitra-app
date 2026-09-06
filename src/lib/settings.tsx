@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import type { Lang } from "./crops";
+import { MITRA_VOICES } from "./voices";
 
 export type TextSize = "sm" | "md" | "lg";
 export type Density = "comfortable" | "compact";
@@ -69,7 +70,7 @@ export const DEFAULT_SETTINGS: Settings = {
     keepHistory: true,
   },
   voice: {
-    voiceId: "warm-female",
+    voiceId: "aarohi",
     lang: "auto",
     speed: 1,
     volume: 1,
@@ -111,9 +112,12 @@ export function getDeviceId(): string {
 
 function merge(raw: unknown): Settings {
   const parsed = (raw ?? {}) as Partial<Settings>;
+  const voice = { ...DEFAULT_SETTINGS.voice, ...(parsed.voice ?? {}) };
+  // Only voices the speech provider actually supports may be stored.
+  if (!MITRA_VOICES.some((v) => v.id === voice.voiceId)) voice.voiceId = DEFAULT_SETTINGS.voice.voiceId;
   return {
     chat: { ...DEFAULT_SETTINGS.chat, ...(parsed.chat ?? {}) },
-    voice: { ...DEFAULT_SETTINGS.voice, ...(parsed.voice ?? {}) },
+    voice,
     notifications: { ...DEFAULT_SETTINGS.notifications, ...(parsed.notifications ?? {}) },
     appearance: { ...DEFAULT_SETTINGS.appearance, ...(parsed.appearance ?? {}) },
   };
