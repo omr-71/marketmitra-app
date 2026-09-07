@@ -10,7 +10,7 @@ import {
   LogOut,
   MapPin,
   Palette,
-  Phone,
+  
   RotateCcw,
   Shield,
   Sprout,
