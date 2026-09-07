@@ -121,16 +121,14 @@ function SettingsPage() {
   const { profile, updateProfile } = useSession();
 
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [village, setVillage] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string }>({});
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
 
   useEffect(() => {
     setName(profile.full_name ?? "");
-    setPhone(profile.phone ?? "");
     setVillage(profile.village ?? "");
-  }, [profile.full_name, profile.phone, profile.village]);
+  }, [profile.full_name, profile.village]);
 
   useEffect(() => {
     setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
@@ -142,33 +140,21 @@ function SettingsPage() {
       mr: "पूर्ण नाव आवश्यक आहे.",
       hi: "पूरा नाम आवश्यक है.",
     },
-    phoneRequired: {
-      en: "Mobile number is required.",
-      mr: "मोबाइल नंबर आवश्यक आहे.",
-      hi: "मोबाइल नंबर आवश्यक है.",
-    },
-    phoneInvalid: {
-      en: "Enter a valid 10-digit Indian mobile number.",
-      mr: "वैध १० अंकी मोबाइल नंबर टाका.",
-      hi: "मान्य 10 अंकों का मोबाइल नंबर डालें.",
-    },
   } as const;
 
   const saveProfile = () => {
-    const next: { name?: string; phone?: string } = {};
+    const next: { name?: string } = {};
     if (!name.trim()) next.name = msg.nameRequired[lang];
-    if (!phone.trim()) next.phone = msg.phoneRequired[lang];
-    else if (!/^[6-9]\d{9}$/.test(phone.trim())) next.phone = msg.phoneInvalid[lang];
     setErrors(next);
-    if (next.name || next.phone) return;
+    if (next.name) return;
 
     updateProfile({
       full_name: name.trim(),
-      phone: phone.trim(),
       village: village.trim() || null,
     });
     toast.success(t("save"));
   };
+
 
   const changeLanguage = (next: Lang) => {
     setLang(next);
