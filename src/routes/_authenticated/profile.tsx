@@ -65,9 +65,11 @@ function ProfilePage() {
     setSaving(true);
     try {
       await updateProfile({
-        full_name: name.trim() || null,
+        // full_name is required in the database, so an empty box saves as "".
+        full_name: name.trim(),
         village: village.trim() || null,
       });
+
       toast.success(t("save"));
       setEditing(false);
     } catch {
