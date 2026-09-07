@@ -44,13 +44,16 @@ function ProfilePage() {
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? "")
-      .join("") || "MM";
+      .join("") || "";
 
   const locationText =
     [profile.village, profile.district, profile.state].filter(Boolean).join(", ") ||
     (location
       ? [location.city, location.district, location.state].filter(Boolean).join(", ")
       : "");
+
+  const incomplete = !displayName || !locationText;
+
 
   useEffect(() => {
     if (!editing) return;
@@ -62,9 +65,11 @@ function ProfilePage() {
     setSaving(true);
     try {
       await updateProfile({
-        full_name: name.trim() || null,
+        // full_name is required in the database, so an empty box saves as "".
+        full_name: name.trim(),
         village: village.trim() || null,
       });
+
       toast.success(t("save"));
       setEditing(false);
     } catch {
@@ -96,7 +101,7 @@ function ProfilePage() {
             <span className="grad-primary pointer-events-none absolute -right-10 -top-10 size-32 rounded-full opacity-15 blur-2xl" />
             <div className="flex items-center gap-4">
               <span className="grad-primary grid size-16 shrink-0 place-items-center rounded-3xl text-xl font-extrabold text-primary-foreground shadow-lg shadow-primary/25">
-                {initials}
+                {initials || <User className="size-7" />}
               </span>
               <div className="min-w-0 flex-1">
                 {displayName ? (
@@ -127,7 +132,28 @@ function ProfilePage() {
                 Edit
               </button>
             </div>
+
+            {incomplete && (
+              <div className="mt-5 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
+                <p className="text-sm font-bold">Complete your profile</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {!displayName && !locationText
+                    ? "Add your name and where you farm so prices and weather match your area."
+                    : !displayName
+                      ? "Add your name so Mitra can greet you properly."
+                      : "Add your village so prices and weather match your area."}
+                </p>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="press grad-primary mt-3 inline-flex h-10 items-center gap-1.5 rounded-2xl px-4 text-xs font-bold text-primary-foreground"
+                >
+                  <PenLine className="size-3.5" />
+                  {!displayName ? "Add your name" : "Add your village"}
+                </button>
+              </div>
+            )}
           </div>
+
 
           {/* Personal information */}
           <section className="page-item card-surface p-5">
