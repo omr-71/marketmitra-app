@@ -44,13 +44,16 @@ function ProfilePage() {
       .filter(Boolean)
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? "")
-      .join("") || "MM";
+      .join("") || "";
 
   const locationText =
     [profile.village, profile.district, profile.state].filter(Boolean).join(", ") ||
     (location
       ? [location.city, location.district, location.state].filter(Boolean).join(", ")
       : "");
+
+  const incomplete = !displayName || !locationText;
+
 
   useEffect(() => {
     if (!editing) return;
