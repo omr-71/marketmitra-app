@@ -18,6 +18,8 @@ import {
   Volume2,
 } from "lucide-react";
 import { Screen, TopBar } from "@/components/app-shell";
+import { PhoneVerifyCard } from "@/components/phone-verify-card";
+
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
