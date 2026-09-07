@@ -248,25 +248,7 @@ function SettingsPage() {
               {errors.name && <p className="mt-1 text-[11px] font-semibold text-destructive">{errors.name}</p>}
             </label>
             <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("phone")} *
-              </span>
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <Phone className="size-4 text-muted-foreground" />
-                <input
-                  value={phone}
-                  inputMode="numeric"
-                  maxLength={10}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  aria-invalid={!!errors.phone}
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
-              </div>
-              {errors.phone && (
-                <p className="mt-1 text-[11px] font-semibold text-destructive">{errors.phone}</p>
-              )}
-            </label>
-            <label className="block">
+
               <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("village")}
               </span>
