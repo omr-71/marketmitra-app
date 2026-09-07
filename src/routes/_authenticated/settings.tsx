@@ -248,7 +248,6 @@ function SettingsPage() {
               {errors.name && <p className="mt-1 text-[11px] font-semibold text-destructive">{errors.name}</p>}
             </label>
             <label className="block">
-
               <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("village")}
               </span>
@@ -268,7 +267,9 @@ function SettingsPage() {
               {t("save")}
             </button>
           </div>
+          <PhoneVerifyCard />
         </Section>
+
 
         {/* Appearance */}
         <Section icon={Palette} title="Appearance">
