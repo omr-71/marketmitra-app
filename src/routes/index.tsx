@@ -20,8 +20,25 @@ export const Route = createFileRoute("/")({
           "Compare mandi prices, transport cost and net profit before you sell, with live weather for your farm.",
       },
       { property: "og:url", content: "https://marketmitra.app/" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://marketmitra.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": "https://marketmitra.app/#website",
+          name: "MarketMitra",
+          url: "https://marketmitra.app/",
+          description:
+            "Compare official APMC mandi prices, transport cost and net profit, with live farm weather, in English, Marathi and Hindi.",
+          inLanguage: ["en", "mr", "hi"],
+        }),
+      },
+    ],
   }),
   component: Splash,
 });
