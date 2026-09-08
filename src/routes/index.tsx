@@ -103,8 +103,15 @@ function Splash() {
           </Link>
         </div>
 
+        <h2
+          className="animate-rise mt-12 w-full text-left font-display text-lg font-bold text-[oklch(0.95_0.01_140)] lg:text-2xl"
+          style={{ animationDelay: "300ms" }}
+        >
+          What you get with MarketMitra
+        </h2>
+
         <div
-          className="animate-rise mt-12 hidden w-full grid-cols-3 gap-4 lg:grid"
+          className="animate-rise mt-4 grid w-full grid-cols-1 gap-4 sm:grid-cols-3"
           style={{ animationDelay: "320ms" }}
         >
           <Highlight
