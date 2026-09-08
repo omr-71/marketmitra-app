@@ -103,6 +103,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "AI-powered mandi intelligence for farmers: compare market prices, transport cost and net profit before you sell.",
       },
       { name: "author", content: "MarketMitra" },
+      {
+        name: "google-site-verification",
+        content: "1WmbQBM_xvrAO1A1KXxibywQY6_0oWBaRFtLk0XpIFY",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:title", content: "MarketMitra" },
