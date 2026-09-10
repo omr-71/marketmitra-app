@@ -42,8 +42,14 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-sky: var(--sky);
+  --color-sky-foreground: var(--sky-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-earthy: var(--earthy);
+  --color-earthy-foreground: var(--earthy-foreground);
+  --font-display: "Urbanist", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Epilogue", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
