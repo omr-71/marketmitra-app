@@ -359,6 +359,91 @@ function HomePage() {
               </section>
             )}
 
+            {/* Latest crop check — real saved diagnosis */}
+            <section className="card-surface hover-lift p-5">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+                  <Leaf className="size-4" /> Latest crop check
+                </p>
+                <Link to="/diagnose" className="text-xs font-bold text-primary">
+                  {t("viewAll")}
+                </Link>
+              </div>
+              {diagnosisQuery.isPending ? (
+                <div className="mt-3 space-y-2">
+                  <div className="shimmer h-3 w-2/3 rounded-xl" />
+                  <div className="shimmer h-10 w-full rounded-2xl" />
+                </div>
+              ) : diagnosis ? (
+                <>
+                  <p className="mt-2.5 text-[14px] font-bold leading-snug">
+                    {diagnosis.crop ?? "Crop"} · {diagnosis.condition ?? "Checked"}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
+                    {diagnosis.severity ? `${diagnosis.severity} · ` : ""}
+                    {diagnosis.confidence != null ? `${diagnosis.confidence}% match · ` : ""}
+                    {new Intl.DateTimeFormat("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                      day: "numeric",
+                      month: "short",
+                    }).format(new Date(diagnosis.checkedAt))}
+                  </p>
+                  {diagnosis.treatment[0] && (
+                    <p className="mt-3 rounded-2xl bg-muted/60 p-3 text-[12px] font-semibold leading-snug">
+                      {diagnosis.treatment[0]}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  No crop photo checked yet. Take a photo of an affected leaf to get guidance.
+                </p>
+              )}
+            </section>
+
+            {/* Mitra AI — continues the farmer's real last conversation */}
+            <section className="card-surface hover-lift p-5">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+                <MessageCircle className="size-4" /> Mitra AI
+              </p>
+              {lastChat ? (
+                <p className="mt-2.5 line-clamp-3 text-[13px] font-semibold leading-snug">
+                  {lastChat}
+                </p>
+              ) : (
+                <p className="mt-2.5 text-xs text-muted-foreground">
+                  Ask about prices, sprays, weather or schemes in your language.
+                </p>
+              )}
+            </section>
+
+            {/* Schemes — real published benefits */}
+            <section>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold">{t("schemes")}</h2>
+                <Link to="/schemes" className="text-xs font-bold text-primary">
+                  {t("viewAll")}
+                </Link>
+              </div>
+              <div className="mt-3 space-y-2.5">
+                {schemes.slice(0, 3).map((scheme) => (
+                  <Link
+                    key={scheme.id}
+                    to="/schemes"
+                    className="press card-surface grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-3"
+                  >
+                    <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                      <Landmark className="size-4 text-primary" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{scheme.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{scheme.benefit}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
             {/* Quick actions */}
             <section>
               <h2 className="text-sm font-bold">{t("quickActions")}</h2>
