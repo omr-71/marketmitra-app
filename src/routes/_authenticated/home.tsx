@@ -88,6 +88,32 @@ function HomePage() {
     refetchInterval: 15 * 60 * 1000,
   });
 
+  const { user } = useAuth();
+
+  const diagnosisQuery = useQuery({
+    queryKey: ["latest-diagnosis", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => latestDiagnosisContext(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const diagnosis = diagnosisQuery.data ?? null;
+
+  const chatQuery = useQuery({
+    queryKey: ["latest-chat", user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => loadLatestThread(user!.id),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const chatMessages = chatQuery.data?.messages ?? [];
+  const lastChat =
+    chatMessages
+      .slice()
+      .reverse()
+      .map((m) => m.parts.map((p) => (p.type === "text" ? p.text : "")).join(""))
+      .find((text) => text.trim().length > 0) ?? null;
+
   const records = priceQuery.data?.ok ? priceQuery.data.records : [];
   const best = records[0];
   const weather = weatherQuery.data?.ok ? weatherQuery.data : null;
