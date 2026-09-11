@@ -631,17 +631,23 @@ function ErrorLine({
   message,
   onRetry,
   retryLabel,
+  onDark = false,
 }: {
   message: string;
   onRetry: () => void;
   retryLabel: string;
+  onDark?: boolean;
 }) {
   return (
     <div className="mt-3">
-      <p className="text-xs font-semibold text-destructive">{message}</p>
+      <p className={`text-xs font-semibold ${onDark ? "text-primary-foreground" : "text-destructive"}`}>
+        {message}
+      </p>
       <button
         onClick={onRetry}
-        className="press mt-2 rounded-full bg-muted px-3 py-1.5 text-[11px] font-bold"
+        className={`press mt-2 rounded-full px-3 py-1.5 text-[11px] font-bold ${
+          onDark ? "bg-primary-foreground/15 text-primary-foreground" : "bg-muted"
+        }`}
       >
         {retryLabel}
       </button>
@@ -652,11 +658,13 @@ function ErrorLine({
 function QuickAction({
   to,
   search,
+  tint,
   icon,
   label,
 }: {
   to: string;
   search?: Record<string, unknown>;
+  tint: string;
   icon: React.ReactNode;
   label: string;
 }) {
@@ -666,9 +674,11 @@ function QuickAction({
       to={to as any}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       search={search as any}
-      className="press card-surface flex flex-col items-center gap-2 px-2 py-4 text-center"
+      className="press card-surface hover-lift group flex min-h-24 flex-col items-center justify-center gap-2 px-2 py-3.5 text-center"
     >
-      {icon}
+      <span className={`${tint} grid size-10 place-items-center rounded-2xl transition-transform duration-200 group-hover:-translate-y-0.5`}>
+        {icon}
+      </span>
       <span className="line-clamp-2 text-[11px] font-bold leading-tight">{label}</span>
     </Link>
   );

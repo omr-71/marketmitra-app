@@ -40,8 +40,8 @@ export function BottomNav() {
   const isActive = useActive();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-3 lg:hidden">
-      <div className="glass flex items-center justify-between rounded-3xl px-1.5 py-2 shadow-[var(--shadow-card)]">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+      <div className="glass flex items-center justify-between rounded-2xl px-1.5 py-2 shadow-[var(--shadow-float)]">
         {nav.map(
           ({ to, icon: Icon, key }) => {
             const active = isActive(to);
@@ -80,20 +80,21 @@ export function SideNav() {
   const isActive = useActive();
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border/70 bg-card/60 px-4 py-6 backdrop-blur-xl lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border/70 bg-card px-4 py-6 lg:flex">
       <Link to="/home" className="flex items-center gap-3 px-2">
         <LogoMark className="size-9" />
         <Wordmark className="text-lg" />
       </Link>
 
-      <nav className="mt-8 space-y-1.5">
+      <p className="mt-9 px-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">Workspace</p>
+      <nav className="mt-2 space-y-1">
         {nav.map(({ to, icon: Icon, key }) => {
           const active = isActive(to);
           return (
             <Link
               key={to}
               to={to}
-              className={`press flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-bold transition-colors ${
+               className={`press flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
                 active
                   ? "bg-primary/12 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -139,11 +140,12 @@ export function Screen({
   const disabled = flag && !flag.enabled ? flag : null;
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
+    <div className="app-canvas min-h-screen bg-background lg:flex">
       {withNav && <SideNav />}
       <div className="min-w-0 flex-1">
         <div
-          className={`mx-auto w-full max-w-[430px] lg:max-w-6xl lg:px-8 ${
+          data-route={pathname}
+          className={`app-page mx-auto w-full max-w-[430px] lg:max-w-6xl lg:px-8 ${
             withNav ? "pb-28 lg:pb-0" : ""
           } ${className}`}
         >
@@ -174,7 +176,7 @@ export function TopBar({
   settings?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bg-background/85 lg:rounded-b-3xl lg:px-6 lg:py-5 lg:backdrop-blur-xl">
+    <header className="app-topbar sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bg-background/90 lg:px-0 lg:py-6 lg:backdrop-blur-xl">
       {back ? (
         <Link
           to={back}
