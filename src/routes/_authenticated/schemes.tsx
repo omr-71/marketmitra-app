@@ -64,18 +64,18 @@ function SchemesPage() {
     <Screen>
       <TopBar title={t("schemes")} back="/home" />
 
-      <div className="px-5 pt-5">
-        <p className="text-xs text-muted-foreground">
+      <div className="px-4 pt-4 sm:px-5 lg:px-0 lg:pt-6">
+        <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
           Benefits and criteria as published by the implementing department. Apply on the official portal —
           MarketMitra does not process applications.
         </p>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
           {schemes.map((scheme) => (
-            <article key={scheme.id} className="card-surface hover-lift p-5">
+            <article key={scheme.id} className="card-surface hover-lift flex min-w-0 flex-col border-t-4 border-t-gold p-4 sm:p-5">
               <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <Landmark className="size-4.5 text-primary" />
+                <span className="tint-gold grid size-10 shrink-0 place-items-center rounded-xl">
+                  <Landmark className="size-4.5" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="text-sm font-extrabold leading-snug">{scheme.name}</h2>
@@ -83,7 +83,7 @@ function SchemesPage() {
                 </div>
               </div>
 
-              <p className="mt-3 text-[13px] font-semibold leading-snug text-primary">{scheme.benefit}</p>
+              <p className="mt-3 text-[13px] font-semibold leading-snug text-gold-foreground">{scheme.benefit}</p>
 
               <ul className="mt-3 space-y-1.5">
                 {scheme.criteria.map((c) => (
@@ -99,7 +99,7 @@ function SchemesPage() {
                 onClick={() => track("scheme_viewed", { label: scheme.name })}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="press mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-primary/35 text-xs font-bold text-primary"
+                className="press mt-auto flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-gold/45 pt-0 text-xs font-bold text-gold-foreground"
               >
                 Open official portal <ExternalLink className="size-3.5" />
               </a>

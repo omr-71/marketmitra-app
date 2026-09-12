@@ -230,7 +230,7 @@ function WeatherPage() {
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-              <section className="card-surface hover-lift overflow-hidden p-6">
+              <section className="card-surface hover-lift overflow-hidden border-t-4 border-t-sky p-4 sm:p-6">
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="font-display text-6xl font-extrabold leading-none">
@@ -246,7 +246,7 @@ function WeatherPage() {
                     </p>
                   </div>
 
-                  <CloudSun className="size-16 text-primary lg:size-20" />
+                    <CloudSun className="size-14 shrink-0 text-sky sm:size-16 lg:size-20" />
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
@@ -269,7 +269,7 @@ function WeatherPage() {
                   />
                 </div>
 
-                <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                <div className="mt-3 grid min-w-0 grid-cols-2 gap-3 rounded-xl bg-muted/60 p-3 text-center sm:grid-cols-4 sm:gap-2">
                   <Metric
                     icon={<CloudRain className="size-4 text-primary" />}
                     label="Rain (1h)"
@@ -327,8 +327,8 @@ function WeatherPage() {
                   />
                 </div>
 
-                <section className="card-surface hover-lift p-5">
-                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+                <section className="card-surface hover-lift border-l-4 border-l-sky p-5">
+                  <p className="eyebrow flex items-center gap-2 text-sky">
                     <Lightbulb className="size-4" />
                     Today's weather insight
                   </p>
@@ -338,8 +338,8 @@ function WeatherPage() {
                   </p>
                 </section>
 
-                <section className="card-surface hover-lift p-5">
-                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+                <section className="card-surface hover-lift border-l-4 border-l-gold p-5">
+                  <p className="eyebrow flex items-center gap-2 text-gold-foreground">
                     <Clock className="size-4" />
                     Best time for farming today
                   </p>
@@ -356,7 +356,7 @@ function WeatherPage() {
             </div>
 
             {wetDays.length > 0 && (
-              <section className="rounded-3xl bg-warning/10 p-5 ring-1 ring-warning/30">
+              <section className="rounded-xl border border-warning/30 bg-warning/10 p-4 sm:p-5">
                 <p className="flex items-center gap-2 text-sm font-extrabold text-warning">
                   <AlertTriangle className="size-4" />
                   {t("rainAlert")}
@@ -473,13 +473,13 @@ function TileStat({
   hint: string;
 }) {
   return (
-    <div className="card-surface hover-lift p-4">
+    <div className="card-surface hover-lift min-w-0 border-t-2 border-t-sky p-4">
       <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
         {icon}
         {label}
       </div>
 
-      <p className="mt-2 font-display text-2xl font-extrabold leading-none">
+      <p className="mt-2 truncate font-display text-xl font-extrabold leading-none sm:text-2xl">
         {value}
       </p>
 

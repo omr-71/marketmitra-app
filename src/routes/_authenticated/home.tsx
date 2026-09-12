@@ -9,27 +9,18 @@ import { useSession } from "@/lib/session";
 import { useLocationContext } from "@/lib/location";
 import { crops, findCrop } from "@/lib/crops";
 import { fetchMandiPrices } from "@/lib/market.functions";
-import { schemes } from "@/lib/schemes";
-import { latestDiagnosisContext } from "@/lib/diagnose.functions";
-import { loadLatestThread } from "@/lib/chat-history";
-import { useAuth } from "@/lib/auth";
 import { getWeather } from "@/lib/weather-fetch";
 import { inr, useIstNow } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
 import { bestFarmingWindow, conditionLabel, todayInsight, uvLabel } from "@/lib/farm-insights";
 import {
   ArrowRight,
-  BarChart3,
   Clock,
   CloudRain,
   CloudSun,
   Droplets,
-  Landmark,
-  Leaf,
   Lightbulb,
-  MessageCircle,
   Sparkles,
-  Store,
   Sun,
   TrendingDown,
   TrendingUp,
@@ -88,32 +79,6 @@ function HomePage() {
     refetchInterval: 15 * 60 * 1000,
   });
 
-  const { user } = useAuth();
-
-  const diagnosisQuery = useQuery({
-    queryKey: ["latest-diagnosis", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: () => latestDiagnosisContext(),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const diagnosis = diagnosisQuery.data ?? null;
-
-  const chatQuery = useQuery({
-    queryKey: ["latest-chat", user?.id],
-    enabled: Boolean(user?.id),
-    queryFn: () => loadLatestThread(user!.id),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  const chatMessages = chatQuery.data?.messages ?? [];
-  const lastChat =
-    chatMessages
-      .slice()
-      .reverse()
-      .map((m) => m.parts.map((p) => (p.type === "text" ? p.text : "")).join(""))
-      .find((text) => text.trim().length > 0) ?? null;
-
   const records = priceQuery.data?.ok ? priceQuery.data.records : [];
   const best = records[0];
   const weather = weatherQuery.data?.ok ? weatherQuery.data : null;
@@ -127,9 +92,7 @@ function HomePage() {
   return (
     <Screen>
       {/* ---------- Hero ---------- */}
-      <section className="grad-forest relative overflow-hidden px-5 pb-16 pt-8 text-primary-foreground lg:rounded-4xl lg:px-8 lg:pb-20 lg:pt-10">
-        <span className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-[oklch(1_0_0/0.1)]" />
-        <span className="pointer-events-none absolute -bottom-24 -left-10 size-48 rounded-full bg-[oklch(1_0_0/0.07)]" />
+      <section className="grad-forest relative overflow-hidden px-5 pb-10 pt-6 text-primary-foreground lg:rounded-4xl lg:px-8 lg:pb-16 lg:pt-10">
 
         <div className="relative grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
           <div className="min-w-0">
@@ -162,20 +125,20 @@ function HomePage() {
             ) : null}
 
             {weather && (
-              <p className="mt-4 max-w-md text-[13px] font-semibold leading-relaxed opacity-95">
+              <p className="mt-3 max-w-md text-[12px] font-semibold leading-relaxed opacity-95 sm:text-[13px]">
                 {todayInsight(weather)}
               </p>
             )}
 
             {weather && (
-              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-[oklch(1_0_0/0.13)] px-4 py-3 text-[12px] font-semibold">
+              <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-primary-foreground/10 px-3 py-2.5 text-[11px] font-semibold sm:text-[12px]">
                 <span className="flex items-center gap-1.5">
                   <Clock className="size-3.5 shrink-0" />
                   <b className="font-extrabold">{bestFarmingWindow(weather).window}</b>
                 </span>
                 <Link
                   to="/weather"
-                  className="nudge-icon ml-auto flex items-center gap-1 font-extrabold"
+                  className="nudge-icon flex shrink-0 items-center gap-1 font-extrabold"
                 >
                   {t("viewAll")} <ArrowRight className="size-3.5" />
                 </Link>
@@ -184,7 +147,7 @@ function HomePage() {
           </div>
 
           {weather ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
               <GlassStat
                 icon={<Droplets className="size-4" />}
                 label={t("humidity")}
@@ -207,7 +170,7 @@ function HomePage() {
               />
             </div>
           ) : (
-            <div className="rounded-3xl bg-[oklch(1_0_0/0.12)] p-5">
+              <div className="rounded-2xl bg-primary-foreground/10 p-4">
               <p className="text-sm font-extrabold">{t("weather")}</p>
               {weatherQuery.data && !weatherQuery.data.ok ? (
                 <ErrorLine
@@ -225,60 +188,14 @@ function HomePage() {
       </section>
 
       {/* ---------- Dashboard body ---------- */}
-      <div className="relative z-10 -mt-10 space-y-6 px-5 lg:px-8">
-        {/* Quick actions — thumb reachable on mobile, toolbar on desktop */}
-        <div className="grid grid-cols-3 gap-2.5 lg:grid-cols-6">
-          <QuickAction
-            to="/crops"
-            tint="tint-primary"
-            icon={<Store className="size-5" />}
-            label={t("selectCrop")}
-          />
-          <QuickAction
-            to="/markets"
-            search={{ crop: primary.id, qty: 20 }}
-            tint="tint-gold"
-            icon={<Sparkles className="size-5" />}
-            label={t("compareMarkets")}
-          />
-          <QuickAction
-            to="/predict"
-            search={{
-              crop: primary.id,
-              market: best?.market ?? "",
-              state: location?.state ?? "",
-            }}
-            tint="tint-sky"
-            icon={<BarChart3 className="size-5" />}
-            label={t("pricePrediction")}
-          />
-          <QuickAction
-            to="/weather"
-            tint="tint-sky"
-            icon={<CloudSun className="size-5" />}
-            label={t("weather")}
-          />
-          <QuickAction
-            to="/diagnose"
-            tint="tint-primary"
-            icon={<Leaf className="size-5" />}
-            label={t("diagnose")}
-          />
-          <QuickAction
-            to="/schemes"
-            tint="tint-earthy"
-            icon={<Landmark className="size-5" />}
-            label={t("schemes")}
-          />
-        </div>
-
+      <div className="relative z-10 space-y-5 px-4 pt-4 sm:px-5 lg:-mt-8 lg:space-y-6 lg:px-8 lg:pt-0">
         <LocationCard />
 
         {/* Key numbers */}
         {priceQuery.isPending && location?.state ? (
           <StatSkeleton />
         ) : records.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
             <CounterCard label="Markets reporting" value={marketCount} accent="primary" />
             <CounterCard
               label={`${primary.name[lang]} top rate`}
@@ -415,8 +332,8 @@ function HomePage() {
             </section>
           </div>
 
-          {/* Right rail */}
-          <div className="space-y-4">
+          {/* Desktop intelligence rail; mobile stays focused on today's decision. */}
+          <div className="hidden space-y-4 lg:block">
             {weather ? (
               <Panel
                 tint="tint-sky"
@@ -451,80 +368,6 @@ function HomePage() {
               location?.latitude != null && weatherQuery.isPending && <CardSkeleton lines={4} />
             )}
 
-            {/* Latest crop check — real saved diagnosis */}
-            <Panel
-              tint="tint-primary"
-              icon={<Leaf className="size-4" />}
-              title="Latest crop check"
-              to="/diagnose"
-              viewAll={t("viewAll")}
-            >
-              {diagnosisQuery.isPending ? (
-                <div className="space-y-2">
-                  <div className="shimmer h-3 w-2/3 rounded-xl" />
-                  <div className="shimmer h-10 w-full rounded-2xl" />
-                </div>
-              ) : diagnosis ? (
-                <>
-                  <p className="text-[14px] font-extrabold leading-snug">
-                    {diagnosis.crop ?? "Crop"} · {diagnosis.condition ?? "Checked"}
-                  </p>
-                  <p className="mt-1 text-[11px] font-semibold text-muted-foreground">
-                    {diagnosis.severity ? `${diagnosis.severity} · ` : ""}
-                    {diagnosis.confidence != null ? `${diagnosis.confidence}% match · ` : ""}
-                    {new Intl.DateTimeFormat("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      day: "numeric",
-                      month: "short",
-                    }).format(new Date(diagnosis.checkedAt))}
-                  </p>
-                  {diagnosis.treatment[0] && (
-                    <p className="mt-3 rounded-2xl bg-muted/50 p-3 text-[12px] font-semibold leading-relaxed">
-                      {diagnosis.treatment[0]}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="text-xs font-semibold text-muted-foreground">
-                  No crop photo checked yet. Take a photo of an affected leaf to get guidance.
-                </p>
-              )}
-            </Panel>
-
-            {/* Mitra AI — continues the farmer's real last conversation */}
-            <Panel tint="tint-earthy" icon={<MessageCircle className="size-4" />} title="Mitra AI">
-              {lastChat ? (
-                <p className="line-clamp-3 text-[13px] font-semibold leading-relaxed">{lastChat}</p>
-              ) : (
-                <p className="text-xs font-semibold text-muted-foreground">
-                  Ask about prices, sprays, weather or schemes in your language.
-                </p>
-              )}
-            </Panel>
-
-            {/* Schemes — real published benefits */}
-            <Panel
-              tint="tint-gold"
-              icon={<Landmark className="size-4" />}
-              title={t("schemes")}
-              to="/schemes"
-              viewAll={t("viewAll")}
-            >
-              <div className="-mx-1 divide-y divide-border/70">
-                {schemes.slice(0, 3).map((scheme) => (
-                  <Link
-                    key={scheme.id}
-                    to="/schemes"
-                    className="press block px-1 py-3 first:pt-0 last:pb-0"
-                  >
-                    <p className="truncate text-sm font-extrabold">{scheme.name}</p>
-                    <p className="truncate text-[11px] font-semibold text-muted-foreground">
-                      {scheme.benefit}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </Panel>
           </div>
         </div>
       </div>
@@ -555,7 +398,7 @@ function CounterCard({
     <div className="card-surface hover-lift relative overflow-hidden p-4">
       <span className={`${accentTint[accent]} absolute inset-x-0 top-0 h-1`} />
       <p className="truncate text-[11px] font-extrabold text-muted-foreground">{label}</p>
-      <p className="mt-1.5 font-display text-xl font-extrabold tabular-nums leading-none lg:text-2xl">
+      <p className="mt-1.5 min-w-0 truncate font-display text-lg font-extrabold tabular-nums leading-none sm:text-xl lg:text-2xl">
         {money ? inr(Math.round(shown)) : Math.round(shown).toLocaleString("en-IN")}
       </p>
     </div>
@@ -655,31 +498,3 @@ function ErrorLine({
   );
 }
 
-function QuickAction({
-  to,
-  search,
-  tint,
-  icon,
-  label,
-}: {
-  to: string;
-  search?: Record<string, unknown>;
-  tint: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <Link
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      to={to as any}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      search={search as any}
-      className="press card-surface hover-lift group flex min-h-24 flex-col items-center justify-center gap-2 px-2 py-3.5 text-center"
-    >
-      <span className={`${tint} grid size-10 place-items-center rounded-2xl transition-transform duration-200 group-hover:-translate-y-0.5`}>
-        {icon}
-      </span>
-      <span className="line-clamp-2 text-[11px] font-bold leading-tight">{label}</span>
-    </Link>
-  );
-}

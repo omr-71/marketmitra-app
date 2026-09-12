@@ -431,7 +431,7 @@ export function MitraAI() {
         aria-hidden={hideOrb}
         tabIndex={hideOrb ? -1 : 0}
         style={{ bottom: bottomOffset }}
-        className={`press fixed right-4 z-50 grid size-14 place-items-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-primary-foreground/20 transition-all duration-200 hover:scale-105 lg:right-8 lg:size-16 ${
+        className={`press grad-primary fixed right-4 z-50 grid size-14 place-items-center rounded-full text-primary-foreground shadow-[var(--shadow-float)] ring-1 ring-primary-foreground/20 transition-all duration-200 hover:scale-105 lg:right-8 lg:size-16 ${
           hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100"
         }`}
       >
@@ -458,23 +458,23 @@ export function MitraAI() {
           }
           className="fixed inset-0 z-50 h-[100dvh] lg:inset-auto lg:right-8 lg:h-[600px] lg:max-h-[80vh] lg:w-[420px]"
         >
-          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background lg:rounded-3xl lg:border lg:border-border/70 lg:bg-background/95 lg:shadow-[var(--shadow-card)] lg:backdrop-blur-2xl">
-            <header className="flex items-center gap-3 border-b border-border/60 bg-card/70 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:pt-3">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background lg:rounded-2xl lg:border lg:border-border/70 lg:bg-background/95 lg:shadow-[var(--shadow-float)] lg:backdrop-blur-xl">
+            <header className="grad-forest flex items-center gap-3 border-b border-primary-foreground/10 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-primary-foreground lg:pt-3">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={copy.close[lang]}
-                className="press grid size-11 shrink-0 place-items-center rounded-full bg-muted text-foreground lg:hidden"
+                className="press grid size-11 shrink-0 place-items-center rounded-full bg-primary-foreground/10 text-primary-foreground lg:hidden"
               >
                 <ChevronLeft className="size-5" strokeWidth={2.2} />
               </button>
 
-              <span className="hidden size-10 place-items-center rounded-2xl bg-primary/15 text-primary lg:grid">
+              <span className="hidden size-10 place-items-center rounded-xl bg-primary-foreground/10 text-primary-foreground lg:grid">
                 <Leaf className="size-5" strokeWidth={2.2} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-display text-sm font-bold lg:text-base">{copy.title[lang]}</p>
-                <p className="truncate text-[11px] text-muted-foreground">
+                <p className="truncate text-[11px] text-primary-foreground/70">
                   {location?.place ? location.place : copy.subtitle[lang]}
                 </p>
               </div>
@@ -482,7 +482,7 @@ export function MitraAI() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={copy.close[lang]}
-                className="press hidden size-9 place-items-center rounded-full bg-muted text-muted-foreground lg:grid"
+                className="press hidden size-9 place-items-center rounded-full bg-primary-foreground/10 text-primary-foreground lg:grid"
               >
                 <X className="size-4" />
               </button>

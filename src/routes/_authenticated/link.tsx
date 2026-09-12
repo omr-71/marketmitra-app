@@ -416,7 +416,7 @@ function NeedForm({ onDone, onClose }: { onDone: (requestId: string) => void; on
   });
 
   return (
-    <div className="card-surface animate-page space-y-4 p-5">
+    <div className="card-surface animate-page space-y-4 border-t-4 border-t-earthy p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-extrabold">I NEED</p>
@@ -618,7 +618,7 @@ function HaveForm({
   });
 
   return (
-    <div className="card-surface animate-page space-y-4 p-5">
+    <div className="card-surface animate-page space-y-4 border-t-4 border-t-primary p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-extrabold">I HAVE</p>
@@ -848,7 +848,7 @@ function MatchPanel({
             const { listing } = candidate;
             const clusterShare = shareCost(listing.price, 2);
             return (
-              <div key={listing.id} className="rounded-3xl border border-border p-4">
+              <div key={listing.id} className="rounded-xl border border-border bg-muted/20 p-4">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Mitra match found</p>
                 <div className="mt-3 flex gap-3">
                   <Photo url={listing.photoUrls[0]} className="size-24 shrink-0" />
@@ -973,7 +973,7 @@ function MatchRow({
   const canContact = match.status === "accepted" || match.status === "scheduled" || match.status === "in_progress";
 
   return (
-    <div className="card-surface hover-lift p-4">
+    <div className="card-surface hover-lift min-w-0 border-l-4 border-l-earthy p-4">
       <div className="flex items-center gap-3">
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold">

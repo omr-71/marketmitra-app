@@ -305,6 +305,7 @@
 
 @utility animate-page {
   animation: page-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 
   /* Short, GPU-cheap staggered entrance for the first blocks only, so the
      rest of a long page paints immediately instead of waiting its turn. */
@@ -315,6 +316,38 @@
   & > *:nth-child(2) { animation-delay: 0.04s; }
   & > *:nth-child(3) { animation-delay: 0.08s; }
   & > *:nth-child(4) { animation-delay: 0.12s; }
+}
+
+/* Route-level visual accents preserve each workflow while making feature areas distinct. */
+[data-route="/markets"] .app-topbar,
+[data-route^="/market/"] .app-topbar {
+  border-bottom-color: color-mix(in oklab, var(--color-gold) 38%, var(--color-border));
+}
+
+[data-route="/weather"] .app-topbar {
+  border-bottom-color: color-mix(in oklab, var(--color-sky) 42%, var(--color-border));
+}
+
+[data-route="/diagnose"] .app-topbar {
+  border-bottom-color: color-mix(in oklab, var(--color-primary) 42%, var(--color-border));
+}
+
+[data-route="/schemes"] .app-topbar {
+  border-bottom-color: color-mix(in oklab, var(--color-gold) 42%, var(--color-border));
+}
+
+[data-route="/link"] .app-topbar {
+  border-bottom-color: color-mix(in oklab, var(--color-earthy) 42%, var(--color-border));
+}
+
+@media (max-width: 639px) {
+  [data-route="/home"] {
+    overflow-x: clip;
+  }
+
+  [data-route="/home"] .card-surface {
+    min-width: 0;
+  }
 }
 
 

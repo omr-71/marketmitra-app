@@ -159,7 +159,7 @@ function MarketsPage() {
         }
       />
 
-      <div className="px-5 pt-5">
+      <div className="px-4 pt-4 sm:px-5 lg:px-0 lg:pt-6">
         <div className="flex gap-2">
           <label className="card-surface hover-lift flex h-12 flex-1 items-center gap-2 px-4">
             <Search className="size-4 shrink-0 text-muted-foreground" />
@@ -183,7 +183,7 @@ function MarketsPage() {
         </div>
 
         {showFilters && (
-          <div className="card-surface hover-lift mt-3 space-y-4 p-4">
+            <div className="card-surface mt-3 space-y-4 border-t-2 border-t-sky p-4">
             <div>
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span>Transport rate (₹ per km)</span>
@@ -249,8 +249,8 @@ function MarketsPage() {
         ) : (
           <>
             {bestPrice && result && (
-              <section className="mt-5 rounded-3xl bg-primary/10 p-5 ring-1 ring-primary/25">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+              <section className="card-surface mt-5 overflow-hidden border-t-4 border-t-gold p-4 sm:p-5">
+                <p className="eyebrow flex items-center gap-1.5 text-gold-foreground">
                   <Award className="size-3.5" /> {t("bestChoice")} · best available price
                 </p>
                 <p className="mt-1.5 text-lg font-extrabold">{bestPrice.record.market}</p>
@@ -289,7 +289,7 @@ function MarketsPage() {
                     to="/market/$marketId"
                     params={{ marketId: row.record.market }}
                     search={{ crop: crop.id, state: row.record.state }}
-                    className={`press card-surface block p-4 ${isBest ? "ring-2 ring-primary/40" : ""}`}
+                    className={`press card-surface hover-lift block min-w-0 overflow-hidden p-4 ${isBest ? "border-gold/60 ring-2 ring-gold/25" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -316,13 +316,13 @@ function MarketsPage() {
                       )}
                     </div>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-muted/60 p-3 text-center">
+                    <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 rounded-xl bg-muted/60 p-2.5 text-center sm:gap-2 sm:p-3">
                       <Cell label={t("minPrice")} value={inr(row.record.minPrice)} />
                       <Cell label={t("modalPrice")} value={inr(row.record.modalPrice)} />
                       <Cell label={t("maxPrice")} value={inr(row.record.maxPrice)} />
                     </div>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border pt-3 text-center">
+                    <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 border-t border-border pt-3 text-center sm:gap-2">
                       <Cell label="Gross" value={inr(row.gross)} />
                       <Cell
                         label={row.transport ? `${t("transport")} (est.)` : t("transport")}
@@ -369,8 +369,8 @@ function MarketsPage() {
 function Cell({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <p className={`truncate text-sm font-extrabold ${accent ? "text-primary" : ""}`}>{value}</p>
-      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className={`truncate text-xs font-extrabold sm:text-sm ${accent ? "text-primary" : ""}`}>{value}</p>
+      <p className="line-clamp-2 text-[9px] leading-tight text-muted-foreground sm:text-[10px]">{label}</p>
     </div>
   );
 }
