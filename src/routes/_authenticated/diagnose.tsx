@@ -418,7 +418,7 @@ function DiagnosePage() {
   );
 
   const uploader = (
-    <div className="rounded-3xl border border-border/70 bg-card/50 p-4 shadow-[var(--shadow-card)] lg:p-6">
+    <div className="card-surface border-t-4 border-t-primary p-4 lg:p-6">
       <h2 className="flex items-center gap-2 text-sm font-bold">
         <Stethoscope className="size-4 text-primary" />
         {s("aiAnalysis")}
@@ -474,7 +474,7 @@ function DiagnosePage() {
           role="button"
           tabIndex={0}
           aria-label={s("gallery")}
-          className={`mt-4 grid cursor-pointer place-items-center rounded-2xl border border-dashed px-5 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:py-14 ${
+          className={`mt-4 grid cursor-pointer place-items-center rounded-xl border border-dashed px-4 py-7 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-5 lg:py-14 ${
             dragging ? "border-primary bg-primary/8" : "border-border/80 bg-muted/40 hover:border-primary/60"
           }`}
         >
@@ -725,7 +725,7 @@ function DiagnosePage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start lg:gap-6">
           <div className="min-w-0 lg:sticky lg:top-6">{uploader}</div>
 
           <div className="min-w-0 space-y-4">
@@ -793,7 +793,7 @@ function DiagnosePage() {
 
             {!busy && diagnosis && (
               <div className="animate-fade-in space-y-4">
-                <div className="rounded-3xl border border-border/70 bg-card/50 p-4 shadow-[var(--shadow-card)] lg:p-6">
+                <div className="card-surface border-t-4 border-t-primary p-4 lg:p-6">
                   <div className="grid gap-5 lg:grid-cols-2 lg:items-center">
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -831,7 +831,7 @@ function DiagnosePage() {
                 <div
                   role="tablist"
                   aria-label={s("aiAnalysis")}
-                  className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
+                  className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-5 sm:px-5 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
                 >
                   {tabs.map(({ id, label, icon: Icon }) => {
                     const active = tab === id;
@@ -887,7 +887,7 @@ function DiagnosePage() {
               {history.data?.map((h) => (
                 <li
                   key={h.id}
-                  className="group flex items-center gap-3 rounded-3xl border border-border/70 bg-card/40 p-3"
+                  className="group card-surface flex min-w-0 items-center gap-3 p-3"
                 >
                   <button
                     type="button"
