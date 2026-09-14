@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Screen } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
-import { SourceNote } from "@/components/source-note";
+import { DataProvenance, FreshnessBadge, UnavailableState } from "@/components/market-meta";
+import { Reveal } from "@/components/reveal";
 import { CardSkeleton, RowSkeleton, StatSkeleton } from "@/components/skeletons";
 import { useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { useLocationContext } from "@/lib/location";
 import { crops, findCrop } from "@/lib/crops";
-import { fetchMandiPrices } from "@/lib/market.functions";
+import { latestPerMarket, marketPricesQuery } from "@/lib/market-queries";
 import { getWeather } from "@/lib/weather-fetch";
 import { inr, useIstNow } from "@/lib/format";
 import { useCountUp } from "@/lib/use-count-up";
@@ -22,8 +23,6 @@ import {
   Lightbulb,
   Sparkles,
   Sun,
-  TrendingDown,
-  TrendingUp,
   Wind,
 } from "lucide-react";
 
@@ -57,19 +56,13 @@ function HomePage() {
   const savedIds = profile?.saved_crops?.length ? profile.saved_crops : ["onion"];
   const primary = findCrop(savedIds[0]!) ?? crops[0]!;
 
-  const priceQuery = useQuery({
-    queryKey: ["mandi", primary.commodity, location?.state, location?.district],
-    enabled: Boolean(location?.state),
-    queryFn: () =>
-      fetchMandiPrices({
-        data: {
-          commodity: primary.commodity,
-          state: location!.state,
-          ...(location?.district ? { district: location.district } : {}),
-        },
-      }),
-    staleTime: 10 * 60 * 1000,
-  });
+  const priceQuery = useQuery(
+    marketPricesQuery({
+      commodity: primary.commodity,
+      ...(location?.state ? { state: location.state } : {}),
+      ...(location?.district ? { district: location.district } : {}),
+    }),
+  );
 
   const weatherQuery = useQuery({
     queryKey: ["weather", location?.latitude, location?.longitude],
@@ -79,7 +72,7 @@ function HomePage() {
     refetchInterval: 15 * 60 * 1000,
   });
 
-  const records = priceQuery.data?.ok ? priceQuery.data.records : [];
+  const records = latestPerMarket(priceQuery.data?.records ?? []);
   const best = records[0];
   const weather = weatherQuery.data?.ok ? weatherQuery.data : null;
 
@@ -189,13 +182,13 @@ function HomePage() {
 
       {/* ---------- Dashboard body ---------- */}
       <div className="relative z-10 space-y-5 px-4 pt-4 sm:px-5 lg:-mt-8 lg:space-y-6 lg:px-8 lg:pt-0">
-        <LocationCard />
+        <Reveal><LocationCard /></Reveal>
 
         {/* Key numbers */}
-        {priceQuery.isPending && location?.state ? (
+        {!location?.district ? null : priceQuery.isPending ? (
           <StatSkeleton />
         ) : records.length > 0 ? (
-          <div className="grid min-w-0 grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
+          <Reveal delay={40} className="grid min-w-0 grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
             <CounterCard label="Markets reporting" value={marketCount} accent="primary" />
             <CounterCard
               label={`${primary.name[lang]} top rate`}
@@ -205,14 +198,14 @@ function HomePage() {
             />
             <CounterCard label="Average modal rate" value={avgModal} money accent="sky" />
             <CounterCard label="Price spread" value={spread} money accent="earthy" />
-          </div>
+          </Reveal>
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr] lg:items-start">
           {/* Left column */}
           <div className="space-y-6">
             {/* Best market */}
-            <section className="card-surface hover-lift overflow-hidden">
+            <Reveal delay={80} className="card-surface hover-lift overflow-hidden">
               <div className="flex items-center gap-2 border-b border-border/70 px-5 py-4">
                 <span className="tint-gold grid size-8 place-items-center rounded-xl">
                   <Sparkles className="size-4" />
@@ -221,21 +214,17 @@ function HomePage() {
               </div>
 
               <div className="p-5">
-                {!location?.state ? (
+                {!location?.district ? (
                   <p className="text-xs font-semibold text-muted-foreground">
-                    {t("locationNeeded")}
+                    Select your district to see matching official market prices.
                   </p>
                 ) : priceQuery.isPending ? (
                   <div className="space-y-2.5">
                     <div className="shimmer h-3 w-3/4 rounded-xl" />
                     <div className="shimmer h-16 w-full rounded-2xl" />
                   </div>
-                ) : priceQuery.data && !priceQuery.data.ok ? (
-                  <ErrorLine
-                    message={priceQuery.data.error}
-                    onRetry={() => void priceQuery.refetch()}
-                    retryLabel={t("retry")}
-                  />
+                ) : priceQuery.isError ? (
+                  <UnavailableState onRetry={() => void priceQuery.refetch()} message="The latest official market prices could not be loaded." />
                 ) : best ? (
                   <>
                     <p className="text-[15px] font-semibold leading-relaxed">
@@ -256,13 +245,13 @@ function HomePage() {
                     </Link>
                   </>
                 ) : (
-                  <p className="text-xs font-semibold text-muted-foreground">{t("noPrices")}</p>
+                  <UnavailableState onRetry={() => void priceQuery.refetch()} />
                 )}
               </div>
-            </section>
+            </Reveal>
 
             {/* Today's prices */}
-            <section>
+            <Reveal delay={120}>
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-base font-extrabold tracking-tight">
                   {t("todayPrices")}
@@ -272,28 +261,23 @@ function HomePage() {
                 </Link>
               </div>
 
-              {priceQuery.isPending && location?.state ? (
+              {priceQuery.isPending && location?.district ? (
                 <div className="mt-3">
                   <RowSkeleton rows={4} />
                 </div>
               ) : records.length === 0 ? (
                 <p className="card-surface mt-3 p-4 text-xs font-semibold text-muted-foreground">
-                  {location?.state ? t("noPrices") : t("locationNeeded")}
+                  {location?.district ? t("noPrices") : "Select your district to see prices."}
                 </p>
               ) : (
                 <div className="card-surface mt-3 divide-y divide-border/70 overflow-hidden">
-                  {records.slice(0, 6).map((r, i) => {
-                    const previous = records[i + 1];
-                    const change = previous
-                      ? ((r.modalPrice - previous.modalPrice) / previous.modalPrice) * 100
-                      : 0;
-                    const up = change >= 0;
+                  {records.slice(0, 6).map((r) => {
                     return (
                       <Link
-                        key={`${r.market}-${r.variety}-${r.arrivalDate}`}
+                        key={`${r.market}-${r.variety}-${r.date}`}
                         to="/market/$marketId"
                         params={{ marketId: r.market }}
-                        search={{ crop: primary.id, state: r.state }}
+                        search={{ crop: primary.id, state: r.state, district: r.district }}
                         className="press grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 hover:bg-muted/40"
                       >
                         <span className="tint-primary grid size-10 shrink-0 place-items-center rounded-2xl text-lg">
@@ -309,18 +293,7 @@ function HomePage() {
                           <p className="font-display text-sm font-extrabold tabular-nums">
                             {inr(r.modalPrice)}
                           </p>
-                          <p
-                            className={`flex items-center justify-end gap-0.5 text-[11px] font-extrabold ${
-                              up ? "text-primary" : "text-destructive"
-                            }`}
-                          >
-                            {up ? (
-                              <TrendingUp className="size-3" />
-                            ) : (
-                              <TrendingDown className="size-3" />
-                            )}
-                            {Math.abs(change).toFixed(1)}%
-                          </p>
+                          {priceQuery.data && <FreshnessBadge freshness={priceQuery.data.freshness} className="mt-1" />}
                         </div>
                       </Link>
                     );
@@ -328,8 +301,8 @@ function HomePage() {
                 </div>
               )}
 
-              {priceQuery.data?.ok && <SourceNote result={priceQuery.data} className="mt-3" />}
-            </section>
+              {priceQuery.data && <DataProvenance result={priceQuery.data} className="mt-3" />}
+            </Reveal>
           </div>
 
           {/* Desktop intelligence rail; mobile stays focused on today's decision. */}

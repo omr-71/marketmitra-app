@@ -8,7 +8,7 @@ export function useCountUp(value: number, duration = 900) {
   useEffect(() => {
     if (!Number.isFinite(value)) return;
     const reduceMotion =
-      document.documentElement.dataset.motion === "reduced" ||
+      document.documentElement.dataset["motion"] === "reduced" ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
       fromRef.current = value;

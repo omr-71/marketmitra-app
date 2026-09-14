@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
-import { SourceNote } from "@/components/source-note";
+import { DataProvenance, UnavailableState } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
-import { fetchMandiPrices, fetchPriceHistory } from "@/lib/market.functions";
+import { fetchPriceHistory } from "@/lib/market.functions";
+import { marketPricesQuery } from "@/lib/market-queries";
 import { formatIstDate, inr } from "@/lib/format";
 
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -14,6 +15,7 @@ import { BarChart3, Loader2, TrendingUp } from "lucide-react";
 const searchSchema = z.object({
   crop: z.string().catch("onion"),
   state: z.string().catch("Maharashtra"),
+  district: z.string().catch(""),
 });
 
 export const Route = createFileRoute("/_authenticated/market/$marketId")({
@@ -55,15 +57,12 @@ export const Route = createFileRoute("/_authenticated/market/$marketId")({
 function MarketDetailPage() {
   const { t, lang } = useLang();
   const { marketId } = Route.useParams();
-  const { crop: cropId, state } = Route.useSearch();
+  const { crop: cropId, state, district } = Route.useSearch();
   const crop = findCrop(cropId) ?? crops[0]!;
 
-  const todayQuery = useQuery({
-    queryKey: ["mandi-market", crop.commodity, state, marketId],
-    queryFn: () =>
-      fetchMandiPrices({ data: { commodity: crop.commodity, state, market: marketId } }),
-    staleTime: 10 * 60 * 1000,
-  });
+  const todayQuery = useQuery(
+    marketPricesQuery({ commodity: crop.commodity, state, district, market: marketId }),
+  );
 
   const historyQuery = useQuery({
     queryKey: ["history", crop.commodity, state, marketId],
@@ -72,7 +71,7 @@ function MarketDetailPage() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const latest = todayQuery.data?.ok ? todayQuery.data.records[0] : undefined;
+  const latest = todayQuery.data?.records[0];
   const points = historyQuery.data?.points ?? [];
   const chartData = points
     .slice(-14)
@@ -87,16 +86,8 @@ function MarketDetailPage() {
           <div className="card-surface hover-lift flex items-center gap-2 p-5 text-xs text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> {t("loading")}
           </div>
-        ) : todayQuery.data && !todayQuery.data.ok ? (
-          <div className="card-surface hover-lift p-5">
-            <p className="text-sm font-semibold text-destructive">{todayQuery.data.error}</p>
-            <button
-              onClick={() => void todayQuery.refetch()}
-              className="press mt-3 rounded-full bg-muted px-4 py-2 text-xs font-bold"
-            >
-              {t("retry")}
-            </button>
-          </div>
+        ) : todayQuery.isError ? (
+          <UnavailableState onRetry={() => void todayQuery.refetch()} message="The latest official price could not be loaded." />
         ) : latest ? (
           <div className="card-surface hover-lift p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
@@ -116,10 +107,10 @@ function MarketDetailPage() {
                 <p className="text-[10px] text-muted-foreground">{t("maxPrice")}</p>
               </div>
             </div>
-            {todayQuery.data?.ok && (
-              <SourceNote
+            {todayQuery.data && (
+              <DataProvenance
                 result={todayQuery.data}
-                priceDate={latest.arrivalDate}
+                priceDate={latest.date}
                 className="mt-3"
               />
             )}

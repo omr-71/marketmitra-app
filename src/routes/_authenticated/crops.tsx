@@ -3,12 +3,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
-import { SourceNote } from "@/components/source-note";
+import { DataProvenance } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
-import { fetchMandiPrices } from "@/lib/market.functions";
+import { marketPricesQuery } from "@/lib/market-queries";
 import { inr } from "@/lib/format";
 import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
 
@@ -39,23 +39,17 @@ function CropsPage() {
   const [selected, setSelected] = useState("onion");
   const [qty, setQty] = useState(20);
 
-  const crop = crops.find((c) => c.id === selected)!;
+  const crop = crops.find((c) => c.id === selected) ?? crops[0]!;
 
-  const priceQuery = useQuery({
-    queryKey: ["mandi", crop.commodity, location?.state, location?.district],
-    enabled: Boolean(location?.state),
-    queryFn: () =>
-      fetchMandiPrices({
-        data: {
-          commodity: crop.commodity,
-          state: location!.state,
-          ...(location?.district ? { district: location.district } : {}),
-        },
-      }),
-    staleTime: 10 * 60 * 1000,
-  });
+  const priceQuery = useQuery(
+    marketPricesQuery({
+      commodity: crop.commodity,
+      ...(location?.state ? { state: location.state } : {}),
+      ...(location?.district ? { district: location.district } : {}),
+    }),
+  );
 
-  const best = priceQuery.data?.ok ? priceQuery.data.records[0] : undefined;
+  const best = priceQuery.data?.records[0];
 
   return (
     <Screen>
@@ -130,8 +124,8 @@ function CropsPage() {
           />
 
           <div className="mt-5 border-t border-border pt-4">
-            {!location?.state ? (
-              <p className="text-xs text-muted-foreground">{t("locationNeeded")}</p>
+            {!location?.district ? (
+              <p className="text-xs text-muted-foreground">Select your district to see matching prices.</p>
             ) : priceQuery.isPending ? (
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" /> {t("loading")}
@@ -153,18 +147,18 @@ function CropsPage() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                {priceQuery.data && !priceQuery.data.ok ? priceQuery.data.error : t("noPrices")}
+                {priceQuery.isError ? "The latest official prices could not be loaded." : t("noPrices")}
               </p>
             )}
-            {priceQuery.data?.ok && best && (
-              <SourceNote result={priceQuery.data} priceDate={best.arrivalDate} className="mt-2" />
+            {priceQuery.data && best && (
+              <DataProvenance result={priceQuery.data} priceDate={best.date} className="mt-2" />
             )}
           </div>
         </div>
 
         <button
           onClick={() => navigate({ to: "/markets", search: { crop: selected, qty } })}
-          disabled={!location?.state}
+          disabled={!location?.district}
           className="press grad-primary mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground shadow-[var(--shadow-float)] disabled:opacity-60"
         >
           {t("compareMarkets")}
