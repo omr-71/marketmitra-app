@@ -7,7 +7,7 @@
  * invents, averages across dates, or synthesises a price.
  */
 
-import { computeFreshness, type Freshness } from "./market-freshness";
+import { computeFreshness, isCurrentMarketDate, type Freshness } from "./market-freshness";
 
 export type PriceRecord = {
   providerId: string;
@@ -114,6 +114,33 @@ function isValid(record: PriceRecord) {
   );
 }
 
+/** Re-check every normalized row, even when an upstream API claims it applied filters. */
+export function matchesMarketFilters(record: PriceRecord, filters: MarketFilters) {
+  return (
+    looseEq(record.commodity, filters.commodity) &&
+    looseEq(record.state, filters.state) &&
+    (!filters.district || looseEq(record.district, filters.district)) &&
+    (!filters.market || looseEq(record.market, filters.market))
+  );
+}
+
+export function currentMarketRecords(
+  records: PriceRecord[],
+  filters: MarketFilters,
+  now: Date = new Date(),
+) {
+  return dedupe(
+    sortRecords(
+      records.filter(
+        (record) =>
+          isValid(record) &&
+          matchesMarketFilters(record, filters) &&
+          isCurrentMarketDate(record.date, now),
+      ),
+    ),
+  );
+}
+
 /** Newest reporting date first, then highest modal price. */
 export function sortRecords(records: PriceRecord[]) {
   return [...records].sort((a, b) =>
@@ -212,17 +239,8 @@ const agmarknetVariety: Provider = {
       return getJson(url);
     };
 
-    let { payload, statusCode } = await request(filters);
-    let rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
-    // District names differ in spelling across AGMARKNET; widen to the state
-    // (same official source) rather than showing nothing.
-    if (rows.length === 0 && filters.district && !filters.market) {
-      ({ payload, statusCode } = await request({
-        commodity: filters.commodity,
-        state: filters.state,
-      }));
-      rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
-    }
+    const { payload, statusCode } = await request(filters);
+    const rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
 
     const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
     return {
@@ -249,8 +267,8 @@ const agmarknetDaily: Provider = {
     const apiKey = process.env["DATA_GOV_IN_API_KEY"];
     if (!apiKey) throw new Error("missing_api_key");
     const fetchedAt = new Date().toISOString();
-    // This resource ignores server-side filters, so we take the published
-    // snapshot and match commodity/state ourselves.
+    // This resource ignores server-side filters, so we strictly match all
+    // requested location and crop fields ourselves.
     const url = new URL(`https://api.data.gov.in/resource/${AGMARKNET_DAILY}`);
     url.searchParams.set("api-key", apiKey);
     url.searchParams.set("format", "json");
@@ -259,7 +277,9 @@ const agmarknetDaily: Provider = {
     const rows = ((payload as { records?: Record<string, unknown>[] }).records ?? []).filter(
       (row) =>
         looseEq(pick(row, "commodity"), filters.commodity) &&
-        looseEq(pick(row, "state"), filters.state),
+        looseEq(pick(row, "state"), filters.state) &&
+        (!filters.district || looseEq(pick(row, "district"), filters.district)) &&
+        (!filters.market || looseEq(pick(row, "market"), filters.market)),
     );
     const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
     return {
@@ -294,8 +314,21 @@ const storedArchive: Provider = {
       .select("commodity, variety, state, district, market, min_price, max_price, modal_price, arrival_date")
       .eq("commodity", filters.commodity)
       .eq("state", filters.state)
+      .gte("arrival_date", (() => {
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+          new Date(),
+        );
+        const yesterday = new Date(`${today}T00:00:00Z`);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        return yesterday.toISOString().slice(0, 10);
+      })())
+      .lte(
+        "arrival_date",
+        new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()),
+      )
       .order("arrival_date", { ascending: false })
       .limit(250);
+    if (filters.district) query = query.eq("district", filters.district);
     if (filters.market) query = query.eq("market", filters.market);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
@@ -550,7 +583,11 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
     ...runnable.map(async (provider) => {
       const started = Date.now();
       try {
-        const result = await provider.fetch(filters);
+        const rawResult = await provider.fetch(filters);
+        const result = {
+          ...rawResult,
+          records: currentMarketRecords(rawResult.records, filters),
+        };
         attempts.push({
           providerId: provider.id,
           provider: provider.name,
@@ -614,7 +651,8 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
   void logAttempts(attempts, filters);
 
-  // Prefer live sources; fall back to the stored archive only if nothing live answered.
+  // Prefer live sources; stored official rows are eligible only inside the same
+  // today/yesterday window already enforced above.
   const live = successes.filter((s) => !s.provider.archive);
   const pool = live.length > 0 ? live : successes;
 
@@ -648,9 +686,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
       records: s.result.records.filter((r) => r.date === latestDate),
     })),
   );
-  // Keep older dates from the primary source too (used for per-mandi history/trends).
-  const older = primary.result.records.filter((r) => r.date !== latestDate);
-  const records = [...merged.records, ...older];
+  const records = merged.records;
 
   await persist(records);
 

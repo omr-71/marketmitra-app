@@ -9,7 +9,7 @@ import type { AggregateResult, MarketFilters, PriceRecord } from "./market-types
  * duplicating calls to the government API.
  */
 export function marketPricesQuery(filters: Partial<MarketFilters>) {
-  const enabled = Boolean(filters.commodity && filters.state);
+  const enabled = Boolean(filters.commodity && filters.state && filters.district);
   return queryOptions({
     queryKey: [
       "market-prices",
@@ -26,8 +26,8 @@ export function marketPricesQuery(filters: Partial<MarketFilters>) {
     queryFn: (): Promise<AggregateResult> =>
       getMarketPrices({
         data: {
-          commodity: filters.commodity!,
-          state: filters.state!,
+          commodity: filters.commodity ?? "",
+          state: filters.state ?? "",
           ...(filters.district ? { district: filters.district } : {}),
           ...(filters.market ? { market: filters.market } : {}),
         },
