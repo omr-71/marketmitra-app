@@ -160,6 +160,15 @@ function MarketsPage() {
       />
 
       <div className="px-4 pt-4 sm:px-5 lg:px-0 lg:pt-6">
+        <div className="mb-4 min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-primary">Selected district</p>
+          <h1 className="truncate font-display text-xl font-extrabold">
+            {location?.district || "Choose your district"}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Latest official {crop.name[lang]} prices reported today or yesterday.
+          </p>
+        </div>
         <div className="flex gap-2">
           <label className="card-surface hover-lift flex h-12 flex-1 items-center gap-2 px-4">
             <Search className="size-4 shrink-0 text-muted-foreground" />
@@ -222,9 +231,9 @@ function MarketsPage() {
           </div>
         )}
 
-        {!location?.state ? (
+        {!location?.district ? (
           <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
-            {t("locationNeeded")}
+            Select your district to compare matching markets.
           </p>
         ) : priceQuery.isPending ? (
           <div className="mt-5 space-y-3">
@@ -281,14 +290,13 @@ function MarketsPage() {
             <div className="mt-4 space-y-3">
               {rows.map((row) => {
                 const isBest = row.record.market === bestPrice?.record.market;
-                const older = row.record.date !== comparableDate;
                 const rowFreshness = computeFreshness({ dataDate: row.record.date });
                 return (
                   <Link
                     key={row.record.market}
                     to="/market/$marketId"
                     params={{ marketId: row.record.market }}
-                    search={{ crop: crop.id, state: row.record.state }}
+                    search={{ crop: crop.id, state: row.record.state, district: row.record.district }}
                     className={`press card-surface hover-lift block min-w-0 overflow-hidden p-4 ${isBest ? "border-gold/60 ring-2 ring-gold/25" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -305,7 +313,6 @@ function MarketsPage() {
                         <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                           <FreshnessBadge freshness={rowFreshness} />
                           {row.record.district} · {formatIstDate(row.record.date)}
-                          {older ? " (older report)" : ""}
                         </p>
 
                       </div>

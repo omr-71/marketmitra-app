@@ -6,7 +6,7 @@
  * dated today. Anything older is labelled by its real age, never as current.
  */
 
-export type FreshnessLevel = "live" | "today" | "recent" | "stale" | "unavailable";
+export type FreshnessLevel = "today" | "yesterday" | "unavailable";
 
 export type Freshness = {
   level: FreshnessLevel;
@@ -27,6 +27,12 @@ function daysBetween(fromIso: string, toIso: string) {
   return Math.round((b - a) / 86_400_000);
 }
 
+/** True only for an official report dated today or yesterday in India time. */
+export function isCurrentMarketDate(dataDate: string, now: Date = new Date()): boolean {
+  const ageDays = daysBetween(dataDate, istToday(now));
+  return ageDays === 0 || ageDays === 1;
+}
+
 export function computeFreshness(input: {
   /** Official reporting date of the record (yyyy-MM-dd). */
   dataDate: string | null | undefined;
@@ -40,20 +46,13 @@ export function computeFreshness(input: {
   const ageDays = daysBetween(input.dataDate, today);
   if (ageDays == null) return { level: "unavailable", label: "UNAVAILABLE", ageDays: null };
 
-  const publishedToday = input.sourceUpdatedAt
-    ? istToday(new Date(input.sourceUpdatedAt)) === today
-    : false;
-
-  if (ageDays <= 0 && publishedToday) return { level: "live", label: "LIVE", ageDays: 0 };
-  if (ageDays <= 0) return { level: "today", label: "UPDATED TODAY", ageDays: 0 };
-  if (ageDays <= 4) return { level: "recent", label: `RECENT · ${ageDays}d old`, ageDays };
-  return { level: "stale", label: `STALE · ${ageDays}d old`, ageDays };
+  if (ageDays === 0) return { level: "today", label: "UPDATED TODAY", ageDays: 0 };
+  if (ageDays === 1) return { level: "yesterday", label: "YESTERDAY'S DATA", ageDays: 1 };
+  return { level: "unavailable", label: "UNAVAILABLE", ageDays };
 }
 
 export const freshnessTone: Record<FreshnessLevel, string> = {
-  live: "bg-primary/12 text-primary ring-primary/25",
   today: "bg-primary/10 text-primary ring-primary/20",
-  recent: "bg-amber-500/12 text-amber-600 ring-amber-500/25 dark:text-amber-400",
-  stale: "bg-destructive/10 text-destructive ring-destructive/25",
+  yesterday: "bg-amber-500/12 text-amber-600 ring-amber-500/25 dark:text-amber-400",
   unavailable: "bg-muted text-muted-foreground ring-border",
 };
