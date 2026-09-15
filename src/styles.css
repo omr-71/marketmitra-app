@@ -495,6 +495,24 @@
   will-change: auto;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
+html[data-motion="reduced"] .reveal,
+html[data-motion="reduced"] .reveal-in {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  will-change: auto;
+}
+
 /* ---------- Smooth theme switching ---------- */
 @layer base {
   body,

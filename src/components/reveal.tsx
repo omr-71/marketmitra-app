@@ -16,6 +16,12 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      || document.documentElement.dataset["motion"] === "reduced";
+    if (reducedMotion) {
+      setShown(true);
+      return;
+    }
     if (typeof IntersectionObserver === "undefined") {
       setShown(true);
       return;
