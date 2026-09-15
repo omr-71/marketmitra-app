@@ -5,4 +5,4 @@
 - [x] Add truthful freshness and polished empty/error states
 - [x] Refine Home hierarchy, mobile sizing, and one-shot reveal motion
 - [x] Clarify district-specific Markets UI
-- [ ] Validate crop/district/date isolation and responsive behavior
+- [x] Validate crop/district/date isolation and responsive behavior
