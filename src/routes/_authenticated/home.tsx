@@ -85,14 +85,14 @@ function HomePage() {
   return (
     <Screen>
       {/* ---------- Hero ---------- */}
-      <section className="grad-forest relative overflow-hidden px-5 pb-10 pt-6 text-primary-foreground lg:rounded-4xl lg:px-8 lg:pb-16 lg:pt-10">
+      <section className="grad-forest relative overflow-hidden px-4 pb-8 pt-5 text-primary-foreground sm:px-5 sm:pb-10 sm:pt-6 lg:rounded-4xl lg:px-8 lg:pb-16 lg:pt-10">
 
         <div className="relative grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-75">
               {t("welcome")}
             </p>
-            <h1 className="mt-1 truncate font-display text-[26px] font-extrabold leading-tight tracking-tight lg:text-4xl">
+            <h1 className="mt-1 truncate font-display text-2xl font-extrabold leading-tight lg:text-4xl">
               {profile?.full_name ?? "MarketMitra"}
             </h1>
             <p className="mt-1.5 text-xs font-semibold opacity-80">
@@ -100,8 +100,8 @@ function HomePage() {
             </p>
 
             {weather ? (
-              <div className="mt-6 flex items-end gap-4">
-                <p className="font-display text-6xl font-extrabold leading-none tracking-tight lg:text-7xl">
+              <div className="mt-5 flex items-end gap-3 sm:mt-6 sm:gap-4">
+                <p className="font-display text-5xl font-extrabold leading-none sm:text-6xl lg:text-7xl">
                   {weather.current.temperature}°
                 </p>
                 <div className="mb-1.5 min-w-0">
@@ -124,7 +124,7 @@ function HomePage() {
             )}
 
             {weather && (
-              <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-primary-foreground/10 px-3 py-2.5 text-[11px] font-semibold sm:text-[12px]">
+              <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-primary-foreground/10 px-3 py-2.5 text-[11px] font-semibold sm:text-[12px]">
                 <span className="flex items-center gap-1.5">
                   <Clock className="size-3.5 shrink-0" />
                   <b className="font-extrabold">{bestFarmingWindow(weather).window}</b>
@@ -140,7 +140,7 @@ function HomePage() {
           </div>
 
           {weather ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
               <GlassStat
                 icon={<Droplets className="size-4" />}
                 label={t("humidity")}
@@ -188,7 +188,7 @@ function HomePage() {
         {!location?.district ? null : priceQuery.isPending ? (
           <StatSkeleton />
         ) : records.length > 0 ? (
-          <Reveal delay={40} className="grid min-w-0 grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
+          <Reveal delay={40} className="grid min-w-0 grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
             <CounterCard label="Markets reporting" value={marketCount} accent="primary" />
             <CounterCard
               label={`${primary.name[lang]} top rate`}
@@ -368,10 +368,10 @@ function CounterCard({
 }) {
   const shown = useCountUp(value);
   return (
-    <div className="card-surface hover-lift relative overflow-hidden p-4">
+    <div className="card-surface hover-lift relative min-w-0 overflow-hidden p-3.5 sm:p-4">
       <span className={`${accentTint[accent]} absolute inset-x-0 top-0 h-1`} />
-      <p className="truncate text-[11px] font-extrabold text-muted-foreground">{label}</p>
-      <p className="mt-1.5 min-w-0 truncate font-display text-lg font-extrabold tabular-nums leading-none sm:text-xl lg:text-2xl">
+      <p className="line-clamp-2 min-h-7 text-[10px] font-extrabold leading-snug text-muted-foreground sm:text-[11px]">{label}</p>
+      <p className="mt-1.5 min-w-0 truncate font-display text-base font-extrabold tabular-nums leading-none sm:text-xl lg:text-2xl">
         {money ? inr(Math.round(shown)) : Math.round(shown).toLocaleString("en-IN")}
       </p>
     </div>
@@ -423,12 +423,12 @@ function GlassStat({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[oklch(1_0_0/0.14)] px-3 py-2.5 backdrop-blur-sm">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide opacity-85">
+    <div className="min-w-0 rounded-xl bg-primary-foreground/15 px-2.5 py-2.5 sm:rounded-2xl sm:px-3">
+      <div className="flex min-w-0 items-center gap-1.5 text-[9px] font-bold uppercase opacity-85 sm:text-[10px]">
         {icon}
         {label}
       </div>
-      <p className="mt-1 truncate text-sm font-extrabold">{value}</p>
+      <p className="mt-1 truncate text-xs font-extrabold sm:text-sm">{value}</p>
     </div>
   );
 }
