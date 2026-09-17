@@ -7,7 +7,12 @@
  * invents, averages across dates, or synthesises a price.
  */
 
-import { computeFreshness, isCurrentMarketDate, type Freshness } from "./market-freshness";
+import {
+  computeFreshness,
+  isCurrentMarketDate,
+  istToday,
+  type Freshness,
+} from "./market-freshness";
 
 export type PriceRecord = {
   providerId: string;
@@ -96,8 +101,47 @@ function datasetUpdatedAt(payload: { updated_date?: string; updated?: number }):
   return null;
 }
 
-const looseEq = (a: string, b: string) =>
-  a.toLowerCase().replace(/[^a-z0-9]/g, "") === b.toLowerCase().replace(/[^a-z0-9]/g, "");
+const normalizedName = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const DISTRICT_ALIASES: string[][] = [
+  ["Nashik", "Nasik"],
+  ["Chhatrapati Sambhajinagar", "Chattrapati Sambhajinagar", "Aurangabad"],
+  ["Ahilyanagar", "Ahmednagar"],
+  ["Dharashiv", "Osmanabad"],
+  ["Gurugram", "Gurgaon"],
+  ["Prayagraj", "Allahabad"],
+  ["Ayodhya", "Faizabad"],
+  ["Bengaluru Urban", "Bangalore Urban", "Bangalore"],
+  ["Mysuru", "Mysore"],
+  ["Belagavi", "Belgaum"],
+  ["Kalaburagi", "Gulbarga"],
+  ["Vijayapura", "Bijapur"],
+  ["Ballari", "Bellary"],
+  ["Shivamogga", "Shimoga"],
+  ["Tumakuru", "Tumkur"],
+];
+
+function titleCase(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/(^|[\s()-])\p{L}/gu, (letter) => letter.toUpperCase());
+}
+
+function districtVariants(value: string) {
+  const normalized = normalizedName(value);
+  const aliases = DISTRICT_ALIASES.find((group) =>
+    group.some((candidate) => normalizedName(candidate) === normalized),
+  );
+  return [...new Set([titleCase(value), ...(aliases ?? [])])];
+}
+
+const looseEq = (a: string, b: string) => normalizedName(a) === normalizedName(b);
+
+function districtEq(a: string, b: string) {
+  const accepted = districtVariants(b).map(normalizedName);
+  return accepted.includes(normalizedName(a));
+}
 
 /** Rejects malformed / impossible rows so bad upstream data can never render. */
 function isValid(record: PriceRecord) {
@@ -119,7 +163,7 @@ export function matchesMarketFilters(record: PriceRecord, filters: MarketFilters
   return (
     looseEq(record.commodity, filters.commodity) &&
     looseEq(record.state, filters.state) &&
-    (!filters.district || looseEq(record.district, filters.district)) &&
+    (!filters.district || districtEq(record.district, filters.district)) &&
     (!filters.market || looseEq(record.market, filters.market))
   );
 }
@@ -192,7 +236,10 @@ function normalizeRows(
 }
 
 async function getJson(url: URL) {
-  const response = await fetch(url, { headers: { accept: "application/json" } });
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(9_000),
+  });
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     const error = new Error(`HTTP ${response.status}`) as Error & { statusCode: number };
@@ -226,23 +273,55 @@ const agmarknetVariety: Provider = {
     if (!apiKey) throw new Error("missing_api_key");
     const fetchedAt = new Date().toISOString();
 
-    const request = async (f: MarketFilters) => {
+    const request = async (f: MarketFilters, arrivalDate?: string, limit = 250) => {
       const url = new URL(`https://api.data.gov.in/resource/${AGMARKNET_VARIETY}`);
       url.searchParams.set("api-key", apiKey);
       url.searchParams.set("format", "json");
-      url.searchParams.set("limit", "250");
+      url.searchParams.set("limit", String(limit));
       url.searchParams.set("sort[Arrival_Date]", "desc");
-      url.searchParams.set("filters[Commodity]", f.commodity);
-      url.searchParams.set("filters[State]", f.state);
-      if (f.district) url.searchParams.set("filters[District]", f.district);
-      if (f.market) url.searchParams.set("filters[Market]", f.market);
+      url.searchParams.set("filters[Commodity]", titleCase(f.commodity));
+      url.searchParams.set("filters[State]", titleCase(f.state));
+      if (f.district) url.searchParams.set("filters[District]", titleCase(f.district));
+      if (f.market) url.searchParams.set("filters[Market]", titleCase(f.market));
+      if (arrivalDate) url.searchParams.set("filters[Arrival_Date]", arrivalDate);
       return getJson(url);
     };
 
-    const { payload, statusCode } = await request(filters);
-    const rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
+    const districtAttempts = filters.district ? districtVariants(filters.district) : [undefined];
+    let payload: unknown = null;
+    let statusCode: number | null = null;
+    let rows: Record<string, unknown>[] = [];
 
-    const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
+    for (const district of districtAttempts) {
+      const response = await request({ ...filters, ...(district ? { district } : {}) });
+      payload = response.payload;
+      statusCode = response.statusCode;
+      rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
+      if (rows.length > 0) break;
+    }
+
+    // Geocoders and the official dataset often use different district spellings.
+    // Retry only today's two official reporting dates without a server-side district
+    // filter, then strictly re-check every row below before it can reach the UI.
+    if (rows.length === 0 && filters.district) {
+      const today = istToday();
+      const yesterdayDate = new Date(`${today}T00:00:00Z`);
+      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+      const toDmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+      const fallbackFilters = { commodity: filters.commodity, state: filters.state };
+      const fallback = await Promise.all([
+        request(fallbackFilters, toDmy(today), 5000),
+        request(fallbackFilters, toDmy(yesterdayDate.toISOString().slice(0, 10)), 5000),
+      ]);
+      payload = fallback[0]?.payload ?? fallback[1]?.payload ?? null;
+      statusCode = fallback.find((response) => response.statusCode)?.statusCode ?? statusCode;
+      rows = fallback.flatMap(
+        (response) =>
+          ((response.payload as { records?: Record<string, unknown>[] }).records ?? []),
+      );
+    }
+
+    const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
     return {
       records: normalizeRows(rows, {
         providerId: this.id,
