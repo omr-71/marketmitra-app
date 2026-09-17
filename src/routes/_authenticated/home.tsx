@@ -5,6 +5,7 @@ import { LocationCard } from "@/components/location-card";
 import { DataProvenance, FreshnessBadge, UnavailableState } from "@/components/market-meta";
 import { Reveal } from "@/components/reveal";
 import { CardSkeleton, RowSkeleton, StatSkeleton } from "@/components/skeletons";
+import { Button } from "@/components/ui/button";
 import { useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { useLocationContext } from "@/lib/location";
@@ -20,9 +21,14 @@ import {
   CloudRain,
   CloudSun,
   Droplets,
+  Eye,
   Lightbulb,
+  MapPin,
   Sparkles,
   Sun,
+  Sunrise,
+  Sunset,
+  ThermometerSun,
   Wind,
 } from "lucide-react";
 
@@ -81,35 +87,51 @@ function HomePage() {
   const avgModal = records.length
     ? Math.round(records.reduce((sum, r) => sum + r.modalPrice, 0) / records.length)
     : 0;
+  const farmingWindow = weather ? bestFarmingWindow(weather) : null;
+  const WeatherIcon = weather
+    ? weather.current.code <= 1
+      ? Sun
+      : weather.current.code >= 51
+        ? CloudRain
+        : CloudSun
+    : CloudSun;
 
   return (
     <Screen>
       {/* ---------- Hero ---------- */}
-      <section className="grad-forest relative overflow-hidden px-4 pb-8 pt-5 text-primary-foreground sm:px-5 sm:pb-10 sm:pt-6 lg:rounded-4xl lg:px-8 lg:pb-16 lg:pt-10">
-
-        <div className="relative grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
+      <section className="home-weather-hero grad-forest relative overflow-hidden px-4 pb-7 pt-5 text-primary-foreground sm:px-6 sm:pb-9 sm:pt-7 lg:rounded-4xl lg:px-9 lg:pb-16 lg:pt-10">
+        <div className="weather-contour" aria-hidden="true" />
+        <div className="relative grid gap-5 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch lg:gap-8">
           <div className="min-w-0">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] opacity-75">
-              {t("welcome")}
-            </p>
-            <h1 className="mt-1 truncate font-display text-2xl font-extrabold leading-tight lg:text-4xl">
-              {profile?.full_name ?? "MarketMitra"}
-            </h1>
-            <p className="mt-1.5 text-xs font-semibold opacity-80">
-              {now.dateLabel} · <span className="tabular-nums">{now.timeLabel} IST</span>
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] opacity-70">{t("welcome")}</p>
+                <h1 className="mt-1 truncate font-display text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
+                  {profile?.full_name || "MarketMitra"}
+                </h1>
+                <p className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[11px] font-semibold opacity-80 sm:text-xs">
+                  <MapPin className="size-3 shrink-0" />
+                  <span className="truncate">{location?.place || location?.district || t("locationNeeded")}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="shrink-0 tabular-nums">{now.timeLabel} IST</span>
+                </p>
+              </div>
+              {weather && (
+                <span className="weather-icon-enter grid size-12 shrink-0 place-items-center rounded-2xl bg-primary-foreground/12 sm:size-14">
+                  <WeatherIcon className="size-7 sm:size-8" strokeWidth={1.8} />
+                </span>
+              )}
+            </div>
 
             {weather ? (
-              <div className="mt-5 flex items-end gap-3 sm:mt-6 sm:gap-4">
-                <p className="font-display text-5xl font-extrabold leading-none sm:text-6xl lg:text-7xl">
+              <div className="mt-6 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-end gap-3 sm:mt-8 sm:gap-5">
+                <p className="weather-temp-enter font-display text-6xl font-extrabold leading-[0.8] sm:text-7xl lg:text-8xl">
                   {weather.current.temperature}°
                 </p>
-                <div className="mb-1.5 min-w-0">
-                  <p className="truncate text-sm font-extrabold">
-                    {conditionLabel(weather.current.code)}
-                  </p>
-                  <p className="truncate text-[11px] font-semibold opacity-80">
-                    {location?.place || location?.district || ""}
+                <div className="mb-0.5 min-w-0 sm:mb-1">
+                  <p className="truncate text-sm font-extrabold sm:text-base">{conditionLabel(weather.current.code)}</p>
+                  <p className="mt-1 truncate text-[10px] font-semibold opacity-75 sm:text-xs">
+                    Feels like {weather.current.apparent}° · {now.dateLabel}
                   </p>
                 </div>
               </div>
@@ -118,16 +140,16 @@ function HomePage() {
             ) : null}
 
             {weather && (
-              <p className="mt-3 max-w-md text-[12px] font-semibold leading-relaxed opacity-95 sm:text-[13px]">
+              <p className="mt-4 max-w-xl text-[12px] font-semibold leading-relaxed opacity-95 sm:text-sm">
                 {todayInsight(weather)}
               </p>
             )}
 
-            {weather && (
-              <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-primary-foreground/10 px-3 py-2.5 text-[11px] font-semibold sm:text-[12px]">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="size-3.5 shrink-0" />
-                  <b className="font-extrabold">{bestFarmingWindow(weather).window}</b>
+            {weather && farmingWindow && (
+              <div className="mt-4 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 px-3.5 py-3 text-[11px] font-semibold sm:mt-5 sm:text-xs">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-xl bg-primary-foreground/10"><Clock className="size-3.5" /></span>
+                  <span className="min-w-0"><span className="block text-[9px] font-bold uppercase opacity-70">Best field window</span><b className="block truncate font-extrabold">{farmingWindow.window}</b></span>
                 </span>
                 <Link
                   to="/weather"
@@ -140,7 +162,7 @@ function HomePage() {
           </div>
 
           {weather ? (
-            <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 lg:content-start lg:gap-3">
               <GlassStat
                 icon={<Droplets className="size-4" />}
                 label={t("humidity")}
@@ -161,6 +183,20 @@ function HomePage() {
                 label="UV"
                 value={uvLabel(weather.current.uvIndex)}
               />
+              <div className="col-span-2 mt-1 grid min-w-0 grid-cols-3 divide-x divide-primary-foreground/15 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 py-3 sm:col-span-4 lg:col-span-2">
+                <WeatherDetail icon={<ThermometerSun />} label="Feels" value={`${weather.current.apparent}°`} />
+                <WeatherDetail icon={<Sunrise />} label="Sunrise" value={formatSunTime(weather.sunrise)} />
+                <WeatherDetail icon={<Sunset />} label="Sunset" value={formatSunTime(weather.sunset)} />
+              </div>
+              <Link to="/weather" className="press col-span-2 mt-1 grid grid-cols-3 gap-1 rounded-2xl bg-primary-foreground/10 p-2 sm:col-span-4 lg:col-span-2">
+                {weather.days.slice(1, 4).map((day) => (
+                  <span key={day.date} className="min-w-0 rounded-xl px-1.5 py-1.5 text-center">
+                    <span className="block text-[9px] font-bold uppercase opacity-70">{new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "short" }).format(new Date(day.date))}</span>
+                    <span className="mt-1 block text-xs font-extrabold tabular-nums">{day.max}° <span className="opacity-60">{day.min}°</span></span>
+                    <span className="mt-0.5 flex items-center justify-center gap-1 text-[9px] font-bold opacity-75"><Droplets className="size-2.5" />{day.rainChance}%</span>
+                  </span>
+                ))}
+              </Link>
             </div>
           ) : (
               <div className="rounded-2xl bg-primary-foreground/10 p-4">
@@ -423,7 +459,7 @@ function GlassStat({
   value: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl bg-primary-foreground/15 px-2.5 py-2.5 sm:rounded-2xl sm:px-3">
+    <div className="weather-metric-enter min-w-0 rounded-2xl border border-primary-foreground/10 bg-primary-foreground/12 px-3 py-3">
       <div className="flex min-w-0 items-center gap-1.5 text-[9px] font-bold uppercase opacity-85 sm:text-[10px]">
         {icon}
         {label}
@@ -431,6 +467,27 @@ function GlassStat({
       <p className="mt-1 truncate text-xs font-extrabold sm:text-sm">{value}</p>
     </div>
   );
+}
+
+function WeatherDetail({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <span className="min-w-0 px-2 text-center">
+      <span className="mx-auto block w-fit [&_svg]:size-3.5">{icon}</span>
+      <span className="mt-1 block text-[9px] font-bold uppercase opacity-65">{label}</span>
+      <span className="mt-0.5 block truncate text-[10px] font-extrabold sm:text-xs">{value}</span>
+    </span>
+  );
+}
+
+function formatSunTime(value: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function Stat({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
@@ -459,14 +516,15 @@ function ErrorLine({
       <p className={`text-xs font-semibold ${onDark ? "text-primary-foreground" : "text-destructive"}`}>
         {message}
       </p>
-      <button
+      <Button
+        type="button"
+        variant={onDark ? "ghost" : "secondary"}
+        size="sm"
         onClick={onRetry}
-        className={`press mt-2 rounded-full px-3 py-1.5 text-[11px] font-bold ${
-          onDark ? "bg-primary-foreground/15 text-primary-foreground" : "bg-muted"
-        }`}
+        className={`press mt-2 ${onDark ? "bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/20" : ""}`}
       >
         {retryLabel}
-      </button>
+      </Button>
     </div>
   );
 }
