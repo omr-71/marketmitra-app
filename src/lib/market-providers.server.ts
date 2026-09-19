@@ -357,7 +357,7 @@ const agmarknetDaily: Provider = {
       (row) =>
         looseEq(pick(row, "commodity"), filters.commodity) &&
         looseEq(pick(row, "state"), filters.state) &&
-        (!filters.district || looseEq(pick(row, "district"), filters.district)) &&
+        (!filters.district || districtEq(pick(row, "district"), filters.district)) &&
         (!filters.market || looseEq(pick(row, "market"), filters.market)),
     );
     const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
@@ -541,6 +541,10 @@ export type Consensus = "single" | "corroborated" | "conflict";
 
 export type AggregateResult = {
   records: PriceRecord[];
+  /** Strict India-time reporting-day groups. Never contains any other date. */
+  todayRecords: PriceRecord[];
+  yesterdayRecords: PriceRecord[];
+  todayAvailable: boolean;
   attempts: ProviderAttempt[];
   providerId: string | null;
   source: string | null;
@@ -738,6 +742,9 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
   if (pool.length === 0) {
     return {
       records: [],
+      todayRecords: [],
+      yesterdayRecords: [],
+      todayAvailable: false,
       attempts,
       providerId: null,
       source: null,
@@ -751,25 +758,32 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
     };
   }
 
-  // "Latest" = newest underlying market data date, ties broken by source priority.
-  const latestDate = pool
-    .map((s) => s.result.records[0]?.date ?? "")
-    .sort()
-    .reverse()[0]!;
-  const onLatest = pool.filter((s) => s.result.records[0]?.date === latestDate);
+  const today = istToday();
+  const yesterdayDate = new Date(`${today}T00:00:00Z`);
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+  const yesterday = yesterdayDate.toISOString().slice(0, 10);
+  const mergeDate = (date: string) =>
+    mergeSameDate(
+      pool
+        .map((s) => ({
+          priority: s.provider.priority,
+          records: s.result.records.filter((record) => record.date === date),
+        }))
+        .filter((group) => group.records.length > 0),
+    );
+  const todayMerged = mergeDate(today);
+  const yesterdayMerged = mergeDate(yesterday);
+  const todayRecords = todayMerged.records;
+  const yesterdayRecords = yesterdayMerged.records;
+  const todayAvailable = todayRecords.length > 0;
+  const records = todayAvailable ? [...todayRecords, ...yesterdayRecords] : yesterdayRecords;
+  const latestDate = todayAvailable ? today : yesterday;
+  const onLatest = pool.filter((s) => s.result.records.some((record) => record.date === latestDate));
   const primary = [...onLatest].sort((a, b) => a.provider.priority - b.provider.priority)[0]!;
-
-  const merged = mergeSameDate(
-    onLatest.map((s) => ({
-      priority: s.provider.priority,
-      records: s.result.records.filter((r) => r.date === latestDate),
-    })),
-  );
-  const records = merged.records;
 
   await persist(records);
 
-  let conflict = merged.conflict;
+  let conflict = todayMerged.conflict || yesterdayMerged.conflict;
   if (benchmark && benchmark.date === latestDate && records[0]) {
     const spread =
       Math.abs(benchmark.modalPrice - records[0].modalPrice) /
@@ -786,6 +800,9 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
   return {
     records,
+    todayRecords,
+    yesterdayRecords,
+    todayAvailable,
     attempts,
     providerId: primary.provider.id,
     source: records[0]?.source ?? primary.provider.name,

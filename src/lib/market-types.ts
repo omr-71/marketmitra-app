@@ -48,6 +48,10 @@ export type MarketFilters = {
 
 export type AggregateResult = {
   records: PriceRecord[];
+  /** Strict India-time reporting-day groups. Never contains any other date. */
+  todayRecords: PriceRecord[];
+  yesterdayRecords: PriceRecord[];
+  todayAvailable: boolean;
   attempts: ProviderAttempt[];
   providerId: string | null;
   source: string | null;
