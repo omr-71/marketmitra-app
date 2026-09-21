@@ -15,7 +15,11 @@ import {
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 import { usePageTracking } from "@/lib/analytics";
-import { featureKeyForPath, MaintenanceNotice, useFeature } from "@/lib/features";
+import {
+  featureKeyForPath,
+  MaintenanceNotice,
+  useFeature,
+} from "@/lib/features";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
 
 const nav = [
@@ -28,11 +32,11 @@ const nav = [
   { to: "/profile", icon: User, key: "profile" as const },
 ];
 
-
-
 function useActive() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  return (to: string) => pathname === to || (to !== "/home" && pathname.startsWith(to));
+
+  return (to: string) =>
+    pathname === to || (to !== "/home" && pathname.startsWith(to));
 }
 
 export function BottomNav() {
@@ -40,39 +44,87 @@ export function BottomNav() {
   const isActive = useActive();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
-      <div className="glass flex items-center justify-between rounded-2xl px-1.5 py-2 shadow-[var(--shadow-float)]">
-        {nav.map(
-          ({ to, icon: Icon, key }) => {
-            const active = isActive(to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`press nav-pill flex flex-1 flex-col items-center gap-1 rounded-2xl px-0.5 py-2 text-[9.5px] font-semibold ${
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] lg:hidden">
+      <div className="relative mx-auto flex h-[72px] items-center overflow-hidden rounded-[30px] border border-white/30 bg-white/[0.68] px-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.20),0_4px_12px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.18)] backdrop-blur-[28px] backdrop-saturate-[180%] dark:border-white/[0.12] dark:bg-slate-950/[0.70] dark:shadow-[0_20px_55px_rgba(0,0,0,0.45),0_4px_14px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.10)]">
+
+        {/* Glass reflection */}
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80 dark:via-white/30" />
+
+        <div className="pointer-events-none absolute -left-10 -top-12 h-28 w-40 rounded-full bg-white/30 blur-3xl dark:bg-white/[0.04]" />
+
+        <div className="pointer-events-none absolute -right-10 bottom-[-45px] h-28 w-40 rounded-full bg-primary/10 blur-3xl" />
+
+        {nav.map(({ to, icon: Icon, key }) => {
+          const active = isActive(to);
+
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`press group relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-center px-0.5 ${
+                active
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {/* Dynamic liquid bubble */}
+              <span
+                className={`pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] transition-all duration-500 ${
                   active
-                    ? "nav-pill-active text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "scale-100 opacity-100 bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]"
+                    : "scale-75 opacity-0"
+                }`}
+              />
+
+              {/* Bubble highlight */}
+              {active && (
+                <>
+                  <span className="pointer-events-none absolute left-1/2 top-[8px] h-2.5 w-7 -translate-x-1/2 rounded-full bg-white/70 blur-[2px] dark:bg-white/20" />
+
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.07] blur-md" />
+                </>
+              )}
+
+              <span
+                className={`relative grid size-8 place-items-center rounded-full transition-all duration-500 ${
+                  active
+                    ? "scale-110 -translate-y-1"
+                    : "group-hover:-translate-y-0.5 group-hover:scale-105"
                 }`}
               >
                 <Icon
-                  className={`relative size-5 transition-transform duration-300 ${
-                    active ? "-translate-y-px scale-110" : ""
+                  className={`size-[19px] transition-all duration-500 ${
+                    active
+                      ? "drop-shadow-[0_2px_5px_rgba(37,99,235,0.18)]"
+                      : ""
                   }`}
-                  strokeWidth={active ? 2.4 : 1.9}
+                  strokeWidth={active ? 2.5 : 1.8}
                 />
-                <span className="relative w-full truncate text-center">
-                  {t(key)}
-                </span>
-              </Link>
-            );
-          },
-        )}
+
+                {/* Active floating dot */}
+                <span
+                  className={`absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-500 ${
+                    active
+                      ? "scale-100 opacity-100 shadow-[0_0_10px_currentColor]"
+                      : "scale-0 opacity-0"
+                  }`}
+                />
+              </span>
+
+              <span
+                className={`relative mt-0.5 w-full truncate px-0.5 text-center text-[9px] font-bold leading-none transition-all duration-300 ${
+                  active ? "translate-y-[-1px]" : ""
+                }`}
+              >
+                {t(key)}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
 }
-
 
 /** Desktop-only left rail: makes the app read like a professional web platform. */
 export function SideNav() {
@@ -86,15 +138,19 @@ export function SideNav() {
         <Wordmark className="text-lg" />
       </Link>
 
-      <p className="mt-9 px-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">Workspace</p>
+      <p className="mt-9 px-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+        Workspace
+      </p>
+
       <nav className="mt-2 space-y-1">
         {nav.map(({ to, icon: Icon, key }) => {
           const active = isActive(to);
+
           return (
             <Link
               key={to}
               to={to}
-               className={`press flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
+              className={`press flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
                 active
                   ? "bg-primary/12 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -120,7 +176,6 @@ export function SideNav() {
         <br />
         English · मराठी · हिंदी
       </p>
-
     </aside>
   );
 }
@@ -142,6 +197,7 @@ export function Screen({
   return (
     <div className="app-canvas min-h-screen bg-background lg:flex">
       {withNav && <SideNav />}
+
       <div className="min-w-0 flex-1">
         <div
           data-route={pathname}
@@ -150,8 +206,13 @@ export function Screen({
           } ${className}`}
         >
           <div key={pathname} className="animate-page">
-            {disabled ? <MaintenanceNotice flag={disabled} /> : children}
+            {disabled ? (
+              <MaintenanceNotice flag={disabled} />
+            ) : (
+              children
+            )}
           </div>
+
           {withNav && <SiteFooter />}
         </div>
       </div>
@@ -188,12 +249,22 @@ export function TopBar({
       ) : (
         <span className="size-9 shrink-0 lg:hidden" />
       )}
+
       <div className="min-w-0 text-center lg:text-left">
-        <h1 className="truncate font-display text-base font-bold lg:text-2xl">{title}</h1>
-        {subtitle && <p className="truncate text-xs text-muted-foreground lg:text-sm">{subtitle}</p>}
+        <h1 className="truncate font-display text-base font-bold lg:text-2xl">
+          {title}
+        </h1>
+
+        {subtitle && (
+          <p className="truncate text-xs text-muted-foreground lg:text-sm">
+            {subtitle}
+          </p>
+        )}
       </div>
+
       <div className="flex min-w-9 shrink-0 items-center justify-end gap-2">
         {action}
+
         {settings && (
           <Link
             to="/settings"
@@ -215,9 +286,14 @@ export function SiteFooter() {
       <div className="flex flex-col items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:justify-center sm:gap-5">
         <p>© 2026 Market Mitra.All rights reserved</p>
         <p>Developed by Om Labhade</p>
-        <Link to="/terms" className="transition-colors hover:text-primary">
+
+        <Link
+          to="/terms"
+          className="transition-colors hover:text-primary"
+        >
           Terms &amp; Conditions
         </Link>
+
         <a
           href="mailto:hello.marketmitra@gmail.com"
           className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
@@ -229,8 +305,6 @@ export function SiteFooter() {
     </footer>
   );
 }
-
-
 
 export function MobileBrandBar() {
   return (
