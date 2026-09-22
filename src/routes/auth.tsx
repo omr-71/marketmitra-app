@@ -11,6 +11,8 @@ import {
   EyeOff,
   ArrowRight,
   ShieldCheck,
+  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -108,68 +110,170 @@ function AuthPage() {
   const isSignin = mode === "signin";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-6 py-10">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-2xl lg:grid-cols-2">
-          <div className="hidden min-h-[650px] flex-col justify-between bg-gradient-to-br from-blue-950 via-slate-950 to-slate-900 p-10 lg:flex">
-            <div>
-              <div className="mb-8 flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/20">
-                  <ShieldCheck className="h-6 w-6 text-blue-400" />
+    <div className="relative min-h-screen overflow-hidden bg-[#020617] text-white">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-blue-600/15 blur-[120px]" />
+        <div className="absolute -bottom-48 -right-32 h-[550px] w-[550px] rounded-full bg-cyan-500/10 blur-[130px]" />
+        <div className="absolute left-1/2 top-1/3 h-[350px] w-[350px] -translate-x-1/2 rounded-full bg-blue-500/[0.06] blur-[100px]" />
+
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+      </div>
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid w-full overflow-hidden rounded-[28px] border border-white/[0.10] bg-white/[0.035] shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-2xl lg:min-h-[720px] lg:grid-cols-[1.05fr_0.95fr]">
+          {/* Left premium panel */}
+          <div className="relative hidden overflow-hidden lg:flex">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/80 via-[#071329] to-[#020617]" />
+
+            <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-blue-400/10 bg-blue-500/[0.06] blur-sm" />
+            <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full border border-cyan-400/10 bg-cyan-400/[0.04]" />
+
+            <div className="relative z-10 flex w-full flex-col justify-between p-12">
+              {/* Brand */}
+              <div>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 shadow-[0_0_30px_rgba(37,99,235,0.18)]">
+                    <ShieldCheck className="h-6 w-6 text-blue-400" />
+
+                    <div className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+                  </div>
+
+                  <div>
+                    <div className="text-xl font-bold tracking-tight">
+                      Market Mitra
+                    </div>
+
+                    <div className="mt-0.5 text-xs font-medium tracking-[0.18em] text-blue-400/80">
+                      SELL SMARTER. EARN BETTER.
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <div className="text-xl font-bold">Market Mitra</div>
-                  <div className="text-sm text-slate-400">
-                    Sell Smarter. Earn Better.
+                {/* Hero */}
+                <div className="mt-20 max-w-xl">
+                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-400/15 bg-blue-500/[0.08] px-3 py-1.5 text-xs font-medium text-blue-300">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Agriculture Intelligence
+                  </div>
+
+                  <h1 className="text-5xl font-bold leading-[1.08] tracking-tight">
+                    Smarter farming.
+                    <br />
+                    <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                      Better decisions.
+                    </span>
+                  </h1>
+
+                  <p className="mt-6 max-w-lg text-base leading-7 text-slate-400">
+                    One powerful platform for market prices, crop diagnosis,
+                    weather, government schemes and farmer-to-farmer resource
+                    connections.
+                  </p>
+                </div>
+
+                {/* Feature cards */}
+                <div className="mt-12 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10">
+                      <CheckCircle2 className="h-4.5 w-4.5 text-blue-400" />
+                    </div>
+
+                    <div className="text-sm font-semibold text-white">
+                      Real Market Data
+                    </div>
+
+                    <div className="mt-1 text-xs leading-5 text-slate-500">
+                      Make decisions with current mandi information.
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/10">
+                      <Sparkles className="h-4.5 w-4.5 text-cyan-400" />
+                    </div>
+
+                    <div className="text-sm font-semibold text-white">
+                      Mitra Intelligence
+                    </div>
+
+                    <div className="mt-1 text-xs leading-5 text-slate-500">
+                      Agriculture intelligence built around farmers.
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <h1 className="max-w-md text-4xl font-bold leading-tight">
-                Everything a farmer needs, in one place.
-              </h1>
+              {/* Bottom */}
+              <div className="flex items-center justify-between border-t border-white/[0.07] pt-6">
+                <div className="text-xs text-slate-600">
+                  Built for modern Indian agriculture
+                </div>
 
-              <p className="mt-5 max-w-md text-slate-400">
-                Market prices, crop diagnosis, weather, schemes and Mitra Link
-                — built to make everyday farming decisions easier.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <div className="text-sm font-semibold text-white">Mitra AI</div>
-
-              <div className="mt-1 text-sm text-slate-400">
-                Agriculture Intelligence for smarter decisions.
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  Secure access
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex min-h-[650px] items-center justify-center bg-slate-950 p-6 sm:p-10">
+          {/* Right authentication panel */}
+          <div className="relative flex items-center justify-center border-white/[0.07] bg-[#030a18]/80 px-5 py-8 sm:px-10 lg:border-l lg:px-14">
             <div className="w-full max-w-md">
+              {/* Mobile brand */}
+              <div className="mb-10 flex items-center justify-center gap-3 lg:hidden">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10">
+                  <ShieldCheck className="h-5.5 w-5.5 text-blue-400" />
+                </div>
+
+                <div>
+                  <div className="text-lg font-bold">Market Mitra</div>
+                  <div className="text-[10px] tracking-[0.16em] text-blue-400/80">
+                    SELL SMARTER. EARN BETTER.
+                  </div>
+                </div>
+              </div>
+
+              {/* Heading */}
               <div className="mb-8">
-                <h2 className="text-3xl font-bold">
-                  {isSignin ? "Welcome back" : "Create your account"}
+                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+                  {isSignin ? "Welcome back" : "Get started"}
+                </div>
+
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                  {isSignin ? "Welcome back." : "Create your account."}
                 </h2>
 
-                <p className="mt-2 text-sm text-slate-400">
+                <p className="mt-3 text-sm leading-6 text-slate-500">
                   {isSignin
-                    ? "Sign in to continue to Market Mitra."
-                    : "Create your Market Mitra account in seconds."}
+                    ? "Sign in to continue to your Market Mitra dashboard."
+                    : "Create your Market Mitra account and start making smarter decisions."}
                 </p>
               </div>
 
+              {/* Google */}
               <button
                 type="button"
                 onClick={google}
                 disabled={busy !== null}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white py-3.5 font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 font-semibold text-white shadow-lg transition-all duration-300 hover:border-white/[0.2] hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-60"
               >
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+
                 <svg
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
+                  className="relative"
                 >
                   <path
                     fill="#4285F4"
@@ -189,102 +293,131 @@ function AuthPage() {
                   />
                 </svg>
 
-                Continue with Google
+                <span className="relative">
+                  {busy === "google"
+                    ? "Connecting..."
+                    : "Continue with Google"}
+                </span>
               </button>
 
-              <div className="my-6 flex items-center gap-4">
-                <div className="h-px flex-1 bg-white/10" />
-                <span className="text-xs text-slate-500">OR</span>
-                <div className="h-px flex-1 bg-white/10" />
+              {/* Divider */}
+              <div className="my-7 flex items-center gap-4">
+                <div className="h-px flex-1 bg-white/[0.08]" />
+
+                <span className="text-[10px] font-medium tracking-[0.18em] text-slate-600">
+                  OR CONTINUE WITH EMAIL
+                </span>
+
+                <div className="h-px flex-1 bg-white/[0.08]" />
               </div>
 
+              {/* Form */}
               <form onSubmit={submit} className="space-y-4">
                 {!isSignin && (
                   <div>
-                    <label className="mb-2 block text-sm text-slate-300">
+                    <label className="mb-2 block text-xs font-medium text-slate-400">
                       Full name
                     </label>
 
-                    <input
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Enter your name"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-blue-500/60 focus:bg-blue-500/[0.04] focus:ring-4 focus:ring-blue-500/[0.06]"
+                      />
+                    </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-300">
-                    Email
+                  <label className="mb-2 block text-xs font-medium text-slate-400">
+                    Email address
                   </label>
 
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                    <Mail className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-600" />
 
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] py-3.5 pl-12 pr-4 text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+                      className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] py-3.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-blue-500/60 focus:bg-blue-500/[0.04] focus:ring-4 focus:ring-blue-500/[0.06]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm text-slate-300">
+                  <label className="mb-2 block text-xs font-medium text-slate-400">
                     Password
                   </label>
 
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                    <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-600" />
 
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.05] py-3.5 pl-12 pr-12 text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+                      className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] py-3.5 pl-11 pr-12 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-blue-500/60 focus:bg-blue-500/[0.04] focus:ring-4 focus:ring-blue-500/[0.06]"
                     />
 
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 transition-colors hover:text-slate-300"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                     >
                       {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-[18px] w-[18px]" />
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <Eye className="h-[18px] w-[18px]" />
                       )}
                     </button>
                   </div>
                 </div>
 
+                {/* Messages */}
                 {error && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                  <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-sm leading-5 text-red-300">
                     {error}
                   </div>
                 )}
 
                 {notice && (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-sm leading-5 text-emerald-300">
                     {notice}
                   </div>
                 )}
 
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={busy !== null}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3.5 font-semibold transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(37,99,235,0.22)] transition-all duration-300 hover:from-blue-500 hover:to-cyan-500 hover:shadow-[0_12px_35px_rgba(37,99,235,0.32)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSignin ? "Sign in" : "Create account"}
-                  <ArrowRight className="h-5 w-5" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                  <span className="relative">
+                    {busy === "email"
+                      ? isSignin
+                        ? "Signing in..."
+                        : "Creating account..."
+                      : isSignin
+                        ? "Sign in"
+                        : "Create account"}
+                  </span>
+
+                  <ArrowRight className="relative h-4.5 w-4.5 transition-transform duration-300 group-hover:translate-x-1" />
                 </button>
               </form>
 
-              <div className="mt-6 text-center text-sm text-slate-400">
+              {/* Switch */}
+              <div className="mt-7 text-center text-sm text-slate-500">
                 {isSignin
                   ? "Don't have an account?"
                   : "Already have an account?"}{" "}
@@ -295,19 +428,26 @@ function AuthPage() {
                     setError(null);
                     setNotice(null);
                   }}
-                  className="font-semibold text-blue-400 hover:text-blue-300"
+                  className="font-semibold text-blue-400 transition-colors hover:text-cyan-300"
                 >
                   {isSignin ? "Create one" : "Sign in"}
                 </button>
               </div>
 
-              <div className="mt-6 text-center">
+              {/* Footer */}
+              <div className="mt-8 flex items-center justify-center gap-4">
                 <Link
                   to="/"
-                  className="text-xs text-slate-500 hover:text-slate-300"
+                  className="text-xs text-slate-600 transition-colors hover:text-slate-400"
                 >
                   Back to Market Mitra
                 </Link>
+
+                <span className="h-1 w-1 rounded-full bg-slate-700" />
+
+                <span className="text-xs text-slate-700">
+                  Secure authentication
+                </span>
               </div>
             </div>
           </div>
