@@ -13,6 +13,12 @@ import {
   Sparkles,
   CheckCircle2,
   ExternalLink,
+  TrendingUp,
+  ScanLine,
+  Wheat,
+  ShieldCheck,
+  Activity,
+  ArrowUpRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import marketMitraLogo from "@/assets/marketmitra-logo.png";
@@ -111,166 +117,260 @@ function AuthPage() {
   const isSignin = mode === "signin";
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#020b07] text-white">
-      {/* Ambient background */}
+    <div className="relative min-h-screen overflow-hidden bg-[#020907] text-white">
+      {/* BACKGROUND SYSTEM */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-emerald-600/15 blur-[120px]" />
-        <div className="absolute -bottom-48 -right-32 h-[550px] w-[550px] rounded-full bg-green-500/10 blur-[130px]" />
-        <div className="absolute left-1/2 top-1/3 h-[350px] w-[350px] -translate-x-1/2 rounded-full bg-emerald-400/[0.06] blur-[100px]" />
+        <div className="absolute -left-56 -top-56 h-[650px] w-[650px] rounded-full bg-emerald-500/[0.08] blur-[140px]" />
 
+        <div className="absolute -bottom-64 -right-48 h-[700px] w-[700px] rounded-full bg-green-500/[0.07] blur-[150px]" />
+
+        <div className="absolute left-[42%] top-[20%] h-[320px] w-[320px] rounded-full bg-emerald-400/[0.035] blur-[110px]" />
+
+        {/* Fine grid */}
         <div
-          className="absolute inset-0 opacity-[0.035]"
+          className="absolute inset-0 opacity-[0.025]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px)",
             backgroundSize: "48px 48px",
           }}
         />
+
+        {/* Animated vertical light */}
+        <div className="absolute left-[16%] top-0 h-full w-px bg-gradient-to-b from-transparent via-emerald-400/[0.08] to-transparent" />
+
+        <div className="absolute right-[18%] top-0 h-full w-px bg-gradient-to-b from-transparent via-emerald-400/[0.05] to-transparent" />
       </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid w-full overflow-hidden rounded-[28px] border border-white/[0.10] bg-white/[0.035] shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-2xl lg:min-h-[720px] lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid w-full overflow-hidden rounded-[30px] border border-white/[0.10] bg-white/[0.025] shadow-[0_35px_120px_rgba(0,0,0,0.62)] backdrop-blur-2xl lg:min-h-[720px] lg:grid-cols-[1.08fr_0.92fr]">
 
-          {/* LEFT PANEL */}
+          {/* ====================================================== */}
+          {/* LEFT PRODUCT PANEL */}
+          {/* ====================================================== */}
+
           <div className="relative hidden overflow-hidden lg:flex">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/80 via-[#071710] to-[#020b07]" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#071c13] via-[#06130e] to-[#020907]" />
 
-            <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-emerald-400/10 bg-emerald-500/[0.06] blur-sm" />
-            <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full border border-green-400/10 bg-green-400/[0.04]" />
+            {/* Decorative circles */}
+            <div className="absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full border border-emerald-400/[0.08]" />
 
-            <div className="relative z-10 flex w-full flex-col justify-between p-12">
+            <div className="absolute -right-20 -top-20 h-[300px] w-[300px] rounded-full border border-emerald-400/[0.06]" />
+
+            <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full border border-green-400/[0.06]" />
+
+            {/* Floating ambient dots */}
+            <div className="absolute left-[14%] top-[22%] h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.9)]" />
+
+            <div className="absolute right-[19%] top-[32%] h-1 w-1 animate-pulse rounded-full bg-green-300 shadow-[0_0_12px_rgba(74,222,128,0.8)] [animation-delay:700ms]" />
+
+            <div className="absolute bottom-[27%] left-[11%] h-1 w-1 animate-pulse rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.8)] [animation-delay:1200ms]" />
+
+            <div className="relative z-10 flex w-full flex-col p-12">
 
               {/* BRAND */}
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/5 shadow-[0_0_30px_rgba(16,185,129,0.18)]">
-                    <img
-                      src={marketMitraLogo}
-                      alt="Market Mitra"
-                      className="h-10 w-10 object-contain"
-                    />
+              <div className="flex items-center gap-3">
+                <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/[0.045] shadow-[0_0_35px_rgba(16,185,129,0.16)]">
+                  <img
+                    src={marketMitraLogo}
+                    alt="Market Mitra"
+                    className="h-10 w-10 object-contain"
+                  />
+
+                  <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.05]" />
+                </div>
+
+                <div>
+                  <div className="text-xl font-bold tracking-tight">
+                    Market Mitra
                   </div>
 
-                  <div>
-                    <div className="text-xl font-bold tracking-tight">
-                      Market Mitra
+                  <div className="mt-0.5 text-[10px] font-semibold tracking-[0.20em] text-emerald-400/80">
+                    SELL SMARTER. EARN BETTER.
+                  </div>
+                </div>
+              </div>
+
+              {/* HERO */}
+              <div className="mt-20 max-w-xl">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/[0.14] bg-emerald-500/[0.055] px-3.5 py-1.5 text-[11px] font-semibold tracking-wide text-emerald-300">
+                  <Wheat className="h-3.5 w-3.5" />
+                  Agriculture Intelligence
+                </div>
+
+                <h1 className="text-[52px] font-bold leading-[1.04] tracking-[-0.035em]">
+                  Smarter farming.
+                  <br />
+
+                  <span className="bg-gradient-to-r from-emerald-300 via-green-200 to-emerald-400 bg-clip-text text-transparent">
+                    Better decisions.
+                  </span>
+                </h1>
+
+                <p className="mt-7 max-w-lg text-[15px] leading-7 text-slate-400">
+                  One powerful platform for market prices, crop diagnosis,
+                  weather, government schemes and farmer-to-farmer resource
+                  connections.
+                </p>
+              </div>
+
+              {/* ================================================== */}
+              {/* REAL MARKET DATA VISUAL */}
+              {/* ================================================== */}
+
+              <div className="mt-12 grid grid-cols-2 gap-4">
+
+                {/* MARKET CARD */}
+                <div className="group relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#08150f]/80 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-emerald-400/[0.18] hover:bg-[#0a1b13]">
+                  <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-emerald-400/[0.07] blur-2xl transition-all duration-500 group-hover:bg-emerald-400/[0.13]" />
+
+                  <div className="relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/[0.12] bg-emerald-500/[0.08]">
+                        <TrendingUp className="h-5 w-5 text-emerald-400" />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                        Live
+                      </div>
                     </div>
 
-                    <div className="mt-0.5 text-xs font-medium tracking-[0.18em] text-emerald-400/80">
-                      SELL SMARTER. EARN BETTER.
+                    <div className="mt-5">
+                      <div className="text-sm font-semibold text-white">
+                        Real Market Data
+                      </div>
+
+                      <div className="mt-1 text-xs leading-5 text-slate-500">
+                        Current mandi information for smarter selling.
+                      </div>
+                    </div>
+
+                    {/* Decorative price graph */}
+                    <div className="relative mt-5 h-12 overflow-hidden rounded-lg border border-white/[0.04] bg-black/10">
+                      <svg
+                        viewBox="0 0 240 48"
+                        preserveAspectRatio="none"
+                        className="h-full w-full"
+                      >
+                        <path
+                          d="M0 38 C20 35 28 39 43 31 C60 22 69 29 82 25 C100 20 108 27 123 18 C140 8 150 21 165 17 C180 13 187 20 200 10 C215 2 225 8 240 4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="text-emerald-400/70"
+                        />
+
+                        <path
+                          d="M0 48 L0 38 C20 35 28 39 43 31 C60 22 69 29 82 25 C100 20 108 27 123 18 C140 8 150 21 165 17 C180 13 187 20 200 10 C215 2 225 8 240 4 L240 48 Z"
+                          className="fill-emerald-400/[0.045]"
+                        />
+                      </svg>
+
+                      <div className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(52,211,153,1)]" />
                     </div>
                   </div>
                 </div>
 
-                {/* HERO */}
-                <div className="mt-20 max-w-xl">
-                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-500/[0.08] px-3 py-1.5 text-xs font-medium text-emerald-300">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Agriculture Intelligence
-                  </div>
+                {/* MITRA INTELLIGENCE CARD */}
+                <div className="group relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#08150f]/80 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-green-400/[0.18] hover:bg-[#0a1b13]">
+                  <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-green-400/[0.06] blur-2xl transition-all duration-500 group-hover:bg-green-400/[0.12]" />
 
-                  <h1 className="text-5xl font-bold leading-[1.08] tracking-tight">
-                    Smarter farming.
-                    <br />
+                  <div className="relative">
+                    <div className="flex items-start justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-green-400/[0.12] bg-green-500/[0.07]">
+                        <ScanLine className="h-5 w-5 text-green-400" />
+                      </div>
 
-                    <span className="bg-gradient-to-r from-emerald-400 via-green-300 to-emerald-400 bg-clip-text text-transparent">
-                      Better decisions.
-                    </span>
-                  </h1>
-
-                  <p className="mt-6 max-w-lg text-base leading-7 text-slate-400">
-                    One powerful platform for market prices, crop diagnosis,
-                    weather, government schemes and farmer-to-farmer resource
-                    connections.
-                  </p>
-                </div>
-
-                {/* FEATURE CARDS */}
-                <div className="mt-12 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
-                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
-                      <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400" />
+                      <Activity className="h-4 w-4 text-green-400/30 transition-transform duration-500 group-hover:rotate-90 group-hover:text-green-400/60" />
                     </div>
 
-                    <div className="text-sm font-semibold text-white">
-                      Real Market Data
+                    <div className="mt-5">
+                      <div className="text-sm font-semibold text-white">
+                        Mitra Intelligence
+                      </div>
+
+                      <div className="mt-1 text-xs leading-5 text-slate-500">
+                        Agriculture intelligence built around farmers.
+                      </div>
                     </div>
 
-                    <div className="mt-1 text-xs leading-5 text-slate-500">
-                      Make decisions with current mandi information.
-                    </div>
-                  </div>
+                    {/* Scan visual */}
+                    <div className="relative mt-5 h-12 overflow-hidden rounded-lg border border-white/[0.04] bg-black/10">
+                      <div className="absolute left-4 right-4 top-1/2 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent" />
 
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
-                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/10">
-                      <Sparkles className="h-4.5 w-4.5 text-green-400" />
-                    </div>
+                      <div className="absolute left-[18%] top-2 h-8 w-8 rounded-full border border-green-400/20" />
 
-                    <div className="text-sm font-semibold text-white">
-                      Mitra Intelligence
-                    </div>
+                      <div className="absolute left-[48%] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-green-300 shadow-[0_0_14px_rgba(74,222,128,0.9)]" />
 
-                    <div className="mt-1 text-xs leading-5 text-slate-500">
-                      Agriculture intelligence built around farmers.
+                      <div className="absolute right-[18%] top-2 h-8 w-8 rounded-full border border-green-400/10" />
+
+                      <div className="absolute inset-y-0 left-1/2 w-px bg-green-400/20" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* FOUNDER / ABOUT */}
-              <div className="mt-10 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-emerald-500/10">
-                      <img
-                        src={marketMitraLogo}
-                        alt="Market Mitra"
-                        className="h-8 w-8 object-contain"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-600">
-                        Created by
+              {/* FOUNDER */}
+              <div className="mt-auto pt-10">
+                <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4 backdrop-blur-xl">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-400/[0.12] bg-emerald-500/[0.07]">
+                        <img
+                          src={marketMitraLogo}
+                          alt="Market Mitra"
+                          className="h-8 w-8 object-contain"
+                        />
                       </div>
 
-                      <div className="mt-0.5 text-sm font-semibold text-white">
-                        Om Labhade
+                      <div>
+                        <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-600">
+                          Created by
+                        </div>
+
+                        <div className="mt-0.5 text-sm font-semibold text-white">
+                          Om Labhade
+                        </div>
                       </div>
                     </div>
+
+                    <Link
+                      to="/about"
+                      className="group flex items-center gap-1.5 text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
+                    >
+                      About Market Mitra
+                      <ExternalLink className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-5">
+                  <div className="text-[11px] text-slate-600">
+                    Built for modern Indian agriculture
                   </div>
 
-                  <Link
-                    to="/about"
-                    className="group flex items-center gap-1.5 text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
-                  >
-                    About Market Mitra
-                    <ExternalLink className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* BOTTOM */}
-              <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-5">
-                <div className="text-xs text-slate-600">
-                  Built for modern Indian agriculture
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                  Secure access
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    Secure access
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* ====================================================== */}
           {/* RIGHT AUTH PANEL */}
-          <div className="relative flex items-center justify-center border-white/[0.07] bg-[#030c08]/80 px-5 py-8 sm:px-10 lg:border-l lg:px-14">
+          {/* ====================================================== */}
+
+          <div className="relative flex items-center justify-center border-white/[0.07] bg-[#030c08]/85 px-5 py-8 sm:px-10 lg:border-l lg:px-14">
+            <div className="absolute inset-y-0 left-0 hidden w-px bg-gradient-to-b from-transparent via-emerald-400/[0.10] to-transparent lg:block" />
+
             <div className="w-full max-w-md">
 
               {/* MOBILE BRAND */}
               <div className="mb-10 flex items-center justify-center gap-3 lg:hidden">
-                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/5">
+                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/[0.045] shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                   <img
                     src={marketMitraLogo}
                     alt="Market Mitra"
@@ -281,7 +381,7 @@ function AuthPage() {
                 <div>
                   <div className="text-lg font-bold">Market Mitra</div>
 
-                  <div className="text-[10px] tracking-[0.16em] text-emerald-400/80">
+                  <div className="text-[10px] font-semibold tracking-[0.16em] text-emerald-400/80">
                     SELL SMARTER. EARN BETTER.
                   </div>
                 </div>
@@ -289,11 +389,12 @@ function AuthPage() {
 
               {/* HEADING */}
               <div className="mb-8">
-                <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
                   {isSignin ? "Welcome back" : "Get started"}
                 </div>
 
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                <h2 className="text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
                   {isSignin ? "Welcome back." : "Create your account."}
                 </h2>
 
@@ -309,9 +410,9 @@ function AuthPage() {
                 type="button"
                 onClick={google}
                 disabled={busy !== null}
-                className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.06] px-4 py-3.5 font-semibold text-white shadow-lg transition-all duration-300 hover:border-white/[0.2] hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-60"
+                className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl border border-white/[0.11] bg-white/[0.045] px-4 py-3.5 font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-white/[0.20] hover:bg-white/[0.075] hover:shadow-[0_15px_40px_rgba(0,0,0,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent transition-transform duration-700 group-hover:translate-x-full" />
 
                 <svg
                   width="20"
@@ -368,7 +469,7 @@ function AuthPage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Enter your full name"
-                      className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.04] focus:ring-4 focus:ring-emerald-500/[0.06]"
+                      className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.045] focus:ring-4 focus:ring-emerald-500/[0.06]"
                     />
                   </div>
                 )}
@@ -386,7 +487,7 @@ function AuthPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] py-3.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.04] focus:ring-4 focus:ring-emerald-500/[0.06]"
+                      className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] py-3.5 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.045] focus:ring-4 focus:ring-emerald-500/[0.06]"
                     />
                   </div>
                 </div>
@@ -404,7 +505,7 @@ function AuthPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="w-full rounded-2xl border border-white/[0.09] bg-white/[0.035] py-3.5 pl-11 pr-12 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.04] focus:ring-4 focus:ring-emerald-500/[0.06]"
+                      className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] py-3.5 pl-11 pr-12 text-sm text-white outline-none transition-all placeholder:text-slate-700 focus:border-emerald-500/60 focus:bg-emerald-500/[0.045] focus:ring-4 focus:ring-emerald-500/[0.06]"
                     />
 
                     <button
@@ -442,7 +543,7 @@ function AuthPage() {
                 <button
                   type="submit"
                   disabled={busy !== null}
-                  className="group relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.20)] transition-all duration-300 hover:from-emerald-500 hover:to-green-400 hover:shadow-[0_12px_35px_rgba(16,185,129,0.30)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(16,185,129,0.20)] transition-all duration-300 hover:from-emerald-500 hover:to-green-400 hover:shadow-[0_14px_40px_rgba(16,185,129,0.30)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -511,7 +612,8 @@ function AuthPage() {
 
                 <span className="h-1 w-1 rounded-full bg-slate-700" />
 
-                <span className="text-xs text-slate-700">
+                <span className="flex items-center gap-1.5 text-xs text-slate-700">
+                  <ShieldCheck className="h-3.5 w-3.5" />
                   Secure authentication
                 </span>
               </div>
