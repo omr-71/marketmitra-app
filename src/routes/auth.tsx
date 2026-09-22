@@ -10,13 +10,12 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  ShieldCheck,
   Sparkles,
   CheckCircle2,
-  Leaf,
   ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import marketMitraLogo from "@/assets/marketmitra-logo.png";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -144,10 +143,12 @@ function AuthPage() {
               {/* BRAND */}
               <div>
                 <div className="flex items-center gap-3">
-                  <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.18)]">
-                    <Leaf className="h-6 w-6 text-emerald-400" />
-
-                    <div className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                  <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/5 shadow-[0_0_30px_rgba(16,185,129,0.18)]">
+                    <img
+                      src={marketMitraLogo}
+                      alt="Market Mitra"
+                      className="h-10 w-10 object-contain"
+                    />
                   </div>
 
                   <div>
@@ -220,8 +221,12 @@ function AuthPage() {
               <div className="mt-10 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-                      <Leaf className="h-4.5 w-4.5 text-emerald-400" />
+                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-emerald-500/10">
+                      <img
+                        src={marketMitraLogo}
+                        alt="Market Mitra"
+                        className="h-8 w-8 object-contain"
+                      />
                     </div>
 
                     <div>
@@ -265,8 +270,12 @@ function AuthPage() {
 
               {/* MOBILE BRAND */}
               <div className="mb-10 flex items-center justify-center gap-3 lg:hidden">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10">
-                  <Leaf className="h-5.5 w-5.5 text-emerald-400" />
+                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/5">
+                  <img
+                    src={marketMitraLogo}
+                    alt="Market Mitra"
+                    className="h-9 w-9 object-contain"
+                  />
                 </div>
 
                 <div>
