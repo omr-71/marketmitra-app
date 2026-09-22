@@ -12,7 +12,10 @@ import {
   type MatchStatus,
 } from "./link-types";
 
-const resourceTypes = [...MACHINE_TYPES, ...RESOURCE_TYPES] as [string, ...string[]];
+const resourceTypes = [...MACHINE_TYPES, ...RESOURCE_TYPES] as [
+  string,
+  ...string[],
+];
 
 const requestSchema = z.object({
   category: z.enum(["machine", "resource"]),
@@ -38,7 +41,15 @@ const listingSchema = z.object({
   name: z.string().trim().min(2).max(90),
   description: z.string().trim().max(600).optional().nullable(),
   condition: z.string().trim().max(40).optional().nullable(),
-  pricing_model: z.enum(["free", "per_hour", "per_day", "per_acre", "per_unit", "fixed", "negotiable"]),
+  pricing_model: z.enum([
+    "free",
+    "per_hour",
+    "per_day",
+    "per_acre",
+    "per_unit",
+    "fixed",
+    "negotiable",
+  ]),
   price: z.number().nonnegative().max(10_000_000).optional().nullable(),
   negotiable: z.boolean(),
   quantity: z.number().int().positive().max(10_000).optional().nullable(),
@@ -54,6 +65,10 @@ const listingSchema = z.object({
   terms: z.string().trim().max(400).optional().nullable(),
 });
 
+const listingUpdateSchema = listingSchema.extend({
+  listingId: z.string().uuid(),
+});
+
 export type LinkOverview = {
   profile: {
     full_name: string | null;
@@ -62,8 +77,13 @@ export type LinkOverview = {
     state: string | null;
     district: string | null;
   } | null;
+
   requests: LinkRequest[];
-  listings: (LinkListing & { photoUrls: string[] })[];
+
+  listings: (LinkListing & {
+    photoUrls: string[];
+  })[];
+
   matches: {
     id: string;
     status: MatchStatus;
@@ -73,6 +93,7 @@ export type LinkOverview = {
     needed_date: string | null;
     created_at: string;
   }[];
+
   clusters: {
     resource_type: string;
     district: string | null;
@@ -87,120 +108,645 @@ export const getLinkOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<LinkOverview> => {
     const { supabase, userId } = context;
 
-    const [profileRes, requestsRes, listingsRes, matchesRes, clustersRes] = await Promise.all([
+    const [
+      profileRes,
+      requestsRes,
+      listingsRes,
+      matchesRes,
+      clustersRes,
+    ] = await Promise.all([
       supabase
         .from("profiles")
         .select("full_name, phone, phone_verified, state, district")
         .eq("id", userId)
         .maybeSingle(),
+
       supabase
         .from("link_requests")
         .select("*")
         .eq("requester_id", userId)
         .order("created_at", { ascending: false })
         .limit(20),
+
       supabase
         .from("link_listings")
         .select("*")
         .eq("owner_id", userId)
         .order("created_at", { ascending: false })
         .limit(20),
+
       supabase
         .from("link_matches")
-        .select("id, status, requester_id, provider_id, created_at, link_listings(name, resource_type), link_requests(needed_date)")
+        .select(
+          "id, status, requester_id, provider_id, created_at, link_listings(name, resource_type), link_requests(needed_date)",
+        )
+        .or(`requester_id.eq.${userId},provider_id.eq.${userId}`)
         .order("created_at", { ascending: false })
         .limit(20),
+
       supabase.rpc("link_cluster_opportunities", {}),
     ]);
 
-    const listings = ((listingsRes.data ?? []) as unknown as LinkListing[]);
+    if (profileRes.error) {
+      throw new Error(profileRes.error.message);
+    }
+
+    if (requestsRes.error) {
+      throw new Error(requestsRes.error.message);
+    }
+
+    if (listingsRes.error) {
+      throw new Error(listingsRes.error.message);
+    }
+
+    if (matchesRes.error) {
+      throw new Error(matchesRes.error.message);
+    }
+
+    const listings = (listingsRes.data ?? []) as unknown as LinkListing[];
+
     const withPhotos = await Promise.all(
       listings.map(async (listing) => ({
         ...listing,
-        photoUrls: await signPhotos(supabase, listing.photos ?? []),
+        photoUrls: await signPhotos(
+          supabase,
+          listing.photos ?? [],
+        ),
       })),
     );
 
     return {
-      profile: (profileRes.data as LinkOverview["profile"]) ?? null,
-      requests: (requestsRes.data ?? []) as unknown as LinkRequest[],
+      profile:
+        (profileRes.data as LinkOverview["profile"]) ?? null,
+
+      requests:
+        (requestsRes.data ?? []) as unknown as LinkRequest[],
+
       listings: withPhotos,
+
       matches: (matchesRes.data ?? []).map((row: any) => ({
         id: row.id,
         status: row.status as MatchStatus,
-        role: row.requester_id === userId ? ("requester" as const) : ("provider" as const),
-        listing_name: row.link_listings?.name ?? null,
-        resource_type: row.link_listings?.resource_type ?? "",
-        needed_date: row.link_requests?.needed_date ?? null,
+        role:
+          row.requester_id === userId
+            ? ("requester" as const)
+            : ("provider" as const),
+        listing_name:
+          row.link_listings?.name ?? null,
+        resource_type:
+          row.link_listings?.resource_type ?? "",
+        needed_date:
+          row.link_requests?.needed_date ?? null,
         created_at: row.created_at,
       })),
-      clusters: (clustersRes.data ?? []) as LinkOverview["clusters"],
+
+      clusters:
+        (clustersRes.data ?? []) as LinkOverview["clusters"],
     };
   });
 
-export const createLinkRequest = createServerFn({ method: "POST" })
+export const createLinkRequest = createServerFn({
+  method: "POST",
+})
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => requestSchema.parse(data))
+  .inputValidator((data: unknown) =>
+    requestSchema.parse(data),
+  )
   .handler(async ({ data, context }) => {
-    if (isUnsafeResourceText(data.resource_type, data.note)) {
-      throw new Error("Mitra Link cannot coordinate chemicals, fuel or medicines.");
+    if (
+      isUnsafeResourceText(
+        data.resource_type,
+        data.note,
+      )
+    ) {
+      throw new Error(
+        "Mitra Link cannot coordinate chemicals, fuel or medicines.",
+      );
     }
+
     const { data: row, error } = await context.supabase
       .from("link_requests")
-      .insert({ ...data, requester_id: context.userId } as never)
+      .insert({
+        ...data,
+        requester_id: context.userId,
+      } as never)
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
-    return { id: (row as { id: string }).id };
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      id: (row as { id: string }).id,
+    };
   });
 
-export const createLinkListing = createServerFn({ method: "POST" })
+export const createLinkListing = createServerFn({
+  method: "POST",
+})
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => listingSchema.parse(data))
+  .inputValidator((data: unknown) =>
+    listingSchema.parse(data),
+  )
   .handler(async ({ data, context }) => {
-    if (isUnsafeResourceText(data.resource_type, data.name, data.description, data.terms)) {
-      throw new Error("Mitra Link cannot coordinate chemicals, fuel or medicines.");
+    if (
+      isUnsafeResourceText(
+        data.resource_type,
+        data.name,
+        data.description,
+        data.terms,
+      )
+    ) {
+      throw new Error(
+        "Mitra Link cannot coordinate chemicals, fuel or medicines.",
+      );
     }
+
     const { data: profile } = await context.supabase
       .from("profiles")
       .select("phone_verified")
       .eq("id", context.userId)
       .maybeSingle();
+
     if (!profile?.phone_verified) {
-      throw new Error("Verify your mobile number before listing a machine or resource.");
+      throw new Error(
+        "Verify your mobile number before listing a machine or resource.",
+      );
     }
-    if (data.pricing_model !== "free" && data.pricing_model !== "negotiable" && data.price == null) {
-      throw new Error("State the price you charge, or choose Free / Negotiable.");
+
+    if (
+      data.pricing_model !== "free" &&
+      data.pricing_model !== "negotiable" &&
+      data.price == null
+    ) {
+      throw new Error(
+        "State the price you charge, or choose Free / Negotiable.",
+      );
     }
+
     const { data: row, error } = await context.supabase
       .from("link_listings")
-      .insert({ ...data, owner_id: context.userId } as never)
+      .insert({
+        ...data,
+        owner_id: context.userId,
+      } as never)
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
-    return { id: (row as { id: string }).id };
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      id: (row as { id: string }).id,
+    };
   });
 
-export const getRequestMatches = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ requestId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }): Promise<{ request: LinkRequest; candidates: LinkMatchCandidate[] } | null> =>
-    buildMatches(context.supabase, data.requestId),
-  );
-
-export const createMatchRequest = createServerFn({ method: "POST" })
+/**
+ * Update an existing I HAVE listing.
+ *
+ * Only the owner of the listing can update it.
+ */
+export const updateLinkListing = createServerFn({
+  method: "POST",
+})
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ requestId: z.string().uuid(), listingId: z.string().uuid() }).parse(data),
+    listingUpdateSchema.parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    if (
+      isUnsafeResourceText(
+        data.resource_type,
+        data.name,
+        data.description,
+        data.terms,
+      )
+    ) {
+      throw new Error(
+        "Mitra Link cannot coordinate chemicals, fuel or medicines.",
+      );
+    }
+
+    if (
+      data.pricing_model !== "free" &&
+      data.pricing_model !== "negotiable" &&
+      data.price == null
+    ) {
+      throw new Error(
+        "State the price you charge, or choose Free / Negotiable.",
+      );
+    }
+
+    const { data: existing, error: existingError } =
+      await supabase
+        .from("link_listings")
+        .select("id, owner_id")
+        .eq("id", data.listingId)
+        .maybeSingle();
+
+    if (existingError) {
+      throw new Error(existingError.message);
+    }
+
+    if (!existing) {
+      throw new Error(
+        "This listing no longer exists.",
+      );
+    }
+
+    if (
+      (existing as { owner_id: string }).owner_id !==
+      userId
+    ) {
+      throw new Error(
+        "You can only edit your own Mitra Link listings.",
+      );
+    }
+
+    const {
+      listingId,
+      ...updateData
+    } = data;
+
+    const { error } = await supabase
+      .from("link_listings")
+      .update(updateData as never)
+      .eq("id", listingId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: listingId,
+    };
+  });
+
+/**
+ * Pause a listing.
+ *
+ * Pausing keeps the listing and its history but removes it
+ * from active matching until the owner resumes it.
+ */
+export const pauseLinkListing = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      listingId: z.string().uuid(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: listing, error: lookupError } =
+      await supabase
+        .from("link_listings")
+        .select("id, owner_id, status")
+        .eq("id", data.listingId)
+        .maybeSingle();
+
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+
+    if (!listing) {
+      throw new Error(
+        "This listing no longer exists.",
+      );
+    }
+
+    if (
+      (listing as { owner_id: string }).owner_id !==
+      userId
+    ) {
+      throw new Error(
+        "You can only manage your own listings.",
+      );
+    }
+
+    const { error } = await supabase
+      .from("link_listings")
+      .update({
+        status: "paused",
+      } as never)
+      .eq("id", data.listingId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: data.listingId,
+      status: "paused" as const,
+    };
+  });
+
+/**
+ * Resume a paused listing.
+ */
+export const resumeLinkListing = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      listingId: z.string().uuid(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: listing, error: lookupError } =
+      await supabase
+        .from("link_listings")
+        .select(
+          "id, owner_id, status, available_from, available_to",
+        )
+        .eq("id", data.listingId)
+        .maybeSingle();
+
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+
+    if (!listing) {
+      throw new Error(
+        "This listing no longer exists.",
+      );
+    }
+
+    if (
+      (listing as { owner_id: string }).owner_id !==
+      userId
+    ) {
+      throw new Error(
+        "You can only manage your own listings.",
+      );
+    }
+
+    const listingData = listing as {
+      status: string;
+      available_to: string;
+    };
+
+    if (
+      listingData.available_to &&
+      new Date(listingData.available_to).getTime() <
+        Date.now()
+    ) {
+      throw new Error(
+        "This listing has expired. Extend its availability before resuming it.",
+      );
+    }
+
+    const { error } = await supabase
+      .from("link_listings")
+      .update({
+        status: "active",
+      } as never)
+      .eq("id", data.listingId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: data.listingId,
+      status: "active" as const,
+    };
+  });
+
+/**
+ * Extend the availability period of a listing.
+ *
+ * This is intentionally separate from the full edit function
+ * so the UI can offer a quick "Extend" action.
+ */
+export const extendLinkListing = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      listingId: z.string().uuid(),
+      availableTo: z.string().min(8),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: listing, error: lookupError } =
+      await supabase
+        .from("link_listings")
+        .select(
+          "id, owner_id, available_from, available_to",
+        )
+        .eq("id", data.listingId)
+        .maybeSingle();
+
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+
+    if (!listing) {
+      throw new Error(
+        "This listing no longer exists.",
+      );
+    }
+
+    if (
+      (listing as { owner_id: string }).owner_id !==
+      userId
+    ) {
+      throw new Error(
+        "You can only manage your own listings.",
+      );
+    }
+
+    const current = listing as {
+      available_from: string;
+      available_to: string;
+    };
+
+    const newEnd = new Date(
+      data.availableTo,
+    ).getTime();
+
+    const start = new Date(
+      current.available_from,
+    ).getTime();
+
+    if (!Number.isFinite(newEnd)) {
+      throw new Error(
+        "Enter a valid availability end date.",
+      );
+    }
+
+    if (newEnd < start) {
+      throw new Error(
+        "Availability end date cannot be before the start date.",
+      );
+    }
+
+    const { error } = await supabase
+      .from("link_listings")
+      .update({
+        available_to: data.availableTo,
+        status: "active",
+      } as never)
+      .eq("id", data.listingId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: data.listingId,
+      available_to: data.availableTo,
+      status: "active" as const,
+    };
+  });
+
+/**
+ * Remove a listing from Mitra Link.
+ *
+ * This is intentionally implemented as a soft removal instead
+ * of physically deleting the row. That protects match/request
+ * history and avoids breaking foreign-key relationships.
+ */
+export const removeLinkListing = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      listingId: z.string().uuid(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: listing, error: lookupError } =
+      await supabase
+        .from("link_listings")
+        .select("id, owner_id")
+        .eq("id", data.listingId)
+        .maybeSingle();
+
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+
+    if (!listing) {
+      throw new Error(
+        "This listing has already been removed.",
+      );
+    }
+
+    if (
+      (listing as { owner_id: string }).owner_id !==
+      userId
+    ) {
+      throw new Error(
+        "You can only remove your own listings.",
+      );
+    }
+
+    const { error } = await supabase
+      .from("link_listings")
+      .update({
+        status: "removed",
+      } as never)
+      .eq("id", data.listingId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: data.listingId,
+      status: "removed" as const,
+    };
+  });
+
+export const getRequestMatches = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      requestId: z.string().uuid(),
+    }).parse(data),
+  )
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      request: LinkRequest;
+      candidates: LinkMatchCandidate[];
+    } | null> =>
+      buildMatches(
+        context.supabase,
+        data.requestId,
+      ),
+  );
+
+export const createMatchRequest = createServerFn({
+  method: "POST",
+})
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        requestId: z.string().uuid(),
+        listingId: z.string().uuid(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
     const { data: listing } = await supabase
       .from("link_listings")
-      .select("owner_id")
+      .select("owner_id, status")
       .eq("id", data.listingId)
       .maybeSingle();
-    if (!listing) throw new Error("This listing is no longer available.");
+
+    if (!listing) {
+      throw new Error(
+        "This listing is no longer available.",
+      );
+    }
+
+    const listingData = listing as {
+      owner_id: string;
+      status: string;
+    };
+
+    if (
+      listingData.status !== "active"
+    ) {
+      throw new Error(
+        "This listing is not currently available.",
+      );
+    }
 
     const { data: row, error } = await supabase
       .from("link_matches")
@@ -208,52 +754,140 @@ export const createMatchRequest = createServerFn({ method: "POST" })
         request_id: data.requestId,
         listing_id: data.listingId,
         requester_id: userId,
-        provider_id: (listing as { owner_id: string }).owner_id,
+        provider_id: listingData.owner_id,
         status: "requested",
       } as never)
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+
+    if (error) {
+      throw new Error(error.message);
+    }
 
     await supabase
       .from("link_requests")
-      .update({ status: "provider_contacted" } as never)
+      .update({
+        status: "provider_contacted",
+      } as never)
       .eq("id", data.requestId);
 
-    return { id: (row as { id: string }).id };
+    return {
+      id: (row as { id: string }).id,
+    };
   });
 
-export const updateMatchStatus = createServerFn({ method: "POST" })
+export const updateMatchStatus = createServerFn({
+  method: "POST",
+})
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
     z
       .object({
         matchId: z.string().uuid(),
-        status: z.enum(["accepted", "rejected", "scheduled", "in_progress", "completed", "cancelled"]),
+        status: z.enum([
+          "accepted",
+          "rejected",
+          "scheduled",
+          "in_progress",
+          "completed",
+          "cancelled",
+        ]),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+
+    const { data: match, error: lookupError } =
+      await supabase
+        .from("link_matches")
+        .select(
+          "id, requester_id, provider_id, status",
+        )
+        .eq("id", data.matchId)
+        .maybeSingle();
+
+    if (lookupError) {
+      throw new Error(lookupError.message);
+    }
+
+    if (!match) {
+      throw new Error(
+        "This match no longer exists.",
+      );
+    }
+
+    const matchData = match as {
+      requester_id: string;
+      provider_id: string;
+    };
+
+    if (
+      matchData.requester_id !== userId &&
+      matchData.provider_id !== userId
+    ) {
+      throw new Error(
+        "You are not allowed to update this match.",
+      );
+    }
+
+    const { error } = await supabase
       .from("link_matches")
-      .update({ status: data.status } as never)
+      .update({
+        status: data.status,
+      } as never)
       .eq("id", data.matchId);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      ok: true,
+      id: data.matchId,
+      status: data.status,
+    };
   });
 
-/** Reveals the provider's verified mobile number only inside an accepted match. */
-export const getMatchContact = createServerFn({ method: "POST" })
+/**
+ * Reveals the provider's verified mobile number only
+ * inside an accepted match.
+ */
+export const getMatchContact = createServerFn({
+  method: "POST",
+})
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ matchId: z.string().uuid() }).parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        matchId: z.string().uuid(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase.rpc("link_provider_contact", {
-      _match_id: data.matchId,
-    });
-    if (error) throw new Error(error.message);
+    const { data: rows, error } =
+      await context.supabase.rpc(
+        "link_provider_contact",
+        {
+          _match_id: data.matchId,
+        },
+      );
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
     const row = (rows ?? [])[0] as
-      | { full_name: string | null; phone: string | null; phone_verified: boolean }
+      | {
+          full_name: string | null;
+          phone: string | null;
+          phone_verified: boolean;
+        }
       | undefined;
-    if (!row) return null;
+
+    if (!row) {
+      return null;
+    }
+
     return row;
   });
