@@ -1,9 +1,25 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  Link,
+  useNavigate,
+  useSearch,
+  createFileRoute,
+} from "@tanstack/react-router";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export default function AuthPage() {
+export const Route = createFileRoute("/auth")({
+  component: AuthPage,
+});
+
+function AuthPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/auth" });
 
@@ -29,7 +45,7 @@ export default function AuthPage() {
     const redirectTo = `${window.location.origin}/auth`;
 
     const url = new URL(
-      "https://bulpboucdnkvepxabyuy.supabase.co/auth/v1/authorize"
+      "https://bulpboucdnkvepxabyuy.supabase.co/auth/v1/authorize",
     );
 
     url.searchParams.set("provider", "google");
@@ -70,7 +86,7 @@ export default function AuthPage() {
         }
 
         setNotice(
-          "Account created. Please check your email if confirmation is required."
+          "Account created. Please check your email if confirmation is required.",
         );
       } else {
         const { error: signInError } =
@@ -89,7 +105,7 @@ export default function AuthPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again."
+          : "Something went wrong. Please try again.",
       );
     } finally {
       setBusy(null);
@@ -102,7 +118,6 @@ export default function AuthPage() {
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-6 py-10">
         <div className="grid w-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-2xl lg:grid-cols-2">
-
           <div className="hidden min-h-[650px] flex-col justify-between bg-gradient-to-br from-blue-950 via-slate-950 to-slate-900 p-10 lg:flex">
             <div>
               <div className="mb-8 flex items-center gap-3">
@@ -129,9 +144,7 @@ export default function AuthPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <div className="text-sm font-semibold text-white">
-                Mitra AI
-              </div>
+              <div className="text-sm font-semibold text-white">Mitra AI</div>
 
               <div className="mt-1 text-sm text-slate-400">
                 Agriculture Intelligence for smarter decisions.
@@ -141,7 +154,6 @@ export default function AuthPage() {
 
           <div className="flex min-h-[650px] items-center justify-center bg-slate-950 p-6 sm:p-10">
             <div className="w-full max-w-md">
-
               <div className="mb-8">
                 <h2 className="text-3xl font-bold">
                   {isSignin ? "Welcome back" : "Create your account"}
@@ -194,7 +206,6 @@ export default function AuthPage() {
               </div>
 
               <form onSubmit={submit} className="space-y-4">
-
                 {!isSignin && (
                   <div>
                     <label className="mb-2 block text-sm text-slate-300">
@@ -284,7 +295,6 @@ export default function AuthPage() {
                 {isSignin
                   ? "Don't have an account?"
                   : "Already have an account?"}{" "}
-
                 <button
                   type="button"
                   onClick={() => {
@@ -306,7 +316,6 @@ export default function AuthPage() {
                   Back to Market Mitra
                 </Link>
               </div>
-
             </div>
           </div>
         </div>
