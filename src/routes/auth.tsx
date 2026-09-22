@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Link,
   useNavigate,
-  useSearch,
   createFileRoute,
 } from "@tanstack/react-router";
 import {
@@ -21,7 +20,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const search = useSearch({ from: "/auth" });
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -31,11 +29,6 @@ function AuthPage() {
   const [busy, setBusy] = useState<"google" | "email" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const destination =
-    typeof search?.redirect === "string" && search.redirect
-      ? search.redirect
-      : "/home";
 
   const google = () => {
     setError(null);
@@ -54,7 +47,7 @@ function AuthPage() {
     window.location.assign(url.toString());
   };
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     setError(null);
@@ -62,7 +55,7 @@ function AuthPage() {
     setBusy("email");
 
     try {
-      if (!email || !password) {
+      if (!email.trim() || !password) {
         throw new Error("Please enter your email and password.");
       }
 
@@ -99,7 +92,7 @@ function AuthPage() {
           throw signInError;
         }
 
-        navigate({ to: destination });
+        navigate({ to: "/home" });
       }
     } catch (err) {
       setError(
