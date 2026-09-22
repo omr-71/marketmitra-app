@@ -789,3 +789,192 @@ html[data-motion="reduced"] .reveal-in {
     border-width: 2px;
   }
 }
+
+
+/* =========================================================
+   MARKET MITRA — MOBILE VISUAL ENHANCEMENT
+   Mobile only. Existing desktop styles remain untouched.
+   ========================================================= */
+
+@media (max-width: 639px) {
+
+  /* Keep the mobile experience visually alive */
+  [data-route] {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Soft ambient green light */
+  [data-route]::before {
+    content: "";
+    position: fixed;
+    width: 280px;
+    height: 280px;
+    top: 8%;
+    right: -150px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--color-primary) 14%, transparent),
+      transparent 68%
+    );
+    filter: blur(18px);
+    animation: mm-mobile-orb 7s ease-in-out infinite;
+  }
+
+  /* Second ambient light */
+  [data-route]::after {
+    content: "";
+    position: fixed;
+    width: 220px;
+    height: 220px;
+    left: -130px;
+    bottom: 12%;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--color-primary-glow) 10%, transparent),
+      transparent 70%
+    );
+    filter: blur(20px);
+    animation: mm-mobile-orb-reverse 9s ease-in-out infinite;
+  }
+
+  /* Bring existing reveal animations to life on mobile */
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.985);
+  }
+
+  .reveal-in {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  /* Existing page animation gets a little more visible */
+  .animate-page {
+    animation-duration: 0.38s;
+  }
+
+  /* Make existing card surfaces feel less static */
+  .card-surface {
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s ease,
+      border-color 0.35s ease;
+  }
+
+  /* Give cards a tiny press response on touch */
+  .card-surface:active {
+    transform: scale(0.985);
+  }
+
+  /* Existing glass surfaces get stronger visual depth */
+  .glass {
+    box-shadow:
+      0 10px 35px -25px color-mix(
+        in oklab,
+        var(--color-primary) 35%,
+        transparent
+      );
+  }
+
+  /* Animated green glow for live/status elements */
+  [class*="bg-primary"],
+  [class*="border-primary"] {
+    --mm-mobile-glow:
+      color-mix(in oklab, var(--color-primary) 18%, transparent);
+  }
+
+  /* Slightly more cinematic navigation */
+  nav {
+    transition:
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  /* Keep decorative SVG graphics visible when their parent
+     isn't explicitly hidden by the component itself */
+  svg {
+    max-width: 100%;
+  }
+
+  /* Premium floating animation for decorative elements */
+  [data-route] .animate-breathe {
+    animation:
+      breathe 4.2s ease-in-out infinite,
+      mm-mobile-float 6s ease-in-out infinite;
+  }
+
+  /* Shimmer becomes a continuous subtle mobile effect
+     instead of relying on hover */
+  .sheen-on-hover::after {
+    opacity: 0.35;
+    animation: sheen 4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  /* Subtle animated loading/data feeling */
+  .shimmer::after {
+    animation-duration: 2.2s;
+  }
+}
+
+/* Mobile ambient motion */
+@keyframes mm-mobile-orb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: translate3d(-25px, 35px, 0) scale(1.12);
+    opacity: 0.9;
+  }
+}
+
+@keyframes mm-mobile-orb-reverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: translate3d(30px, -25px, 0) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes mm-mobile-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+/* Never override the user's reduced-motion setting */
+@media (prefers-reduced-motion: reduce) {
+  [data-route]::before,
+  [data-route]::after,
+  [data-route] .animate-breathe,
+  .sheen-on-hover::after {
+    animation: none !important;
+  }
+}
+
+html[data-motion="reduced"] [data-route]::before,
+html[data-motion="reduced"] [data-route]::after,
+html[data-motion="reduced"] [data-route] .animate-breathe,
+html[data-motion="reduced"] .sheen-on-hover::after {
+  animation: none !important;
+}
