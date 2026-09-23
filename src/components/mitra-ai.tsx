@@ -448,6 +448,40 @@ function clampOrbPosition(position: Position): Position {
   };
 }
 
+function MitraMark({
+  size = "md",
+  className = "",
+}: {
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizes = {
+    sm: "size-4",
+    md: "size-5",
+    lg: "size-7",
+  };
+
+  return (
+    <span
+      className={`relative grid ${sizes[size]} shrink-0 place-items-center ${className}`}
+      aria-hidden="true"
+    >
+      {/* Farmer */}
+      <span className="absolute top-[10%] left-1/2 size-[28%] -translate-x-1/2 rounded-full bg-current" />
+
+      <span className="absolute top-[34%] left-1/2 h-[28%] w-[52%] -translate-x-1/2 rounded-[55%_55%_30%_30%] bg-current" />
+
+      {/* Field lines */}
+      <span className="absolute bottom-[13%] left-[12%] h-[10%] w-[76%] rotate-[-5deg] rounded-full border-t-[1.5px] border-current/80" />
+
+      <span className="absolute bottom-[5%] left-[20%] h-[8%] w-[60%] rotate-[4deg] rounded-full border-t-[1.5px] border-current/45" />
+
+      {/* Live effect */}
+      <span className="absolute inset-0 rounded-full bg-current/10 animate-pulse" />
+    </span>
+  );
+}
+
 export function MitraAI() {
   const { lang } = useLang();
   const { location } = useLocationContext();
@@ -1306,10 +1340,7 @@ export function MitraAI() {
           <span className="relative grid size-full place-items-center overflow-hidden rounded-full grad-primary ring-1 ring-white/20">
             <span className="absolute left-3 top-2 size-3 rounded-full bg-white/50 blur-[2px]" />
 
-            <Leaf
-              className="relative size-7"
-              strokeWidth={2}
-            />
+            <MitraMark size="lg" />
 
             <span className="absolute bottom-2 right-2 size-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
           </span>
@@ -1360,10 +1391,7 @@ export function MitraAI() {
               <div className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-primary/10">
                 <span className="absolute inset-0 bg-primary/10 animate-pulse" />
 
-                <Leaf
-                  className="relative size-5 text-primary"
-                  strokeWidth={2.1}
-                />
+                <MitraMark size="md" className="text-primary" />
               </div>
 
               <div className="relative min-w-0 flex-1">
@@ -1441,10 +1469,7 @@ export function MitraAI() {
                         <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
                           <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
 
-                          <Leaf
-                            className="relative size-6 text-primary"
-                            strokeWidth={1.9}
-                          />
+                          <MitraMark size="lg" className="text-primary" />
                         </div>
 
                         <div>
@@ -1534,10 +1559,7 @@ export function MitraAI() {
                       {isAssistant && (
                         <div className="mb-1 flex items-center gap-1.5 px-1">
                           <span className="grid size-5 place-items-center rounded-md bg-primary/10">
-                            <Leaf
-                              className="size-3 text-primary"
-                              strokeWidth={2.1}
-                            />
+                            <MitraMark size="sm" className="text-primary" />
                           </span>
 
                           <span className="text-[10px] font-semibold tracking-wide text-muted-foreground">
@@ -1589,10 +1611,7 @@ export function MitraAI() {
                     <div className="relative grid size-8 place-items-center rounded-xl bg-primary/8">
                       <span className="absolute inset-0 rounded-xl bg-primary/10 animate-pulse" />
 
-                      <Leaf
-                        className="relative size-4 text-primary"
-                        strokeWidth={2}
-                      />
+                      <MitraMark size="sm" className="text-primary" />
                     </div>
 
                     <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
@@ -1828,10 +1847,7 @@ export function MitraAI() {
               </button>
 
               <div className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-                <Leaf
-                  className="size-5 text-primary"
-                  strokeWidth={2}
-                />
+                <MitraMark size="md" className="text-primary" />
               </div>
 
               <div className="relative min-w-0 flex-1">
@@ -1886,10 +1902,7 @@ export function MitraAI() {
                         <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10">
                           <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
 
-                          <Leaf
-                            className="relative size-6 text-primary"
-                            strokeWidth={1.9}
-                          />
+                          <MitraMark size="lg" className="text-primary" />
                         </div>
 
                         <div>
@@ -2025,10 +2038,7 @@ export function MitraAI() {
                     <div className="relative grid size-8 place-items-center rounded-xl bg-primary/8">
                       <span className="absolute inset-0 rounded-xl bg-primary/10 animate-pulse" />
 
-                      <Leaf
-                        className="relative size-4 text-primary"
-                        strokeWidth={2}
-                      />
+                      <MitraMark size="sm" className="text-primary" />
                     </div>
 
                     <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
