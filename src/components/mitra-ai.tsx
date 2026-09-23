@@ -575,7 +575,7 @@ export function MitraAI() {
    */
 
   useEffect(() => {
-    if (!isDesktop) return;
+    
 
     const savedPanel =
       readPosition(PANEL_STORAGE_KEY);
