@@ -39,9 +39,13 @@ function useActive() {
     pathname === to || (to !== "/home" && pathname.startsWith(to));
 }
 
+import { motion } from "motion/react";
+import { SPRINGS, useReducedMotion } from "@/lib/motion";
+
 export function BottomNav() {
   const { t } = useLang();
   const isActive = useActive();
+  const reducedMotion = useReducedMotion();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] lg:hidden">
@@ -67,33 +71,36 @@ export function BottomNav() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {/* Dynamic liquid bubble */}
-              <span
-                className={`pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] transition-all duration-500 ${
-                  active
-                    ? "scale-100 opacity-100 bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]"
-                    : "scale-75 opacity-0"
-                }`}
-              />
+              {/* Dynamic liquid bubble with layout animation */}
+              {active && (
+                reducedMotion ? (
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]" />
+                ) : (
+                  <motion.span
+                    layoutId="bottomNavBubble"
+                    transition={SPRINGS.navPill}
+                    className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]"
+                  />
+                )
+              )}
 
               {/* Bubble highlight */}
               {active && (
                 <>
                   <span className="pointer-events-none absolute left-1/2 top-[8px] h-2.5 w-7 -translate-x-1/2 rounded-full bg-white/70 blur-[2px] dark:bg-white/20" />
-
                   <span className="pointer-events-none absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.07] blur-md" />
                 </>
               )}
 
               <span
-                className={`relative grid size-8 place-items-center rounded-full transition-all duration-500 ${
+                className={`relative grid size-8 place-items-center rounded-full transition-all duration-300 ${
                   active
                     ? "scale-110 -translate-y-1"
                     : "group-hover:-translate-y-0.5 group-hover:scale-105"
                 }`}
               >
                 <Icon
-                  className={`size-[19px] transition-all duration-500 ${
+                  className={`size-[19px] transition-all duration-300 ${
                     active
                       ? "drop-shadow-[0_2px_5px_rgba(37,99,235,0.18)]"
                       : ""
@@ -102,13 +109,17 @@ export function BottomNav() {
                 />
 
                 {/* Active floating dot */}
-                <span
-                  className={`absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary transition-all duration-500 ${
-                    active
-                      ? "scale-100 opacity-100 shadow-[0_0_10px_currentColor]"
-                      : "scale-0 opacity-0"
-                  }`}
-                />
+                {active && (
+                  reducedMotion ? (
+                    <span className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]" />
+                  ) : (
+                    <motion.span
+                      layoutId="bottomNavDot"
+                      transition={SPRINGS.tactile}
+                      className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]"
+                    />
+                  )
+                )}
               </span>
 
               <span
@@ -130,6 +141,7 @@ export function BottomNav() {
 export function SideNav() {
   const { t } = useLang();
   const isActive = useActive();
+  const reducedMotion = useReducedMotion();
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border/70 bg-card px-4 py-6 lg:flex">
@@ -150,18 +162,30 @@ export function SideNav() {
             <Link
               key={to}
               to={to}
-              className={`press flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
+              className={`press relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
                 active
-                  ? "bg-primary/12 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               }`}
             >
+              {active && (
+                reducedMotion ? (
+                  <span className="absolute inset-0 -z-10 rounded-xl bg-primary/12" />
+                ) : (
+                  <motion.span
+                    layoutId="sideNavActivePill"
+                    transition={SPRINGS.navPill}
+                    className="absolute inset-0 -z-10 rounded-xl bg-primary/12"
+                  />
+                )
+              )}
               <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
               {t(key)}
             </Link>
           );
         })}
       </nav>
+
 
       <Link
         to="/about"
@@ -241,10 +265,10 @@ export function TopBar({
       {back ? (
         <Link
           to={back}
-          className="press grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground"
+          className="press group grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80"
           aria-label="Back"
         >
-          <ChevronLeft className="size-5" />
+          <ChevronLeft className="size-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
         </Link>
       ) : (
         <span className="size-9 shrink-0 lg:hidden" />
@@ -268,10 +292,10 @@ export function TopBar({
         {settings && (
           <Link
             to="/settings"
-            className="press grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground"
+            className="press group grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground transition-colors hover:bg-muted/80"
             aria-label="Settings"
           >
-            <Settings className="size-4.5" />
+            <Settings className="size-4.5 transition-transform duration-300 group-hover:rotate-45" />
           </Link>
         )}
       </div>

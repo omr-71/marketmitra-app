@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
 import { CardSkeleton, StatSkeleton } from "@/components/skeletons";
+import { AnimatedNumber } from "@/components/motion/animated-number";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { useLocationContext } from "@/lib/location";
@@ -234,7 +236,7 @@ function WeatherPage() {
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="font-display text-6xl font-extrabold leading-none">
-                      {data.current.temperature}°
+                      <AnimatedNumber value={data.current.temperature} suffix="°" />
                     </p>
 
                     <p className="mt-2 text-sm font-bold">
@@ -246,7 +248,7 @@ function WeatherPage() {
                     </p>
                   </div>
 
-                    <CloudSun className="size-14 shrink-0 text-sky sm:size-16 lg:size-20" />
+                  <CloudSun className="animate-subtle-float size-14 shrink-0 text-sky sm:size-16 lg:size-20" />
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center">
@@ -375,9 +377,9 @@ function WeatherPage() {
               <section className="card-surface hover-lift p-5">
                 <p className="text-sm font-bold">{t("sevenDay")}</p>
 
-                <div className="mt-3 space-y-2">
+                <StaggerContainer className="mt-3 space-y-2" staggerDelay={0.045}>
                   {data.days.map((day) => (
-                    <div
+                    <StaggerItem
                       key={day.date}
                       className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
                     >
@@ -397,9 +399,9 @@ function WeatherPage() {
                           {day.min}°
                         </span>
                       </p>
-                    </div>
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
               </section>
 
               <div className="space-y-4">
