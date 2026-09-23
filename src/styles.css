@@ -7184,3 +7184,798 @@ html[data-motion="reduced"] .mm-float-c {
     transition: none !important;
   }
 }
+
+
+/* =========================================================
+   MARKET MITRA — MARKET EXPERIENCE
+   Premium motion layer
+   Theme preserved: MarketMitra identity
+   ========================================================= */
+
+.mm-market-page {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ---------------------------------------------------------
+   LIVE MARKET WORLD
+   --------------------------------------------------------- */
+
+.mm-market-world {
+  inset: 0;
+  overflow: hidden;
+  min-height: 100%;
+  z-index: 0;
+}
+
+.mm-market-world-grid {
+  position: absolute;
+  inset: -20%;
+  opacity: 0.16;
+  background-image:
+    linear-gradient(
+      rgba(59, 130, 246, 0.07) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.07) 1px,
+      transparent 1px
+    );
+  background-size: 70px 70px;
+  transform: perspective(900px) rotateX(62deg) translateY(12%);
+  transform-origin: center bottom;
+  animation: mm-market-grid-drift 22s linear infinite;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 28%,
+    black 72%,
+    transparent 100%
+  );
+}
+
+.mm-market-orb {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+  will-change: transform;
+}
+
+.mm-market-orb-one {
+  width: 360px;
+  height: 360px;
+  top: 4%;
+  right: -150px;
+  background: radial-gradient(
+    circle,
+    rgba(34, 197, 94, 0.13),
+    transparent 68%
+  );
+  animation: mm-market-orb-one 12s ease-in-out infinite;
+}
+
+.mm-market-orb-two {
+  width: 300px;
+  height: 300px;
+  top: 35%;
+  left: -160px;
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.12),
+    transparent 68%
+  );
+  animation: mm-market-orb-two 15s ease-in-out infinite;
+}
+
+.mm-market-orb-three {
+  width: 260px;
+  height: 260px;
+  bottom: 8%;
+  right: 8%;
+  background: radial-gradient(
+    circle,
+    rgba(34, 197, 94, 0.08),
+    transparent 70%
+  );
+  animation: mm-market-orb-three 18s ease-in-out infinite;
+}
+
+.mm-market-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -30%;
+  height: 180px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(59, 130, 246, 0.035),
+    transparent
+  );
+  opacity: 0.7;
+  animation: mm-market-scan 9s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------
+   PARTICLES
+   --------------------------------------------------------- */
+
+.mm-market-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  color: hsl(var(--primary));
+  opacity: 0.35;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.mm-market-particle-one {
+  top: 18%;
+  left: 16%;
+  animation: mm-market-particle-a 7s ease-in-out infinite;
+}
+
+.mm-market-particle-two {
+  top: 31%;
+  right: 12%;
+  animation: mm-market-particle-b 9s ease-in-out infinite;
+}
+
+.mm-market-particle-three {
+  top: 61%;
+  left: 8%;
+  animation: mm-market-particle-c 8s ease-in-out infinite;
+}
+
+.mm-market-particle-four {
+  bottom: 18%;
+  right: 20%;
+  animation: mm-market-particle-a 11s ease-in-out infinite reverse;
+}
+
+/* ---------------------------------------------------------
+   COMMAND PANEL
+   --------------------------------------------------------- */
+
+.mm-market-command {
+  position: relative;
+  border: 1px solid hsl(var(--border) / 0.65);
+  box-shadow:
+    0 20px 70px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    border-color 400ms ease,
+    box-shadow 400ms ease,
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mm-market-command:hover {
+  border-color: hsl(var(--primary) / 0.22);
+  box-shadow:
+    0 26px 90px rgba(0, 0, 0, 0.11),
+    0 0 50px hsl(var(--primary) / 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.mm-command-light {
+  position: absolute;
+  width: 260px;
+  height: 90px;
+  top: -50px;
+  left: 18%;
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.09);
+  filter: blur(35px);
+  animation: mm-command-light 7s ease-in-out infinite;
+}
+
+.mm-panel-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.025) 40%,
+      transparent 65%
+    );
+  background-size: 220% 100%;
+  animation: mm-panel-flow 8s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------
+   SNAPSHOT
+   --------------------------------------------------------- */
+
+.mm-snapshot {
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow:
+    0 14px 45px rgba(0, 0, 0, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.mm-snapshot-shine {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      110deg,
+      transparent 15%,
+      hsl(var(--primary) / 0.055) 45%,
+      transparent 70%
+    );
+  background-size: 220% 100%;
+  animation: mm-panel-flow 9s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------
+   BEST MARKET
+   --------------------------------------------------------- */
+
+.mm-best-market {
+  border-color: hsl(var(--gold) / 0.22);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.08),
+    0 0 70px hsl(var(--gold) / 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  transform: translateZ(0);
+  transition:
+    transform 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 450ms ease;
+}
+
+.mm-best-market:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 28px 85px rgba(0, 0, 0, 0.11),
+    0 0 90px hsl(var(--gold) / 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.mm-best-glow {
+  position: absolute;
+  width: 340px;
+  height: 180px;
+  top: -90px;
+  right: -60px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(var(--gold) / 0.13),
+    transparent 70%
+  );
+  filter: blur(20px);
+  animation: mm-best-glow 8s ease-in-out infinite;
+}
+
+.mm-best-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(
+      hsl(var(--gold) / 0.16) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      hsl(var(--gold) / 0.16) 1px,
+      transparent 1px
+    );
+  background-size: 42px 42px;
+  mask-image: radial-gradient(
+    circle at 80% 15%,
+    black,
+    transparent 65%
+  );
+}
+
+.mm-best-scan {
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--gold) / 0.055),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: mm-best-scan 8s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------
+   MARKET CARDS
+   --------------------------------------------------------- */
+
+.mm-market-card {
+  border: 1px solid hsl(var(--border) / 0.55);
+  box-shadow:
+    0 12px 38px rgba(0, 0, 0, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  transform: translateZ(0);
+  transition:
+    transform 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 350ms ease,
+    box-shadow 450ms ease,
+    background-color 350ms ease;
+}
+
+.mm-market-card:hover {
+  transform: translateY(-4px) scale(1.005);
+  border-color: hsl(var(--primary) / 0.24);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.09),
+    0 0 45px hsl(var(--primary) / 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.mm-market-card:active {
+  transform: translateY(-1px) scale(0.998);
+}
+
+.mm-card-sweep {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 20%,
+      hsl(var(--primary) / 0.055) 48%,
+      transparent 72%
+    );
+  background-size: 220% 100%;
+  opacity: 0;
+  transition: opacity 350ms ease;
+}
+
+.mm-market-card:hover .mm-card-sweep {
+  opacity: 1;
+  animation: mm-card-sweep 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mm-market-index {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid hsl(var(--border) / 0.55);
+  background: hsl(var(--muted) / 0.65);
+  color: hsl(var(--muted-foreground));
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mm-market-card:hover .mm-market-index {
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary) / 0.22);
+  background: hsl(var(--primary) / 0.07);
+  transform: translateY(-1px);
+}
+
+/* ---------------------------------------------------------
+   LIVE DOT
+   --------------------------------------------------------- */
+
+.mm-live-dot {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35);
+  animation: mm-live-pulse 2.2s ease-out infinite;
+}
+
+.mm-mini-live-dot {
+  width: 5px;
+  height: 5px;
+  flex-basis: 5px;
+}
+
+/* ---------------------------------------------------------
+   EMPTY / SKELETON
+   --------------------------------------------------------- */
+
+.mm-empty-market {
+  border: 1px solid hsl(var(--border) / 0.55);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.mm-empty-ring {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  left: 50%;
+  top: 50%;
+  border: 1px solid hsl(var(--primary) / 0.08);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: mm-ring-breathe 7s ease-in-out infinite;
+}
+
+.mm-market-skeleton {
+  border: 1px solid hsl(var(--border) / 0.45);
+  background:
+    linear-gradient(
+      110deg,
+      hsl(var(--muted) / 0.5),
+      hsl(var(--muted) / 0.78),
+      hsl(var(--muted) / 0.5)
+    );
+}
+
+.mm-skeleton-shine {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 75%
+    );
+  background-size: 220% 100%;
+  animation: mm-skeleton-flow 1.8s linear infinite;
+}
+
+/* ---------------------------------------------------------
+   DIVIDER
+   --------------------------------------------------------- */
+
+.mm-divider {
+  border-top: 1px solid hsl(var(--border) / 0.55);
+}
+
+/* ---------------------------------------------------------
+   KEYFRAMES
+   --------------------------------------------------------- */
+
+@keyframes mm-market-grid-drift {
+  from {
+    transform:
+      perspective(900px)
+      rotateX(62deg)
+      translateY(12%)
+      translateX(0);
+  }
+  to {
+    transform:
+      perspective(900px)
+      rotateX(62deg)
+      translateY(18%)
+      translateX(-70px);
+  }
+}
+
+@keyframes mm-market-orb-one {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-45px, 28px, 0) scale(1.08);
+  }
+}
+
+@keyframes mm-market-orb-two {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(45px, -25px, 0);
+  }
+}
+
+@keyframes mm-market-orb-three {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-25px, -30px, 0) scale(1.1);
+  }
+}
+
+@keyframes mm-market-scan {
+  0% {
+    transform: translateY(-20%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(700%);
+    opacity: 0;
+  }
+}
+
+@keyframes mm-command-light {
+  0%, 100% {
+    transform: translateX(-30px);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(100px);
+    opacity: 1;
+  }
+}
+
+@keyframes mm-panel-flow {
+  0% {
+    background-position: 180% 0;
+  }
+  50% {
+    background-position: 20% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+
+@keyframes mm-best-glow {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(-25px, 20px, 0) scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes mm-best-scan {
+  0% {
+    left: -30%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.6;
+  }
+  100% {
+    left: 115%;
+    opacity: 0;
+  }
+}
+
+@keyframes mm-card-sweep {
+  0% {
+    background-position: 160% 0;
+  }
+  100% {
+    background-position: -20% 0;
+  }
+}
+
+@keyframes mm-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.32);
+  }
+  70% {
+    box-shadow: 0 0 0 7px hsl(var(--primary) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+}
+
+@keyframes mm-ring-breathe {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.88);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.65;
+  }
+}
+
+@keyframes mm-skeleton-flow {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@keyframes mm-market-particle-a {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate3d(25px, -35px, 0);
+    opacity: 0.7;
+  }
+}
+
+@keyframes mm-market-particle-b {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate3d(-30px, 25px, 0);
+    opacity: 0.65;
+  }
+}
+
+@keyframes mm-market-particle-c {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate3d(18px, -28px, 0);
+    opacity: 0.6;
+  }
+}
+
+/* ---------------------------------------------------------
+   ACCESSIBILITY / PERFORMANCE
+   --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-market-world *,
+  .mm-market-page *,
+  .mm-market-page::before,
+  .mm-market-page::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .mm-market-card:hover,
+  .mm-best-market:hover {
+    transform: none;
+  }
+}
+
+/* Mobile: keep everything inside the viewport */
+@media (max-width: 640px) {
+  .mm-market-world-grid {
+    opacity: 0.09;
+  }
+
+  .mm-market-orb-one {
+    width: 240px;
+    height: 240px;
+  }
+
+  .mm-market-orb-two {
+    width: 220px;
+    height: 220px;
+  }
+
+  .mm-market-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+
+/* =========================================================
+   MARKET — LAYOUT / CLIPPING FIX
+   Keeps the existing Market Mitra theme.
+   ========================================================= */
+
+.mm-market-page {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+  isolation: isolate;
+}
+
+.mm-market-page > .relative.z-10 {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Prevent headings and market labels from being squeezed */
+.mm-market-page h1,
+.mm-market-page h2,
+.mm-market-page h3,
+.mm-market-page p {
+  max-width: 100%;
+}
+
+.mm-market-page [class*="grid"] {
+  min-width: 0;
+}
+
+.mm-market-page [class*="grid"] > * {
+  min-width: 0;
+}
+
+/* Main comparison section */
+.mm-market-page .mm-best-market,
+.mm-market-page .mm-market-card,
+.mm-market-page .mm-snapshot,
+.mm-market-page .mm-empty-market,
+.mm-market-page .mm-market-command {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Keep market names readable instead of getting visually crushed */
+.mm-market-page .mm-market-card h3,
+.mm-market-page .mm-best-market h3 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Description text should wrap naturally */
+.mm-market-page .mm-market-card p,
+.mm-market-page .mm-best-market p,
+.mm-market-page .mm-empty-market p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Don't let decorative layers affect layout */
+.mm-market-world,
+.mm-market-world-grid,
+.mm-market-orb,
+.mm-market-scan,
+.mm-market-particle {
+  pointer-events: none;
+}
+
+/* Mobile/tablet: remove aggressive horizontal pressure */
+@media (max-width: 900px) {
+  .mm-market-page {
+    overflow-x: hidden;
+  }
+
+  .mm-market-page .mm-market-card,
+  .mm-market-page .mm-best-market {
+    overflow: hidden;
+  }
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+  .mm-market-page {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .mm-market-page h1 {
+    font-size: clamp(2rem, 10vw, 3rem);
+    line-height: 0.98;
+  }
+
+  .mm-market-page .mm-empty-market {
+    min-height: 300px;
+  }
+}

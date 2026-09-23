@@ -2,12 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import { motion } from "motion/react";
 import { Screen, TopBar } from "@/components/app-shell";
 import {
   DataProvenance,
   FreshnessBadge,
   UnavailableState,
 } from "@/components/market-meta";
+import { Reveal } from "@/components/reveal";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/motion/stagger";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops, findCrop } from "@/lib/crops";
@@ -233,339 +239,450 @@ function MarketsPage() {
 
   return (
     <Screen>
-      <TopBar
-        title={t("compareMarkets")}
-        subtitle={`${crop.name[lang]} · ${qty} ${crop.unit}`}
-        back="/crops"
-        action={
-          <button
-            onClick={() => void priceQuery.refetch()}
-            className="press grid size-9 place-items-center rounded-full bg-muted"
-            aria-label={t("retry")}
-          >
-            <RefreshCw
-              className={`size-4 ${
-                priceQuery.isFetching ? "animate-spin" : ""
-              }`}
-            />
-          </button>
-        }
-      />
+      <div className="mm-market-page relative isolate min-h-full">
+        {/* Ambient visual layer.
+            It is absolutely positioned and does not affect page layout. */}
+        <div
+          className="mm-market-world pointer-events-none absolute inset-x-0 top-0 -z-10 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div className="mm-market-world-grid" />
 
-      <div className="px-4 pt-4 sm:px-5 lg:px-0 lg:pt-6">
-        <div className="mb-4 min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-primary">
-            Selected district
-          </p>
+          <div className="mm-market-orb mm-market-orb-one" />
+          <div className="mm-market-orb mm-market-orb-two" />
+          <div className="mm-market-orb mm-market-orb-three" />
 
-          <h1 className="truncate font-display text-xl font-extrabold">
-            {location?.district || "Choose your district"}
-          </h1>
+          <div className="mm-market-scan" />
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            Latest official {crop.name[lang]} prices reported today or
-            yesterday.
-          </p>
+          <span className="mm-market-particle mm-market-particle-one" />
+          <span className="mm-market-particle mm-market-particle-two" />
+          <span className="mm-market-particle mm-market-particle-three" />
+          <span className="mm-market-particle mm-market-particle-four" />
         </div>
 
-        <div className="flex gap-2">
-          <label className="card-surface hover-lift flex h-12 flex-1 items-center gap-2 px-4">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
+        <TopBar
+          title={t("compareMarkets")}
+          subtitle={`${crop.name[lang]} · ${qty} ${crop.unit}`}
+          back="/crops"
+          action={
+            <button
+              onClick={() => void priceQuery.refetch()}
+              className="press grid size-9 place-items-center rounded-full bg-muted"
+              aria-label={t("retry")}
+            >
+              <RefreshCw
+                className={`size-4 ${
+                  priceQuery.isFetching ? "animate-spin" : ""
+                }`}
+              />
+            </button>
+          }
+        />
 
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("searchMarket")}
-              maxLength={60}
-              className="w-full bg-transparent text-sm font-semibold outline-none"
-            />
-          </label>
-
-          <button
-            onClick={() => setShowFilters((s) => !s)}
-            className={`press grid size-12 shrink-0 place-items-center rounded-2xl ${
-              showFilters
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted"
-            }`}
-            aria-label="Filters"
+        <div className="relative px-4 pt-4 sm:px-5 lg:px-0 lg:pt-6">
+          <Reveal
+            className="mb-4 min-w-0"
+            y={18}
+            duration={600}
           >
-            <SlidersHorizontal className="size-4" />
-          </button>
-        </div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-primary">
+              Selected district
+            </p>
 
-        {showFilters && (
-          <div className="card-surface mt-3 space-y-4 border-t-2 border-t-sky p-4">
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span>Transport rate (₹ per km)</span>
+            <h1 className="truncate font-display text-xl font-extrabold">
+              {location?.district || "Choose your district"}
+            </h1>
 
-                <span className="text-primary">
-                  {inr(ratePerKm)}/km
-                </span>
-              </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Latest official {crop.name[lang]} prices reported today or
+              yesterday.
+            </p>
+          </Reveal>
+
+          <motion.div
+            className="flex gap-2"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.55,
+              delay: 0.08,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+          >
+            <label className="card-surface hover-lift flex h-12 flex-1 items-center gap-2 px-4">
+              <Search className="size-4 shrink-0 text-muted-foreground" />
 
               <input
-                type="range"
-                min={5}
-                max={120}
-                step={1}
-                value={ratePerKm}
-                onChange={(e) =>
-                  setRatePerKm(Number(e.target.value))
-                }
-                className="mt-2 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
-                aria-label="Transport rate per km"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("searchMarket")}
+                maxLength={60}
+                className="w-full bg-transparent text-sm font-semibold outline-none"
               />
+            </label>
 
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Set your own vehicle hire rate. Cost is estimated for the
-                round trip.
+            <button
+              onClick={() => setShowFilters((s) => !s)}
+              className={`press grid size-12 shrink-0 place-items-center rounded-2xl ${
+                showFilters
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted"
+              }`}
+              aria-label="Filters"
+            >
+              <SlidersHorizontal className="size-4" />
+            </button>
+          </motion.div>
+
+          {showFilters && (
+            <motion.div
+              className="card-surface mt-3 space-y-4 border-t-2 border-t-sky p-4"
+              initial={{ opacity: 0, height: 0, y: -8 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -8 }}
+              transition={{
+                duration: 0.28,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span>Transport rate (₹ per km)</span>
+
+                  <span className="text-primary">
+                    {inr(ratePerKm)}/km
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={5}
+                  max={120}
+                  step={1}
+                  value={ratePerKm}
+                  onChange={(e) =>
+                    setRatePerKm(Number(e.target.value))
+                  }
+                  className="mt-2 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
+                  aria-label="Transport rate per km"
+                />
+
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Set your own vehicle hire rate. Cost is estimated for the
+                  round trip.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span>{t("commissionRate")}</span>
+
+                  <span className="text-primary">
+                    {commission}%
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  step={0.5}
+                  value={commission}
+                  onChange={(e) =>
+                    setCommission(Number(e.target.value))
+                  }
+                  className="mt-2 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
+                  aria-label={t("commissionRate")}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {!location?.district ? (
+            <Reveal
+              className="mt-5"
+              y={20}
+              duration={550}
+            >
+              <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">
+                Select your district to compare matching markets.
+              </p>
+            </Reveal>
+          ) : priceQuery.isPending ? (
+            <div className="mt-5 space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="card-surface hover-lift h-28 animate-pulse"
+                />
+              ))}
+
+              <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                {t("loading")}
               </p>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span>{t("commissionRate")}</span>
-
-                <span className="text-primary">
-                  {commission}%
-                </span>
-              </div>
-
-              <input
-                type="range"
-                min={0}
-                max={10}
-                step={0.5}
-                value={commission}
-                onChange={(e) =>
-                  setCommission(Number(e.target.value))
-                }
-                className="mt-2 h-1.5 w-full appearance-none rounded-full bg-muted accent-primary"
-                aria-label={t("commissionRate")}
+          ) : priceQuery.isError ? (
+            <Reveal className="mt-5" y={18}>
+              <UnavailableState
+                onRetry={() => void priceQuery.refetch()}
+                message="The official market price service could not be reached."
               />
-            </div>
-          </div>
-        )}
-
-        {!location?.district ? (
-          <p className="card-surface hover-lift mt-5 p-5 text-sm text-muted-foreground">
-            Select your district to compare matching markets.
-          </p>
-        ) : priceQuery.isPending ? (
-          <div className="mt-5 space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="card-surface hover-lift h-28 animate-pulse"
+            </Reveal>
+          ) : rows.length === 0 ? (
+            <Reveal className="mt-5" y={18}>
+              <UnavailableState
+                onRetry={() => void priceQuery.refetch()}
               />
-            ))}
+            </Reveal>
+          ) : (
+            <>
+              {bestPrice && result && (
+                <motion.section
+                  className="mm-best-market card-surface relative mt-5 overflow-hidden border-t-4 border-t-gold p-4 sm:p-5"
+                  initial={{
+                    opacity: 0,
+                    y: 24,
+                    scale: 0.985,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                  }}
+                  transition={{
+                    duration: 0.65,
+                    delay: 0.12,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  <div className="mm-best-glow pointer-events-none" />
+                  <div className="mm-best-grid pointer-events-none" />
+                  <div className="mm-best-scan pointer-events-none" />
 
-            <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              {t("loading")}
-            </p>
-          </div>
-        ) : priceQuery.isError ? (
-          <div className="mt-5">
-            <UnavailableState
-              onRetry={() => void priceQuery.refetch()}
-              message="The official market price service could not be reached."
-            />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="mt-5">
-            <UnavailableState
-              onRetry={() => void priceQuery.refetch()}
-            />
-          </div>
-        ) : (
-          <>
-            {bestPrice && result && (
-              <section className="card-surface mt-5 overflow-hidden border-t-4 border-t-gold p-4 sm:p-5">
-                <p className="eyebrow flex items-center gap-1.5 text-gold-foreground">
-                  <Award className="size-3.5" />
-                  {t("bestChoice")} · best available price
-                </p>
-
-                <p className="mt-1.5 text-lg font-extrabold">
-                  {bestPrice.record.market}
-                </p>
-
-                <p className="font-display text-3xl font-extrabold">
-                  {inr(bestPrice.record.modalPrice)}
-                </p>
-
-                <p className="text-xs text-muted-foreground">
-                  {t("perQuintal")} · {t("modalPrice")}
-                  {bestPrice.record.variety
-                    ? ` · ${bestPrice.record.variety}`
-                    : ""}
-                  {bestPrice.record.grade
-                    ? ` · ${bestPrice.record.grade}`
-                    : ""}
-                </p>
-
-                <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                  <FreshnessBadge freshness={result.freshness} />
-                  Market data date:{" "}
-                  {formatIstDate(bestPrice.record.date)} ·{" "}
-                  {bestPrice.record.district}
-                </p>
-
-                {bestPractical &&
-                  bestPractical.record.market !==
-                    bestPrice.record.market && (
-                    <p className="mt-3 border-t border-primary/20 pt-3 text-[12px] font-semibold leading-snug">
-                      Best practical choice after estimated transport:{" "}
-                      <b>{bestPractical.record.market}</b> —{" "}
-                      {inr(bestPractical.net)} net for {qty}{" "}
-                      {crop.unit} (
-                      {bestPractical.transport!.distanceKm} km).
+                  <div className="relative z-10">
+                    <p className="eyebrow flex items-center gap-1.5 text-gold-foreground">
+                      <Award className="size-3.5" />
+                      {t("bestChoice")} · best available price
                     </p>
-                  )}
-              </section>
-            )}
 
-            <div className="mt-4 space-y-3">
-              {rows.map((row) => {
-                const isBest =
-                  row.record.market === bestPrice?.record.market;
+                    <p className="mt-1.5 text-lg font-extrabold">
+                      {bestPrice.record.market}
+                    </p>
 
-                const rowFreshness = computeFreshness({
-                  dataDate: row.record.date,
-                });
+                    <motion.p
+                      className="font-display text-3xl font-extrabold"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.5,
+                        delay: 0.28,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                    >
+                      {inr(bestPrice.record.modalPrice)}
+                    </motion.p>
 
-                return (
-                  <Link
-                    key={row.record.market}
-                    to="/market/$marketId"
-                    params={{
-                      marketId: row.record.market,
-                    }}
-                    search={{
-                      crop: crop.id,
-                      state: row.record.state,
-                      district: row.record.district,
-                    }}
-                    className={`press card-surface hover-lift block min-w-0 overflow-hidden p-4 ${
-                      isBest
-                        ? "border-gold/60 ring-2 ring-gold/25"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold">
-                          {row.record.market}
+                    <p className="text-xs text-muted-foreground">
+                      {t("perQuintal")} · {t("modalPrice")}
+                      {bestPrice.record.variety
+                        ? ` · ${bestPrice.record.variety}`
+                        : ""}
+                      {bestPrice.record.grade
+                        ? ` · ${bestPrice.record.grade}`
+                        : ""}
+                    </p>
 
-                          {row.record.variety ? (
-                            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-                              {row.record.variety}
-                              {row.record.grade
-                                ? ` · ${row.record.grade}`
-                                : ""}
-                            </span>
-                          ) : null}
+                    <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                      <FreshnessBadge freshness={result.freshness} />
+                      Market data date:{" "}
+                      {formatIstDate(bestPrice.record.date)} ·{" "}
+                      {bestPrice.record.district}
+                    </p>
+
+                    {bestPractical &&
+                      bestPractical.record.market !==
+                        bestPrice.record.market && (
+                        <p className="mt-3 border-t border-primary/20 pt-3 text-[12px] font-semibold leading-snug">
+                          Best practical choice after estimated transport:{" "}
+                          <b>{bestPractical.record.market}</b> —{" "}
+                          {inr(bestPractical.net)} net for {qty}{" "}
+                          {crop.unit} (
+                          {bestPractical.transport!.distanceKm} km).
                         </p>
-
-                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <FreshnessBadge freshness={rowFreshness} />
-                          {row.record.district} ·{" "}
-                          {formatIstDate(row.record.date)}
-                        </p>
-                      </div>
-
-                      {isBest && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground">
-                          <Award className="size-3" />
-                          {t("bestChoice")}
-                        </span>
                       )}
-                    </div>
+                  </div>
+                </motion.section>
+              )}
 
-                    <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 rounded-xl bg-muted/60 p-2.5 text-center sm:gap-2 sm:p-3">
-                      <Cell
-                        label={t("minPrice")}
-                        value={inr(row.record.minPrice)}
-                      />
+              <StaggerContainer
+                className="mt-4 space-y-3"
+                delay={0.04}
+                staggerDelay={0.055}
+              >
+                {rows.map((row) => {
+                  const isBest =
+                    row.record.market === bestPrice?.record.market;
 
-                      <Cell
-                        label={t("modalPrice")}
-                        value={inr(row.record.modalPrice)}
-                      />
+                  const rowFreshness = computeFreshness({
+                    dataDate: row.record.date,
+                  });
 
-                      <Cell
-                        label={t("maxPrice")}
-                        value={inr(row.record.maxPrice)}
-                      />
-                    </div>
+                  return (
+                    <StaggerItem key={row.record.market}>
+                      <Link
+                        to="/market/$marketId"
+                        params={{
+                          marketId: row.record.market,
+                        }}
+                        search={{
+                          crop: crop.id,
+                          state: row.record.state,
+                          district: row.record.district,
+                        }}
+                        className={`mm-market-card press card-surface hover-lift relative block min-w-0 overflow-hidden p-4 ${
+                          isBest
+                            ? "border-gold/60 ring-2 ring-gold/25"
+                            : ""
+                        }`}
+                      >
+                        <div className="mm-card-sweep pointer-events-none absolute inset-0" />
 
-                    <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 border-t border-border pt-3 text-center sm:gap-2">
-                      <Cell
-                        label="Gross"
-                        value={inr(row.gross)}
-                      />
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-extrabold">
+                                {row.record.market}
 
-                      <Cell
-                        label={
-                          row.transport
-                            ? `${t("transport")} (est.)`
-                            : t("transport")
-                        }
-                        value={
-                          row.transport
-                            ? `- ${inr(row.transport.totalCost)}`
-                            : "—"
-                        }
-                      />
+                                {row.record.variety ? (
+                                  <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                                    {row.record.variety}
+                                    {row.record.grade
+                                      ? ` · ${row.record.grade}`
+                                      : ""}
+                                  </span>
+                                ) : null}
+                              </p>
 
-                      <Cell
-                        label={t("netProfit")}
-                        value={inr(row.net)}
-                        accent
-                      />
-                    </div>
+                              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                                <FreshnessBadge
+                                  freshness={rowFreshness}
+                                />
+                                {row.record.district} ·{" "}
+                                {formatIstDate(row.record.date)}
+                              </p>
+                            </div>
 
-                    {row.transport ? (
-                      <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[10px] font-semibold text-muted-foreground">
-                        <Truck className="size-3" />
+                            {isBest && (
+                              <motion.span
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground"
+                                animate={{
+                                  boxShadow: [
+                                    "0 0 0 0 hsl(var(--primary) / 0)",
+                                    "0 0 0 5px hsl(var(--primary) / 0.08)",
+                                    "0 0 0 0 hsl(var(--primary) / 0)",
+                                  ],
+                                }}
+                                transition={{
+                                  duration: 2.6,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                }}
+                              >
+                                <Award className="size-3" />
+                                {t("bestChoice")}
+                              </motion.span>
+                            )}
+                          </div>
 
-                        {location?.place ||
-                          location?.district ||
-                          "Your location"}{" "}
-                        → {row.record.market} · ~
-                        {row.transport.distanceKm} km ·{" "}
-                        {inr(row.transport.ratePerKm)}/km round trip ·{" "}
-                        {inr(row.transport.perQuintal)}/
-                        {crop.unit} (estimated)
-                      </p>
-                    ) : (
-                      <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
-                        <MapPin className="size-3" />
-                        Distance not available for this mandi —
-                        transport not included.
-                      </p>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </>
-        )}
+                          <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 rounded-xl bg-muted/60 p-2.5 text-center sm:gap-2 sm:p-3">
+                            <Cell
+                              label={t("minPrice")}
+                              value={inr(row.record.minPrice)}
+                            />
 
-        {result && (
-          <div className="mt-4">
-            <DataProvenance result={result} />
+                            <Cell
+                              label={t("modalPrice")}
+                              value={inr(row.record.modalPrice)}
+                            />
 
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Transport is an estimate from road distance × your ₹/km
-              rate, not an official freight rate. Commission is the % you
-              set.
-            </p>
-          </div>
-        )}
+                            <Cell
+                              label={t("maxPrice")}
+                              value={inr(row.record.maxPrice)}
+                            />
+                          </div>
+
+                          <div className="mt-3 grid min-w-0 grid-cols-3 gap-1 border-t border-border pt-3 text-center sm:gap-2">
+                            <Cell
+                              label="Gross"
+                              value={inr(row.gross)}
+                            />
+
+                            <Cell
+                              label={
+                                row.transport
+                                  ? `${t("transport")} (est.)`
+                                  : t("transport")
+                              }
+                              value={
+                                row.transport
+                                  ? `- ${inr(row.transport.totalCost)}`
+                                  : "—"
+                              }
+                            />
+
+                            <Cell
+                              label={t("netProfit")}
+                              value={inr(row.net)}
+                              accent
+                            />
+                          </div>
+
+                          {row.transport ? (
+                            <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[10px] font-semibold text-muted-foreground">
+                              <Truck className="size-3" />
+
+                              {location?.place ||
+                                location?.district ||
+                                "Your location"}{" "}
+                              → {row.record.market} · ~
+                              {row.transport.distanceKm} km ·{" "}
+                              {inr(row.transport.ratePerKm)}/km round trip ·{" "}
+                              {inr(row.transport.perQuintal)}/
+                              {crop.unit} (estimated)
+                            </p>
+                          ) : (
+                            <p className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground">
+                              <MapPin className="size-3" />
+                              Distance not available for this mandi —
+                              transport not included.
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </StaggerItem>
+                  );
+                })}
+              </StaggerContainer>
+            </>
+          )}
+
+          {result && (
+            <Reveal
+              className="mt-4"
+              y={16}
+              duration={600}
+            >
+              <DataProvenance result={result} />
+
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Transport is an estimate from road distance × your ₹/km
+                rate, not an official freight rate. Commission is the % you
+                set.
+              </p>
+            </Reveal>
+          )}
+        </div>
       </div>
     </Screen>
   );
