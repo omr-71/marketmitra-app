@@ -4,25 +4,22 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import {
-  Leaf,
+  ArrowUpRight,
   ChevronLeft,
-  X,
-  Sprout,
   CloudSun,
+  GripHorizontal,
   Landmark,
-  Stethoscope,
+  Leaf,
+  MapPin,
   Mic,
+  RefreshCw,
+  RotateCcw,
+  Sprout,
   Square,
+  Stethoscope,
   Volume2,
   VolumeX,
-  RotateCcw,
-  RefreshCw,
-  Sparkles,
-  ArrowUp,
-  Grip,
-  MapPin,
-  ShieldCheck,
-  MessageCircle,
+  X,
 } from "lucide-react";
 import {
   useCallback,
@@ -30,6 +27,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import {
@@ -44,9 +42,9 @@ import {
 } from "@/components/ai-elements/message";
 import {
   PromptInput,
-  PromptInputTextarea,
   PromptInputFooter,
   PromptInputSubmit,
+  PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { track } from "@/lib/analytics";
@@ -65,83 +63,102 @@ import {
   titleThread,
 } from "@/lib/chat-history";
 
+const ORB_STORAGE_KEY = "market-mitra-mitra-orb-v2";
+const PANEL_STORAGE_KEY = "market-mitra-mitra-panel-v2";
+
+const PANEL_WIDTH = 440;
+const PANEL_HEIGHT = 650;
+const ORB_SIZE_DESKTOP = 64;
+const ORB_SIZE_MOBILE = 56;
+
+type Position = {
+  x: number;
+  y: number;
+};
+
 const copy = {
-  title: {
-    en: "Mitra AI",
-    mr: "मित्र AI",
-    hi: "मित्र AI",
-  },
-
-  subtitle: {
-    en: "Agriculture Intelligence",
-    mr: "शेतीसाठी बुद्धिमान मदत",
-    hi: "खेती के लिए बुद्धिमान मदद",
-  },
-
-  greeting: {
-    en: "Hello. I’m Mitra.",
-    mr: "नमस्कार. मी मित्र.",
-    hi: "नमस्ते. मैं मित्र हूँ.",
-  },
-
-  greetingSub: {
-    en: "Ask me anything about your farm, markets, weather or schemes.",
-    mr: "तुमच्या शेती, बाजारभाव, हवामान किंवा योजनांबद्दल काहीही विचारा.",
-    hi: "अपनी खेती, मंडी भाव, मौसम या योजनाओं के बारे में कुछ भी पूछें.",
-  },
-
   contextLabel: {
     en: "Recent crop check",
     mr: "अलीकडील पीक तपासणी",
-    hi: "हाल की फसल जाँच",
+    hi: "हाल की फ़सल जाँच",
+  },
+
+  title: {
+    en: "Mitra",
+    mr: "मित्र",
+    hi: "मित्र",
+  },
+
+  subtitle: {
+    en: "Your farming companion",
+    mr: "तुमचा शेती सहकारी",
+    hi: "आपका खेती साथी",
+  },
+
+  greeting: {
+    en: "Welcome back. Tell me what’s happening in your field today, and we’ll work it out together.",
+    mr: "पुन्हा स्वागत आहे. आज शेतात काय चाललंय ते सांगा — आपण मिळून पाहूया.",
+    hi: "वापसी पर स्वागत है। आज खेत में क्या हो रहा है, बताइए — हम मिलकर देखते हैं।",
+  },
+
+  greetingSmall: {
+    en: "Prices, weather, crop care, schemes — ask me anything.",
+    mr: "बाजारभाव, हवामान, पीक काळजी, योजना — काहीही विचारा.",
+    hi: "मंडी भाव, मौसम, फसल देखभाल, योजनाएँ — कुछ भी पूछें।",
   },
 
   placeholder: {
-    en: "Ask Mitra anything...",
-    mr: "मित्रला काहीही विचारा...",
-    hi: "मित्र से कुछ भी पूछें...",
+    en: "Ask Mitra anything…",
+    mr: "मित्रला काहीही विचारा…",
+    hi: "मित्र से कुछ भी पूछें…",
   },
 
   thinking: {
-    en: "Mitra is thinking...",
-    mr: "मित्र विचार करत आहे...",
-    hi: "मित्र सोच रहा है...",
+    en: "Mitra is thinking",
+    mr: "मित्र विचार करत आहे",
+    hi: "मित्र सोच रहा है",
   },
 
   online: {
-    en: "Mitra is ready",
-    mr: "मित्र तयार आहे",
-    hi: "मित्र तैयार है",
+    en: "Online",
+    mr: "ऑनलाइन",
+    hi: "ऑनलाइन",
   },
 
   open: {
-    en: "Open Mitra AI",
-    mr: "मित्र AI उघडा",
-    hi: "मित्र AI खोलें",
+    en: "Open Mitra",
+    mr: "मित्र उघडा",
+    hi: "मित्र खोलें",
   },
 
   close: {
-    en: "Close Mitra AI",
-    mr: "मित्र AI बंद करा",
-    hi: "मित्र AI बंद करें",
+    en: "Close Mitra",
+    mr: "मित्र बंद करा",
+    hi: "मित्र बंद करें",
   },
 
   error: {
-    en: "Mitra couldn't answer just now. Please try again.",
-    mr: "मित्र आत्ता उत्तर देऊ शकला नाही. पुन्हा प्रयत्न करा.",
-    hi: "मित्र अभी जवाब नहीं दे सका। फिर से कोशिश करें.",
+    en: "I couldn’t answer that just now. Please try again.",
+    mr: "आत्ता उत्तर देता आले नाही. कृपया पुन्हा प्रयत्न करा.",
+    hi: "अभी इसका जवाब नहीं दे पाया। कृपया फिर कोशिश करें।",
+  },
+
+  micIdle: {
+    en: "Tap the microphone to speak",
+    mr: "बोलण्यासाठी माइक दाबा",
+    hi: "बोलने के लिए माइक दबाएँ",
   },
 
   listening: {
-    en: "Listening...",
-    mr: "ऐकत आहे...",
-    hi: "सुन रहा है...",
+    en: "Listening…",
+    mr: "ऐकत आहे…",
+    hi: "सुन रहा है…",
   },
 
   speaking: {
-    en: "Speaking...",
-    mr: "बोलत आहे...",
-    hi: "बोल रहा है...",
+    en: "Speaking…",
+    mr: "बोलत आहे…",
+    hi: "बोल रहा है…",
   },
 
   mic: {
@@ -169,33 +186,33 @@ const copy = {
   },
 
   retry: {
-    en: "Retry",
+    en: "Try again",
     mr: "पुन्हा प्रयत्न",
-    hi: "फिर से कोशिश",
+    hi: "फिर कोशिश",
   },
 
   replay: {
     en: "Replay answer",
     mr: "उत्तर पुन्हा ऐका",
-    hi: "उत्तर फिर से सुनें",
+    hi: "उत्तर दोबारा सुनें",
   },
 
   micUnsupported: {
     en: "Voice input isn't available here. You can type instead.",
-    mr: "या ब्राउझरमध्ये आवाज उपलब्ध नाही. तुम्ही टाइप करू शकता.",
-    hi: "इस ब्राउज़र में आवाज़ उपलब्ध नहीं है। आप टाइप कर सकते हैं.",
+    mr: "या ब्राउझरमध्ये आवाज इनपुट उपलब्ध नाही. तुम्ही टाइप करू शकता.",
+    hi: "इस ब्राउज़र में आवाज़ इनपुट उपलब्ध नहीं है। आप टाइप कर सकते हैं।",
   },
 
   micFailed: {
-    en: "Could not hear that. Try again or type your question.",
+    en: "I couldn't hear that. Try again or type your question.",
     mr: "ते ऐकू आले नाही. पुन्हा प्रयत्न करा किंवा प्रश्न टाइप करा.",
-    hi: "सुनाई नहीं दिया। फिर से कोशिश करें या सवाल टाइप करें.",
+    hi: "सुनाई नहीं दिया। फिर कोशिश करें या सवाल टाइप करें।",
   },
 
-  drag: {
-    en: "Drag Mitra",
-    mr: "मित्र हलवा",
-    hi: "मित्र को खींचें",
+  dragHint: {
+    en: "Drag to move",
+    mr: "हलवण्यासाठी ड्रॅग करा",
+    hi: "हिलाने के लिए ड्रैग करें",
   },
 } as const;
 
@@ -203,69 +220,69 @@ const suggestions = {
   en: [
     {
       icon: Sprout,
-      label: "Markets",
-      text: "Best mandi for my onion today?",
+      title: "Today’s market",
+      text: "Check onion prices",
     },
     {
       icon: CloudSun,
-      label: "Weather",
-      text: "Is it safe to spray this week?",
-    },
-    {
-      icon: Landmark,
-      label: "Schemes",
-      text: "Which government schemes can help me?",
+      title: "Weather",
+      text: "Should I spray this week?",
     },
     {
       icon: Stethoscope,
-      label: "Crop care",
-      text: "My leaves have yellow spots",
+      title: "Crop care",
+      text: "My leaves look unusual",
+    },
+    {
+      icon: Landmark,
+      title: "Government schemes",
+      text: "Find schemes for me",
     },
   ],
 
   mr: [
     {
       icon: Sprout,
-      label: "बाजार",
-      text: "आज कांद्यासाठी सर्वोत्तम बाजार कोणता?",
+      title: "आजचा बाजारभाव",
+      text: "कांद्याचे भाव तपासा",
     },
     {
       icon: CloudSun,
-      label: "हवामान",
-      text: "या आठवड्यात फवारणी सुरक्षित आहे का?",
-    },
-    {
-      icon: Landmark,
-      label: "योजना",
-      text: "मला कोणत्या सरकारी योजना उपयोगी पडतील?",
+      title: "हवामान",
+      text: "या आठवड्यात फवारणी करू?",
     },
     {
       icon: Stethoscope,
-      label: "पीक काळजी",
-      text: "पानांवर पिवळे डाग आले आहेत",
+      title: "पीक काळजी",
+      text: "पानांमध्ये बदल दिसतोय",
+    },
+    {
+      icon: Landmark,
+      title: "शासकीय योजना",
+      text: "माझ्यासाठी योजना शोधा",
     },
   ],
 
   hi: [
     {
       icon: Sprout,
-      label: "मंडी",
-      text: "आज प्याज के लिए सबसे अच्छा बाजार कौन सा है?",
+      title: "आज का बाजार",
+      text: "प्याज़ के भाव देखें",
     },
     {
       icon: CloudSun,
-      label: "मौसम",
-      text: "क्या इस हफ्ते छिड़काव करना सुरक्षित है?",
-    },
-    {
-      icon: Landmark,
-      label: "योजनाएँ",
-      text: "मेरे लिए कौन सी सरकारी योजनाएँ उपयोगी हैं?",
+      title: "मौसम",
+      text: "इस हफ्ते छिड़काव करूँ?",
     },
     {
       icon: Stethoscope,
-      label: "फसल देखभाल",
-      text: "मेरी पत्तियों पर पीले धब्बे हैं",
+      title: "फसल देखभाल",
+      text: "पत्तों में बदलाव है",
+    },
+    {
+      icon: Landmark,
+      title: "सरकारी योजनाएँ",
+      text: "मेरे लिए योजनाएँ खोजें",
     },
   ],
 } as const;
@@ -311,84 +328,130 @@ function useIsDesktop() {
   const [desktop, setDesktop] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
+    const media = window.matchMedia("(min-width: 1024px)");
 
-    const update = () => setDesktop(mq.matches);
+    const update = () => setDesktop(media.matches);
 
     update();
+    media.addEventListener("change", update);
 
-    mq.addEventListener("change", update);
-
-    return () => mq.removeEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
   return desktop;
 }
 
-type OrbPosition = {
-  x: number;
-  y: number;
-};
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 
-const POSITION_KEY = "market-mitra:mitra-ai-orb-position";
+function readPosition(key: string): Position | null {
+  if (typeof window === "undefined") return null;
 
-function getDefaultOrbPosition(): OrbPosition {
+  try {
+    const raw = window.localStorage.getItem(key);
+
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+
+    if (
+      typeof parsed?.x !== "number" ||
+      typeof parsed?.y !== "number"
+    ) {
+      return null;
+    }
+
+    return {
+      x: parsed.x,
+      y: parsed.y,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePosition(key: string, position: Position) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(position));
+  } catch {
+    // Storage can be unavailable in private browsing.
+  }
+}
+
+function getDefaultOrbPosition(hasBottomNav: boolean): Position {
+  const width =
+    window.innerWidth >= 1024
+      ? ORB_SIZE_DESKTOP
+      : ORB_SIZE_MOBILE;
+
+  const bottomSpace = hasBottomNav ? 104 : 24;
+
   return {
-    x: 0,
-    y: 0,
+    x: Math.max(12, window.innerWidth - width - 24),
+    y: Math.max(
+      12,
+      window.innerHeight - width - bottomSpace,
+    ),
   };
 }
 
-function getSavedOrbPosition(): OrbPosition {
-  if (typeof window === "undefined") {
-    return getDefaultOrbPosition();
-  }
+function getDefaultPanelPosition(): Position {
+  const height = Math.min(
+    PANEL_HEIGHT,
+    Math.max(420, window.innerHeight * 0.8),
+  );
 
-  try {
-    const saved = window.localStorage.getItem(POSITION_KEY);
-
-    if (!saved) {
-      return getDefaultOrbPosition();
-    }
-
-    const parsed = JSON.parse(saved) as OrbPosition;
-
-    if (
-      typeof parsed.x !== "number" ||
-      typeof parsed.y !== "number"
-    ) {
-      return getDefaultOrbPosition();
-    }
-
-    return parsed;
-  } catch {
-    return getDefaultOrbPosition();
-  }
+  return {
+    x: Math.max(16, window.innerWidth - PANEL_WIDTH - 24),
+    y: Math.max(16, window.innerHeight - height - 24),
+  };
 }
 
-function getGreeting(lang: keyof typeof copy.greeting) {
-  const hour = new Date().getHours();
+function clampPanelPosition(position: Position): Position {
+  const actualHeight = Math.min(
+    PANEL_HEIGHT,
+    Math.max(420, window.innerHeight * 0.8),
+  );
 
-  if (lang === "mr") {
-    if (hour < 12) return "शुभ सकाळ. मी मित्र.";
-    if (hour < 17) return "नमस्कार. मी मित्र.";
-    return "शुभ संध्याकाळ. मी मित्र.";
-  }
+  return {
+    x: clamp(
+      position.x,
+      12,
+      Math.max(12, window.innerWidth - PANEL_WIDTH - 12),
+    ),
+    y: clamp(
+      position.y,
+      12,
+      Math.max(12, window.innerHeight - actualHeight - 12),
+    ),
+  };
+}
 
-  if (lang === "hi") {
-    if (hour < 12) return "सुप्रभात. मैं मित्र हूँ.";
-    if (hour < 17) return "नमस्ते. मैं मित्र हूँ.";
-    return "शुभ संध्या. मैं मित्र हूँ.";
-  }
+function clampOrbPosition(position: Position): Position {
+  const size =
+    window.innerWidth >= 1024
+      ? ORB_SIZE_DESKTOP
+      : ORB_SIZE_MOBILE;
 
-  if (hour < 12) return "Good morning. I’m Mitra.";
-  if (hour < 17) return "Hello. I’m Mitra.";
-  return "Good evening. I’m Mitra.";
+  return {
+    x: clamp(
+      position.x,
+      8,
+      Math.max(8, window.innerWidth - size - 8),
+    ),
+    y: clamp(
+      position.y,
+      8,
+      Math.max(8, window.innerHeight - size - 8),
+    ),
+  };
 }
 
 export function MitraAI() {
   const { lang } = useLang();
   const { location } = useLocationContext();
+
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
@@ -396,37 +459,33 @@ export function MitraAI() {
   const flag = useFeature("mitra_ai");
 
   const [open, setOpen] = useState(false);
-  const [orbPosition, setOrbPosition] = useState<OrbPosition>(
-    getSavedOrbPosition,
-  );
+  const [text, setText] = useState("");
 
-  const [dragging, setDragging] = useState(false);
-  const [hasMoved, setHasMoved] = useState(false);
+  const [orbPosition, setOrbPosition] =
+    useState<Position | null>(null);
+
+  const [panelPosition, setPanelPosition] =
+    useState<Position | null>(null);
+
+  const [panelReady, setPanelReady] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const dragStartRef = useRef<{
-    pointerX: number;
-    pointerY: number;
-    startX: number;
-    startY: number;
-  } | null>(null);
-
-  const orbRef = useRef<HTMLButtonElement | null>(null);
-
-  const [text, setText] = useState("");
-
   const { user } = useAuth();
 
-  const conversationIdRef = useRef<string | null>(null);
-  const savedIdsRef = useRef<Set<string>>(new Set());
+  const conversationIdRef =
+    useRef<string | null>(null);
+
+  const savedIdsRef =
+    useRef<Set<string>>(new Set());
 
   const { inset: keyboardInset, height: viewportHeight } =
     useKeyboardInset();
 
   const isDesktop = useIsDesktop();
 
-  const diagnosisFn = useServerFn(latestDiagnosisContext);
+  const diagnosisFn =
+    useServerFn(latestDiagnosisContext);
 
   const diagnosis = useQuery({
     queryKey: ["mitra-diagnosis-context"],
@@ -438,36 +497,370 @@ export function MitraAI() {
 
   const diagnosisCtx = diagnosis.data ?? null;
 
-  const { messages, setMessages, sendMessage, regenerate, status, error } =
-    useChat({
-      transport: new DefaultChatTransport({
-        api: "/api/chat",
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    regenerate,
+    status,
+    error,
+  } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
 
-        prepareSendMessagesRequest: ({ messages: msgs }) => ({
-          body: {
-            messages: msgs.slice(-24),
+      prepareSendMessagesRequest: ({ messages: msgs }) => ({
+        body: {
+          messages: msgs.slice(-24),
 
-            lang,
+          lang,
 
-            location: location
-              ? {
-                  state: location.state,
-                  district: location.district,
-                  place: location.place,
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                }
-              : null,
+          location: location
+            ? {
+                state: location.state,
+                district: location.district,
+                place: location.place,
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }
+            : null,
 
-            diagnosis: diagnosisCtx,
-          },
-        }),
+          diagnosis: diagnosisCtx,
+        },
       }),
-    });
+    }),
+  });
 
   const busy =
     status === "submitted" ||
     status === "streaming";
+
+  /*
+   * ---------------------------------------------------------
+   * Position persistence
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (!isDesktop) return;
+
+    const savedPanel =
+      readPosition(PANEL_STORAGE_KEY);
+
+    const savedOrb =
+      readPosition(ORB_STORAGE_KEY);
+
+    setPanelPosition(
+      clampPanelPosition(
+        savedPanel ?? getDefaultPanelPosition(),
+      ),
+    );
+
+    setOrbPosition(
+      clampOrbPosition(
+        savedOrb ??
+          getDefaultOrbPosition(
+            pathname !== "/" &&
+              !pathname.startsWith("/admin"),
+          ),
+      ),
+    );
+  }, [isDesktop, pathname]);
+
+  useEffect(() => {
+    if (!isDesktop) return;
+
+    const handleResize = () => {
+      setPanelPosition((current) => {
+        if (!current) return current;
+
+        const next = clampPanelPosition(current);
+
+        savePosition(PANEL_STORAGE_KEY, next);
+
+        return next;
+      });
+
+      setOrbPosition((current) => {
+        if (!current) return current;
+
+        const next = clampOrbPosition(current);
+
+        savePosition(ORB_STORAGE_KEY, next);
+
+        return next;
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () =>
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      );
+  }, [isDesktop]);
+
+  /*
+   * ---------------------------------------------------------
+   * Desktop panel drag
+   * ---------------------------------------------------------
+   */
+
+  const panelDragRef = useRef({
+    active: false,
+    moved: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
+
+  const handlePanelPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if (!isDesktop || !panelPosition) return;
+
+      if (
+        event.pointerType !== "mouse" &&
+        event.pointerType !== "touch"
+      ) {
+        return;
+      }
+
+      const target = event.target as HTMLElement;
+
+      if (target.closest("button")) return;
+
+      panelDragRef.current = {
+        active: true,
+        moved: false,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: panelPosition.x,
+        originY: panelPosition.y,
+      };
+
+      event.currentTarget.setPointerCapture?.(
+        event.pointerId,
+      );
+    },
+    [isDesktop, panelPosition],
+  );
+
+  const handlePanelPointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      const drag = panelDragRef.current;
+
+      if (
+        !drag.active ||
+        drag.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        drag.moved = true;
+      }
+
+      const next = clampPanelPosition({
+        x: drag.originX + dx,
+        y: drag.originY + dy,
+      });
+
+      setPanelPosition(next);
+    },
+    [],
+  );
+
+  const handlePanelPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      const drag = panelDragRef.current;
+
+      if (
+        !drag.active ||
+        drag.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      drag.active = false;
+
+      if (panelPosition) {
+        savePosition(
+          PANEL_STORAGE_KEY,
+          panelPosition,
+        );
+      }
+
+      try {
+        event.currentTarget.releasePointerCapture?.(
+          event.pointerId,
+        );
+      } catch {
+        // Pointer capture may already be released.
+      }
+    },
+    [panelPosition],
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * Closed orb drag
+   * ---------------------------------------------------------
+   */
+
+  const orbDragRef = useRef({
+    active: false,
+    moved: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
+
+  const handleOrbPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (!orbPosition) return;
+
+      orbDragRef.current = {
+        active: true,
+        moved: false,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: orbPosition.x,
+        originY: orbPosition.y,
+      };
+
+      event.currentTarget.setPointerCapture?.(
+        event.pointerId,
+      );
+    },
+    [orbPosition],
+  );
+
+  const handleOrbPointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const drag = orbDragRef.current;
+
+      if (
+        !drag.active ||
+        drag.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        drag.moved = true;
+      }
+
+      setOrbPosition(
+        clampOrbPosition({
+          x: drag.originX + dx,
+          y: drag.originY + dy,
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleOrbPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const drag = orbDragRef.current;
+
+      if (
+        !drag.active ||
+        drag.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      drag.active = false;
+
+      setOrbPosition((current) => {
+        if (!current) return current;
+
+        const next = clampOrbPosition(current);
+
+        savePosition(ORB_STORAGE_KEY, next);
+
+        return next;
+      });
+
+      try {
+        event.currentTarget.releasePointerCapture?.(
+          event.pointerId,
+        );
+      } catch {
+        // Pointer capture may already be released.
+      }
+    },
+    [],
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * Open / close animation
+   * ---------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (!open) {
+      setPanelReady(false);
+      return;
+    }
+
+    setPanelReady(false);
+
+    const frame = window.requestAnimationFrame(() => {
+      setPanelReady(true);
+    });
+
+    return () =>
+      window.cancelAnimationFrame(frame);
+  }, [open]);
+
+  const openMitra = useCallback(() => {
+    if (!isDesktop) {
+      setOpen(true);
+      track("mitra_ai_opened");
+      return;
+    }
+
+    if (!panelPosition) {
+      setPanelPosition(
+        getDefaultPanelPosition(),
+      );
+    }
+
+    track("mitra_ai_opened");
+    setOpen(true);
+  }, [isDesktop, panelPosition]);
+
+  const closeMitra = useCallback(() => {
+    setOpen(false);
+
+    if (panelPosition) {
+      savePosition(
+        PANEL_STORAGE_KEY,
+        panelPosition,
+      );
+    }
+  }, [panelPosition]);
+
+  /*
+   * ---------------------------------------------------------
+   * Restore saved conversation
+   * ---------------------------------------------------------
+   */
 
   useEffect(() => {
     if (!user) {
@@ -480,14 +873,15 @@ export function MitraAI() {
 
     void (async () => {
       try {
-        const thread = await loadLatestThread(user.id);
+        const thread =
+          await loadLatestThread(user.id);
 
         if (cancelled || !thread) return;
 
         conversationIdRef.current = thread.id;
 
         savedIdsRef.current = new Set(
-          thread.messages.map((m) => m.id),
+          thread.messages.map((message) => message.id),
         );
 
         setMessages(thread.messages);
@@ -504,8 +898,20 @@ export function MitraAI() {
     };
   }, [user, setMessages]);
 
+  /*
+   * ---------------------------------------------------------
+   * Save conversation
+   * ---------------------------------------------------------
+   */
+
   useEffect(() => {
-    if (!user || busy || messages.length === 0) return;
+    if (
+      !user ||
+      busy ||
+      messages.length === 0
+    ) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -520,7 +926,9 @@ export function MitraAI() {
           continue;
         }
 
-        if (savedIdsRef.current.has(message.id)) {
+        if (
+          savedIdsRef.current.has(message.id)
+        ) {
           continue;
         }
 
@@ -531,7 +939,8 @@ export function MitraAI() {
           }
 
           await saveMessage({
-            conversationId: conversationIdRef.current,
+            conversationId:
+              conversationIdRef.current,
             userId: user.id,
             role: message.role,
             message,
@@ -550,7 +959,6 @@ export function MitraAI() {
             "Unable to save this message",
             cause,
           );
-
           return;
         }
       }
@@ -567,24 +975,35 @@ export function MitraAI() {
     }
   }, [error]);
 
+  /*
+   * ---------------------------------------------------------
+   * Composer focus
+   * ---------------------------------------------------------
+   */
+
   useEffect(() => {
     if (!open) return;
 
     const id = window.setTimeout(() => {
       inputRef.current?.focus();
-    }, 300);
+    }, 240);
 
     return () => window.clearTimeout(id);
   }, [open]);
 
   useEffect(() => {
-    if (open && status === "ready") {
+    if (
+      open &&
+      status === "ready"
+    ) {
       inputRef.current?.focus();
     }
   }, [open, status]);
 
   /*
+   * ---------------------------------------------------------
    * Voice
+   * ---------------------------------------------------------
    */
 
   const { settings } = useSettings();
@@ -613,7 +1032,6 @@ export function MitraAI() {
       if (!trimmed || busy) return;
 
       setText("");
-
       speech.stop();
 
       track("mitra_ai_message");
@@ -630,12 +1048,19 @@ export function MitraAI() {
   );
 
   useEffect(() => {
-    if (mic.listening && mic.transcript) {
+    if (
+      mic.listening &&
+      mic.transcript
+    ) {
       setText(mic.transcript);
     }
-  }, [mic.listening, mic.transcript]);
+  }, [
+    mic.listening,
+    mic.transcript,
+  ]);
 
-  const pendingVoice = useRef(false);
+  const pendingVoice =
+    useRef(false);
 
   useEffect(() => {
     if (mic.listening) {
@@ -646,7 +1071,8 @@ export function MitraAI() {
     if (pendingVoice.current) {
       pendingVoice.current = false;
 
-      const spoken = mic.transcript.trim();
+      const spoken =
+        mic.transcript.trim();
 
       if (spoken) {
         mic.setTranscript("");
@@ -660,25 +1086,42 @@ export function MitraAI() {
     send,
   ]);
 
+  /*
+   * ---------------------------------------------------------
+   * Latest assistant answer
+   * ---------------------------------------------------------
+   */
+
   const lastAssistantText = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
+    for (
+      let i = messages.length - 1;
+      i >= 0;
+      i -= 1
+    ) {
       const message = messages[i];
 
-      if (message?.role !== "assistant") continue;
+      if (message?.role !== "assistant") {
+        continue;
+      }
 
       const body = message.parts
         .map((part) =>
-          part.type === "text" ? part.text : "",
+          part.type === "text"
+            ? part.text
+            : "",
         )
         .join("");
 
-      if (body.trim()) return body;
+      if (body.trim()) {
+        return body;
+      }
     }
 
     return "";
   }, [messages]);
 
-  const spokenRef = useRef("");
+  const spokenRef =
+    useRef("");
 
   useEffect(() => {
     if (
@@ -689,13 +1132,19 @@ export function MitraAI() {
       return;
     }
 
-    if (spokenRef.current === lastAssistantText) {
+    if (
+      spokenRef.current ===
+      lastAssistantText
+    ) {
       return;
     }
 
-    spokenRef.current = lastAssistantText;
+    spokenRef.current =
+      lastAssistantText;
 
-    speech.speak(lastAssistantText);
+    speech.speak(
+      lastAssistantText,
+    );
   }, [
     settings.voice.autoPlay,
     busy,
@@ -703,22 +1152,29 @@ export function MitraAI() {
     speech,
   ]);
 
-  const lastAssistantId = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      if (messages[i]?.role === "assistant") {
-        return messages[i]!.id;
+  const lastAssistantId =
+    useMemo(() => {
+      for (
+        let i = messages.length - 1;
+        i >= 0;
+        i -= 1
+      ) {
+        if (
+          messages[i]?.role ===
+          "assistant"
+        ) {
+          return messages[i]!.id;
+        }
       }
-    }
 
-    return null;
-  }, [messages]);
+      return null;
+    }, [messages]);
 
   const retry = useCallback(
     (messageId: string) => {
       if (busy) return;
 
       speech.stop();
-
       spokenRef.current = "";
 
       track("mitra_ai_retry");
@@ -730,6 +1186,12 @@ export function MitraAI() {
     [busy, regenerate, speech],
   );
 
+  /*
+   * ---------------------------------------------------------
+   * Status
+   * ---------------------------------------------------------
+   */
+
   const voiceStatus = speech.error
     ? speech.error
     : mic.listening
@@ -739,189 +1201,26 @@ export function MitraAI() {
         : mic.failed
           ? copy.micFailed[lang]
           : mic.supported
-            ? copy.online[lang]
+            ? copy.micIdle[lang]
             : copy.micUnsupported[lang];
-
-  /*
-   * Smart draggable orb
-   */
 
   const hasBottomNav =
     pathname !== "/" &&
     !pathname.startsWith("/admin");
 
-  const keyboardOpen = keyboardInset > 0;
+  const keyboardOpen =
+    keyboardInset > 0;
 
-  const baseBottom =
-    hasBottomNav && !keyboardOpen
-      ? 100
-      : 24;
-
-  const orbHidden =
-    (keyboardOpen && !open) ||
+  const hideOrb =
+    keyboardOpen ||
     (open && !isDesktop);
 
-  const clampOrbPosition = useCallback(
-    (position: OrbPosition): OrbPosition => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-
-      const size = isDesktop ? 64 : 56;
-
-      const margin = 12;
-
-      const maxX =
-        Math.max(0, width - size - margin * 2);
-
-      const maxY =
-        Math.max(0, height - size - margin * 2);
-
-      return {
-        x: Math.max(
-          -maxX / 2,
-          Math.min(maxX / 2, position.x),
-        ),
-
-        y: Math.max(
-          -maxY / 2,
-          Math.min(maxY / 2, position.y),
-        ),
-      };
-    },
-    [isDesktop],
-  );
-
-  const snapOrb = useCallback(
-    (position: OrbPosition) => {
-      const width = window.innerWidth;
-
-      const threshold = width * 0.22;
-
-      const currentRight =
-        width - 32 + position.x;
-
-      let x = position.x;
-
-      if (currentRight < threshold) {
-        x = -(width / 2 - 48);
-      } else if (
-        width - currentRight <
-        threshold
-      ) {
-        x = width / 2 - 48;
-      }
-
-      const clamped = clampOrbPosition({
-        x,
-        y: position.y,
-      });
-
-      setOrbPosition(clamped);
-
-      try {
-        window.localStorage.setItem(
-          POSITION_KEY,
-          JSON.stringify(clamped),
-        );
-      } catch {
-        // Ignore localStorage failures.
-      }
-    },
-    [clampOrbPosition],
-  );
-
-  const handleOrbPointerDown = (
-    event: React.PointerEvent<HTMLButtonElement>,
-  ) => {
-    if (open) return;
-
-    event.currentTarget.setPointerCapture(
-      event.pointerId,
-    );
-
-    setDragging(true);
-    setHasMoved(false);
-
-    dragStartRef.current = {
-      pointerX: event.clientX,
-      pointerY: event.clientY,
-      startX: orbPosition.x,
-      startY: orbPosition.y,
-    };
-  };
-
-  const handleOrbPointerMove = (
-    event: React.PointerEvent<HTMLButtonElement>,
-  ) => {
-    if (!dragStartRef.current || open) return;
-
-    const dx =
-      event.clientX -
-      dragStartRef.current.pointerX;
-
-    const dy =
-      event.clientY -
-      dragStartRef.current.pointerY;
-
-    if (
-      Math.abs(dx) > 4 ||
-      Math.abs(dy) > 4
-    ) {
-      setHasMoved(true);
-    }
-
-    setOrbPosition(
-      clampOrbPosition({
-        x: dragStartRef.current.startX + dx,
-        y: dragStartRef.current.startY + dy,
-      }),
-    );
-  };
-
-  const handleOrbPointerUp = () => {
-    if (!dragStartRef.current) return;
-
-    const moved = hasMoved;
-
-    dragStartRef.current = null;
-    setDragging(false);
-
-    snapOrb(orbPosition);
-
-    if (!moved) {
-      setOpen(true);
-      track("mitra_ai_opened");
-    }
-  };
-
-  useEffect(() => {
-    const onResize = () => {
-      setOrbPosition((current) =>
-        clampOrbPosition(current),
-      );
-    };
-
-    window.addEventListener("resize", onResize);
-
-    return () =>
-      window.removeEventListener(
-        "resize",
-        onResize,
-      );
-  }, [clampOrbPosition]);
-
-  /*
-   * Panel positioning
-   */
-
-  const panelMaxHeight = viewportHeight
-    ? `${Math.max(
-        280,
-        viewportHeight -
-          keyboardInset -
-          90,
-      )}px`
-    : undefined;
+  const mobilePanelStyle =
+    viewportHeight
+      ? {
+          height: `${viewportHeight}px`,
+        }
+      : undefined;
 
   if (
     pathname.startsWith("/admin") ||
@@ -932,405 +1231,283 @@ export function MitraAI() {
 
   return (
     <>
-      {/* =========================================================
-          PREMIUM FLOATING MITRA ORB
-      ========================================================= */}
+      {/*
+       * =====================================================
+       * CLOSED DESKTOP ORB
+       * =====================================================
+       */}
 
-      <button
-        ref={orbRef}
-        type="button"
-        onPointerDown={handleOrbPointerDown}
-        onPointerMove={handleOrbPointerMove}
-        onPointerUp={handleOrbPointerUp}
-        onPointerCancel={() => {
-          dragStartRef.current = null;
-          setDragging(false);
-        }}
-        aria-label={
-          open
-            ? copy.close[lang]
-            : copy.open[lang]
-        }
-        aria-expanded={open}
-        aria-hidden={orbHidden}
-        tabIndex={orbHidden ? -1 : 0}
-        title={copy.drag[lang]}
-        style={{
-          bottom: `calc(env(safe-area-inset-bottom, 0px) + ${baseBottom}px + ${Math.max(
-            0,
-            keyboardInset,
-          )}px)`,
+      {!open && (
+        <button
+          type="button"
+          onClick={(event) => {
+            if (orbDragRef.current.moved) {
+              orbDragRef.current.moved = false;
+              event.preventDefault();
+              return;
+            }
 
-          transform: `translate(${orbPosition.x}px, ${orbPosition.y}px)`,
-        }}
-        className={[
-          "group fixed right-5 z-[60]",
-          "grid size-14 place-items-center",
-          "touch-none select-none",
-          "lg:right-8 lg:size-16",
-          "transition-[opacity,scale,box-shadow]",
-          "duration-300",
-          dragging
-            ? "scale-110 cursor-grabbing"
-            : "cursor-grab",
-          orbHidden
-            ? "pointer-events-none scale-75 opacity-0"
-            : "opacity-100",
-        ].join(" ")}
-      >
-        {/* Ambient glow */}
-
-        <span
+            openMitra();
+          }}
+          onPointerDown={
+            handleOrbPointerDown
+          }
+          onPointerMove={
+            handleOrbPointerMove
+          }
+          onPointerUp={
+            handleOrbPointerUp
+          }
+          aria-label={
+            copy.open[lang]
+          }
+          aria-expanded={false}
+          aria-hidden={hideOrb}
+          tabIndex={
+            hideOrb ? -1 : 0
+          }
+          style={
+            orbPosition
+              ? {
+                  left: `${orbPosition.x}px`,
+                  top: `${orbPosition.y}px`,
+                  right: "auto",
+                  bottom: "auto",
+                }
+              : undefined
+          }
           className={[
-            "absolute -inset-3 rounded-full",
-            "bg-primary/20 blur-xl",
-            "transition-all duration-500",
-            dragging
-              ? "scale-125 opacity-100"
-              : "scale-90 opacity-70",
-          ].join(" ")}
-        />
-
-        {/* Outer ring */}
-
-        <span
-          className={[
-            "absolute inset-0 rounded-full",
-            "border border-primary/30",
-            "bg-primary/10",
-            "backdrop-blur-md",
-            "transition-transform duration-500",
-            "group-hover:scale-110",
-          ].join(" ")}
-        />
-
-        {/* Animated orbit */}
-
-        <span
-          className={[
-            "absolute -inset-1 rounded-full",
-            "border border-primary/20",
-            dragging
-              ? "animate-spin"
-              : "animate-[spin_8s_linear_infinite]",
-          ].join(" ")}
-        />
-
-        {/* Main orb */}
-
-        <span
-          className={[
-            "relative grid size-12 place-items-center",
+            "fixed z-[60] grid place-items-center",
+            "size-14 lg:size-16",
+            "touch-none select-none",
+            "cursor-grab active:cursor-grabbing",
             "rounded-full",
-            "border border-white/20",
-            "bg-gradient-to-br",
-            "from-primary via-primary/90 to-primary/70",
             "text-primary-foreground",
-            "shadow-[0_12px_40px_-8px_hsl(var(--primary)/0.65)]",
-            "transition-all duration-300",
-            "lg:size-14",
-            dragging
-              ? "scale-95"
-              : "group-hover:scale-105",
+            "shadow-[var(--shadow-float)]",
+            "ring-1 ring-white/20",
+            "transition-[transform,opacity] duration-300",
+            "hover:scale-105",
+            "active:scale-95",
+            hideOrb
+              ? "pointer-events-none scale-90 opacity-0"
+              : "opacity-100",
           ].join(" ")}
         >
-          <span className="absolute inset-[2px] rounded-full bg-white/10" />
+          <span className="absolute -inset-2 rounded-full bg-primary/10 blur-xl" />
 
-          {open ? (
-            <X
-              className="relative size-5 lg:size-6"
-              strokeWidth={2.2}
-            />
-          ) : (
+          <span className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
+
+          <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" />
+
+          <span className="absolute inset-0 overflow-hidden rounded-full">
+            <span className="absolute -left-8 top-0 h-full w-1/2 rotate-12 bg-white/15 blur-xl" />
+          </span>
+
+          <span className="relative grid size-full place-items-center overflow-hidden rounded-full grad-primary ring-1 ring-white/20">
+            <span className="absolute left-3 top-2 size-3 rounded-full bg-white/50 blur-[2px]" />
+
             <Leaf
-              className="relative size-6 lg:size-7"
+              className="relative size-7"
               strokeWidth={2}
             />
-          )}
-        </span>
 
-        {/* Tiny live indicator */}
-
-        {!open && (
-          <span className="absolute bottom-0.5 right-0.5 grid size-4 place-items-center rounded-full border-2 border-background bg-emerald-500">
-            <span className="size-1.5 rounded-full bg-white" />
+            <span className="absolute bottom-2 right-2 size-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
           </span>
-        )}
-      </button>
+        </button>
+      )}
 
-      {/* =========================================================
-          CHAT WINDOW
-      ========================================================= */}
+      {/*
+       * =====================================================
+       * DESKTOP PANEL
+       * =====================================================
+       */}
 
-      {open && (
+      {open && isDesktop && panelPosition && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={copy.title[lang]}
-          style={
-            isDesktop
-              ? {
-                  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${baseBottom + 76}px)`,
-                  maxHeight: panelMaxHeight,
-                }
-              : viewportHeight
-                ? {
-                    height: `${viewportHeight}px`,
-                  }
-                : undefined
-          }
+          style={{
+            left: `${panelPosition.x}px`,
+            top: `${panelPosition.y}px`,
+          }}
           className={[
-            "fixed inset-0 z-[55]",
-            "h-[100dvh]",
-            "lg:inset-auto",
-            "lg:right-8",
-            "lg:h-[min(700px,78vh)]",
-            "lg:w-[460px]",
+            "fixed z-50",
+            "h-[min(650px,80vh)] w-[440px]",
+            "transition-[opacity,transform] duration-300 ease-out",
+            panelReady
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-3 scale-[0.985] opacity-0",
           ].join(" ")}
         >
-          <div
-            className={[
-              "relative flex h-full min-h-0 flex-col",
-              "overflow-hidden",
-              "bg-background/95",
-              "shadow-[0_30px_100px_-25px_hsl(var(--foreground)/0.35)]",
-              "backdrop-blur-2xl",
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/10 bg-background/95 shadow-[0_30px_100px_-35px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+            <span className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
 
-              "lg:rounded-[28px]",
-              "lg:border",
-              "lg:border-border/60",
-              "lg:bg-background/90",
-            ].join(" ")}
-          >
-            {/* Decorative background atmosphere */}
+            <header
+              onPointerDown={
+                handlePanelPointerDown
+              }
+              onPointerMove={
+                handlePanelPointerMove
+              }
+              onPointerUp={
+                handlePanelPointerUp
+              }
+              className="relative flex shrink-0 cursor-grab touch-none select-none items-center gap-3 border-b border-white/10 px-4 py-3 active:cursor-grabbing"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.10] via-transparent to-transparent" />
 
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl" />
-              <div className="absolute -bottom-24 -left-24 size-72 rounded-full bg-primary/5 blur-3xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.08),transparent_38%)]" />
-            </div>
+              <div className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-primary/10">
+                <span className="absolute inset-0 bg-primary/10 animate-pulse" />
 
-            {/* =====================================================
-                HEADER
-            ===================================================== */}
+                <Leaf
+                  className="relative size-5 text-primary"
+                  strokeWidth={2.1}
+                />
+              </div>
 
-            <header className="relative shrink-0 border-b border-white/10 bg-gradient-to-br from-primary via-primary/95 to-primary/80 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-primary-foreground lg:rounded-t-[28px] lg:pt-4">
-              <div className="flex items-center gap-3">
-                {/* Mobile back */}
-
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label={copy.close[lang]}
-                  className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 transition-all active:scale-95 lg:hidden"
-                >
-                  <ChevronLeft
-                    className="size-5"
-                    strokeWidth={2.2}
-                  />
-                </button>
-
-                {/* Brand mark */}
-
-                <div className="relative grid size-11 shrink-0 place-items-center rounded-[16px] border border-white/20 bg-white/10 shadow-inner backdrop-blur-md">
-                  <span className="absolute inset-1 rounded-[12px] border border-white/10" />
-
-                  <Leaf
-                    className="relative size-5"
-                    strokeWidth={2}
-                  />
-
-                  <span className="absolute bottom-1.5 right-1.5 size-1.5 rounded-full bg-emerald-300" />
-                </div>
-
-                {/* Brand text */}
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-display text-base font-bold tracking-tight">
-                      {copy.title[lang]}
-                    </p>
-
-                    <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/80">
-                      Intelligence
-                    </span>
-                  </div>
-
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-white/65">
-                    <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)]" />
-
-                    {location?.place ||
-                      copy.subtitle[lang]}
+              <div className="relative min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-display text-[15px] font-bold tracking-[-0.01em]">
+                    {copy.title[lang]}
                   </p>
+
+                  <span className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
+                    <span className="size-1.5 rounded-full bg-primary shadow-[0_0_7px_hsl(var(--primary))]" />
+                    {copy.online[lang]}
+                  </span>
                 </div>
 
-                {/* Desktop close */}
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {location?.place
+                    ? location.place
+                    : copy.subtitle[lang]}
+                </p>
+              </div>
+
+              <div className="relative flex items-center gap-1">
+                <div
+                  className="mr-1 hidden items-center gap-1 text-muted-foreground/40 xl:flex"
+                  title={copy.dragHint[lang]}
+                >
+                  <GripHorizontal className="size-4" />
+                </div>
 
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closeMitra}
                   aria-label={copy.close[lang]}
-                  className="hidden size-9 place-items-center rounded-full border border-white/10 bg-white/10 transition-all hover:bg-white/15 active:scale-95 lg:grid"
+                  className="press grid size-9 place-items-center rounded-full border border-border/60 bg-background/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />
                 </button>
               </div>
-
-              {/* Header status */}
-
-              <div className="mt-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[10px] text-white/60">
-                  <ShieldCheck className="size-3.5" />
-                  <span>{copy.online[lang]}</span>
-                </div>
-
-                {location?.district && (
-                  <div className="flex items-center gap-1 text-[10px] text-white/55">
-                    <MapPin className="size-3" />
-                    <span className="max-w-[130px] truncate">
-                      {location.district}
-                    </span>
-                  </div>
-                )}
-              </div>
             </header>
 
-            {/* =====================================================
-                DIAGNOSIS CONTEXT
-            ===================================================== */}
-
             {diagnosisCtx?.condition && (
-              <div className="relative mx-3 mt-3 overflow-hidden rounded-2xl border border-primary/15 bg-primary/[0.055]">
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                    <Stethoscope className="size-4" />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
-                      {copy.contextLabel[lang]}
-                    </p>
-
-                    <p className="mt-0.5 truncate text-[11px] font-medium text-foreground/80">
-                      {diagnosisCtx.crop
-                        ? `${diagnosisCtx.crop} · `
-                        : ""}
-                      {diagnosisCtx.condition}
-                    </p>
-                  </div>
-
-                  {diagnosisCtx.confidence && (
-                    <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary">
-                      {diagnosisCtx.confidence}%
-                    </span>
-                  )}
+              <div className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-2xl border border-primary/15 bg-primary/[0.055] px-3 py-2.5">
+                <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10">
+                  <Stethoscope className="size-4 text-primary" />
                 </div>
+
+                <p className="min-w-0 truncate text-[11px] leading-relaxed">
+                  <span className="font-semibold text-foreground">
+                    {copy.contextLabel[lang]}
+                  </span>
+
+                  <span className="mx-1.5 text-muted-foreground">
+                    ·
+                  </span>
+
+                  {diagnosisCtx.crop
+                    ? `${diagnosisCtx.crop} — `
+                    : ""}
+
+                  {diagnosisCtx.condition}
+
+                  {diagnosisCtx.confidence
+                    ? ` (${diagnosisCtx.confidence}%)`
+                    : ""}
+                </p>
               </div>
             )}
 
-            {/* =====================================================
-                CONVERSATION
-            ===================================================== */}
-
-            <Conversation className="relative min-h-0 flex-1">
-              <ConversationContent className="gap-4 px-4 py-5">
-                {/* Premium welcome */}
-
+            <Conversation className="min-h-0 flex-1">
+              <ConversationContent className="gap-5 px-4 py-5">
                 {messages.length === 0 && (
-                  <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-                    <div className="mb-5">
-                      <div className="mb-4 flex items-center gap-3">
-                        <div className="relative grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary">
-                          <Sparkles className="size-5" />
+                  <div className="flex min-h-full flex-col justify-center pb-5">
+                    <div className="mb-7">
+                      <div className="mb-5 flex items-center gap-3">
+                        <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
+                          <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
 
-                          <span className="absolute inset-0 rounded-2xl border border-primary/15" />
+                          <Leaf
+                            className="relative size-6 text-primary"
+                            strokeWidth={1.9}
+                          />
                         </div>
 
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary/70">
-                            Mitra Intelligence
+                          <p className="text-xs font-semibold text-primary">
+                            {location?.place
+                              ? `For ${location.place}`
+                              : copy.subtitle[lang]}
                           </p>
 
-                          <p className="text-[11px] text-muted-foreground">
-                            {copy.online[lang]}
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {copy.greetingSmall[lang]}
                           </p>
                         </div>
                       </div>
 
-                      <h2 className="font-display text-[25px] font-bold tracking-tight text-foreground">
-                        {getGreeting(lang)}
+                      <h2 className="max-w-[360px] text-[25px] font-semibold leading-[1.18] tracking-[-0.035em] text-foreground">
+                        {copy.greeting[lang]}
                       </h2>
-
-                      <p className="mt-2 max-w-[360px] text-[13px] leading-relaxed text-muted-foreground">
-                        {copy.greetingSub[lang]}
-                      </p>
                     </div>
 
-                    {/* Suggestion cards */}
-
-                    <div className="grid gap-2">
+                    <div className="grid grid-cols-2 gap-2.5">
                       {suggestions[lang].map(
-                        (
-                          {
-                            icon: Icon,
-                            label,
-                            text: suggestion,
-                          },
-                          index,
-                        ) => (
+                        ({
+                          icon: Icon,
+                          title,
+                          text: suggestionText,
+                        }) => (
                           <button
-                            key={suggestion}
+                            key={`${title}-${suggestionText}`}
                             type="button"
                             onClick={() =>
-                              send(suggestion)
+                              send(
+                                suggestionText,
+                              )
                             }
-                            style={{
-                              animationDelay: `${index * 55}ms`,
-                            }}
-                            className={[
-                              "group relative flex items-center gap-3",
-                              "overflow-hidden rounded-[18px]",
-                              "border border-border/60",
-                              "bg-card/55",
-                              "px-3.5 py-3",
-                              "text-left",
-                              "transition-all duration-300",
-                              "hover:-translate-y-0.5",
-                              "hover:border-primary/30",
-                              "hover:bg-primary/[0.045]",
-                              "hover:shadow-[0_12px_30px_-20px_hsl(var(--primary)/0.45)]",
-                              "active:scale-[0.985]",
-                              "animate-in fade-in slide-in-from-bottom-2",
-                            ].join(" ")}
+                            className="group relative overflow-hidden rounded-[18px] border border-border/70 bg-card/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.045] active:scale-[0.98]"
                           >
-                            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/8 text-primary transition-transform duration-300 group-hover:scale-110">
-                              <Icon
-                                className="size-4"
-                                strokeWidth={2}
-                              />
+                            <span className="absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-xl transition-transform duration-500 group-hover:scale-150" />
+
+                            <div className="relative mb-3 flex items-start justify-between">
+                              <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
+                                <Icon
+                                  className="size-4"
+                                  strokeWidth={2}
+                                />
+                              </span>
+
+                              <ArrowUpRight className="size-3.5 text-muted-foreground/40 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
                             </div>
 
-                            <div className="min-w-0 flex-1">
-                              <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.13em] text-primary/65">
-                                {label}
-                              </p>
+                            <p className="relative text-[12px] font-semibold text-foreground">
+                              {title}
+                            </p>
 
-                              <p className="text-[12px] font-semibold leading-snug text-foreground/85">
-                                {suggestion}
-                              </p>
-                            </div>
-
-                            <ArrowUp
-                              className="size-4 shrink-0 rotate-45 text-muted-foreground/40 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
-                            />
+                            <p className="relative mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                              {suggestionText}
+                            </p>
                           </button>
                         ),
                       )}
                     </div>
                   </div>
                 )}
-
-                {/* Messages */}
 
                 {messages.map((message) => {
                   const body = message.parts
@@ -1341,118 +1518,114 @@ export function MitraAI() {
                     )
                     .join("");
 
-                  if (!body.trim()) return null;
+                  if (!body.trim()) {
+                    return null;
+                  }
 
-                  const isUser =
-                    message.role === "user";
+                  const isAssistant =
+                    message.role ===
+                    "assistant";
 
                   return (
-                    <div
+                    <Message
+                      from={message.role}
                       key={message.id}
-                      className="animate-in fade-in slide-in-from-bottom-2 duration-300"
                     >
-                      <Message
-                        from={message.role}
+                      {isAssistant && (
+                        <div className="mb-1 flex items-center gap-1.5 px-1">
+                          <span className="grid size-5 place-items-center rounded-md bg-primary/10">
+                            <Leaf
+                              className="size-3 text-primary"
+                              strokeWidth={2.1}
+                            />
+                          </span>
+
+                          <span className="text-[10px] font-semibold tracking-wide text-muted-foreground">
+                            Mitra
+                          </span>
+                        </div>
+                      )}
+
+                      <MessageContent
+                        className={
+                          isAssistant
+                            ? "rounded-2xl bg-transparent px-1 text-foreground"
+                            : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground shadow-sm"
+                        }
                       >
-                        <MessageContent
-                          className={
-                            isUser
-                              ? [
-                                  "rounded-[20px]",
-                                  "bg-primary",
-                                  "px-4 py-3",
-                                  "text-primary-foreground",
-                                  "shadow-[0_8px_25px_-16px_hsl(var(--primary))]",
-                                ].join(" ")
-                              : [
-                                  "bg-transparent",
-                                  "px-0",
-                                  "text-foreground",
-                                ].join(" ")
-                          }
-                        >
-                          {!isUser && (
-                            <div className="mb-2 flex items-center gap-2">
-                              <div className="grid size-6 place-items-center rounded-lg bg-primary/10 text-primary">
-                                <Leaf
-                                  className="size-3.5"
-                                  strokeWidth={2}
-                                />
-                              </div>
+                        <MessageResponse>
+                          {body}
+                        </MessageResponse>
+                      </MessageContent>
 
-                              <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary/65">
-                                Mitra
-                              </span>
-                            </div>
-                          )}
-
-                          <MessageResponse>
-                            {body}
-                          </MessageResponse>
-                        </MessageContent>
-
-                        {message.role ===
-                          "assistant" &&
-                          message.id ===
-                            lastAssistantId &&
-                          !busy && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                retry(message.id)
-                              }
-                              aria-label={
-                                copy.retry[lang]
-                              }
-                              className="mt-1.5 flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-all hover:border-primary/30 hover:text-primary active:scale-95"
-                            >
-                              <RefreshCw
-                                className="size-3"
-                                strokeWidth={2.2}
-                              />
-                              {copy.retry[lang]}
-                            </button>
-                          )}
-                      </Message>
-                    </div>
+                      {isAssistant &&
+                        message.id ===
+                          lastAssistantId &&
+                        !busy && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              retry(
+                                message.id,
+                              )
+                            }
+                            aria-label={
+                              copy.retry[
+                                lang
+                              ]
+                            }
+                            className="press ml-1 mt-1 flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                          >
+                            <RefreshCw className="size-3" />
+                            {copy.retry[lang]}
+                          </button>
+                        )}
+                    </Message>
                   );
                 })}
 
-                {/* Thinking state */}
-
                 {busy && (
-                  <div className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                    <div className="grid size-7 place-items-center rounded-xl bg-primary/10">
-                      <Sparkles className="size-3.5 animate-pulse text-primary" />
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="relative grid size-8 place-items-center rounded-xl bg-primary/8">
+                      <span className="absolute inset-0 rounded-xl bg-primary/10 animate-pulse" />
+
+                      <Leaf
+                        className="relative size-4 text-primary"
+                        strokeWidth={2}
+                      />
                     </div>
 
-                    <Shimmer className="text-[12px]">
-                      {copy.thinking[lang]}
-                    </Shimmer>
+                    <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Shimmer className="text-[12px]">
+                          {copy.thinking[lang]}
+                        </Shimmer>
+
+                        <div className="flex gap-0.5">
+                          <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="[animation-delay:120ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="[animation-delay:240ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* Error */}
-
                 {error && !busy && (
-                  <div className="animate-in fade-in slide-in-from-bottom-2 space-y-2 rounded-2xl border border-destructive/20 bg-destructive/[0.055] px-3.5 py-3">
-                    <div className="flex items-start gap-2.5">
-                      <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive">
-                        <RefreshCw className="size-3.5" />
-                      </div>
-
-                      <p className="text-[12px] leading-relaxed text-destructive">
-                        {copy.error[lang]}
-                      </p>
-                    </div>
+                  <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.045] px-3.5 py-3">
+                    <p className="text-sm leading-relaxed text-destructive">
+                      {copy.error[lang]}
+                    </p>
 
                     {lastAssistantId && (
                       <button
                         type="button"
                         onClick={() =>
-                          retry(lastAssistantId)
+                          retry(
+                            lastAssistantId,
+                          )
                         }
-                        className="ml-9 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10px] font-semibold text-foreground transition-all active:scale-95"
+                        className="press mt-2 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10px] font-semibold"
                       >
                         <RefreshCw className="size-3" />
                         {copy.retry[lang]}
@@ -1465,36 +1638,41 @@ export function MitraAI() {
               <ConversationScrollButton />
             </Conversation>
 
-            {/* =====================================================
-                COMPOSER
-            ===================================================== */}
+            <div className="shrink-0 border-t border-border/60 bg-card/50 p-3 pb-3 backdrop-blur-xl">
+              <div className="mb-2 flex min-h-5 items-center gap-2 px-1">
+                {mic.listening || speech.speaking ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-4 items-end gap-0.5">
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "45%" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "85%", animationDelay: "100ms" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "60%", animationDelay: "180ms" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "95%", animationDelay: "260ms" }} />
+                    </div>
 
-            <div className="relative shrink-0 border-t border-border/50 bg-card/75 p-3 backdrop-blur-xl pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:rounded-b-[28px] lg:pb-3">
-              {/* Voice / status */}
+                    <p className="text-[10px] font-medium text-primary">
+                      {voiceStatus}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">
+                    {voiceStatus}
+                  </p>
+                )}
 
-              <div className="mb-2 flex min-h-6 items-center gap-2 px-1">
-                <div
-                  className={[
-                    "grid size-5 place-items-center rounded-full",
-                    mic.listening
-                      ? "bg-primary/15 text-primary"
-                      : speech.speaking
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground",
-                  ].join(" ")}
-                >
-                  {mic.listening ? (
-                    <Mic className="size-2.5" />
-                  ) : speech.speaking ? (
-                    <Volume2 className="size-2.5" />
-                  ) : (
-                    <MessageCircle className="size-2.5" />
-                  )}
-                </div>
-
-                <p className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">
-                  {voiceStatus}
-                </p>
+                {mic.listening && (
+                  <button
+                    type="button"
+                    onClick={mic.cancel}
+                    aria-label={
+                      copy.cancelMic[
+                        lang
+                      ]
+                    }
+                    className="press grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-muted-foreground"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
 
                 {lastAssistantText &&
                   !mic.listening && (
@@ -1509,10 +1687,14 @@ export function MitraAI() {
                       }
                       aria-label={
                         speech.speaking
-                          ? copy.stopSpeak[lang]
-                          : copy.replay[lang]
+                          ? copy.stopSpeak[
+                              lang
+                            ]
+                          : copy.replay[
+                              lang
+                            ]
                       }
-                      className="grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-muted-foreground transition-all hover:text-primary active:scale-95"
+                      className="press grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-foreground"
                     >
                       {speech.speaking ? (
                         <VolumeX className="size-3.5" />
@@ -1524,104 +1706,515 @@ export function MitraAI() {
                       )}
                     </button>
                   )}
+              </div>
+
+              <PromptInput
+                onSubmit={(
+                  _message,
+                  event,
+                ) => {
+                  event.preventDefault();
+                  send(text);
+                }}
+              >
+                <PromptInputTextarea
+                  ref={inputRef}
+                  value={text}
+                  onChange={(event) =>
+                    setText(
+                      event.currentTarget
+                        .value,
+                    )
+                  }
+                  placeholder={
+                    copy.placeholder[
+                      lang
+                    ]
+                  }
+                />
+
+                <PromptInputFooter className="justify-end gap-1.5">
+                  <button
+                    type="button"
+                    disabled={
+                      !mic.supported
+                    }
+                    onClick={() =>
+                      mic.listening
+                        ? mic.stop()
+                        : mic.start()
+                    }
+                    aria-label={
+                      mic.listening
+                        ? copy.stopMic[
+                            lang
+                          ]
+                        : copy.mic[lang]
+                    }
+                    className={[
+                      "press relative grid size-9 shrink-0 place-items-center rounded-full border transition-all",
+                      "disabled:opacity-40",
+                      mic.listening
+                        ? "border-primary/40 bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.25)]"
+                        : "border-border/70 bg-background/70 text-foreground hover:border-primary/30 hover:bg-primary/5",
+                    ].join(" ")}
+                  >
+                    {mic.listening && (
+                      <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                    )}
+
+                    {mic.listening ? (
+                      <Square
+                        className="relative size-4"
+                        strokeWidth={2.4}
+                      />
+                    ) : (
+                      <Mic
+                        className="relative size-4"
+                        strokeWidth={2.2}
+                      />
+                    )}
+                  </button>
+
+                  <PromptInputSubmit
+                    status={status}
+                    disabled={
+                      !text.trim() &&
+                      !busy
+                    }
+                  />
+                </PromptInputFooter>
+              </PromptInput>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/*
+       * =====================================================
+       * MOBILE FULL-SCREEN PANEL
+       * =====================================================
+       */}
+
+      {open && !isDesktop && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.title[lang]}
+          style={mobilePanelStyle}
+          className={[
+            "fixed inset-0 z-[70]",
+            "h-[100dvh]",
+            "bg-background",
+            "transition-[opacity,transform] duration-300 ease-out",
+            panelReady
+              ? "translate-y-0 opacity-100"
+              : "translate-y-3 opacity-0",
+          ].join(" ")}
+        >
+          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+            <header className="relative flex shrink-0 items-center gap-3 border-b border-border/60 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+              <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-primary/[0.07] to-transparent" />
+
+              <button
+                type="button"
+                onClick={closeMitra}
+                aria-label={
+                  copy.close[lang]
+                }
+                className="press relative grid size-11 shrink-0 place-items-center rounded-full bg-muted/60"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+
+              <div className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
+                <Leaf
+                  className="size-5 text-primary"
+                  strokeWidth={2}
+                />
+              </div>
+
+              <div className="relative min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-display text-sm font-bold">
+                    {copy.title[lang]}
+                  </p>
+
+                  <span className="flex items-center gap-1 text-[9px] font-semibold text-primary">
+                    <span className="size-1.5 rounded-full bg-primary shadow-[0_0_7px_hsl(var(--primary))]" />
+                    {copy.online[lang]}
+                  </span>
+                </div>
+
+                <p className="truncate text-[10px] text-muted-foreground">
+                  {location?.place ||
+                    copy.subtitle[lang]}
+                </p>
+              </div>
+            </header>
+
+            {diagnosisCtx?.condition && (
+              <div className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-2xl border border-primary/15 bg-primary/[0.055] px-3 py-2.5">
+                <div className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10">
+                  <Stethoscope className="size-4 text-primary" />
+                </div>
+
+                <p className="min-w-0 truncate text-[11px]">
+                  <span className="font-semibold">
+                    {copy.contextLabel[lang]}
+                  </span>
+
+                  <span className="mx-1.5 text-muted-foreground">
+                    ·
+                  </span>
+
+                  {diagnosisCtx.crop
+                    ? `${diagnosisCtx.crop} — `
+                    : ""}
+
+                  {diagnosisCtx.condition}
+                </p>
+              </div>
+            )}
+
+            <Conversation className="min-h-0 flex-1">
+              <ConversationContent className="gap-5 px-4 py-5">
+                {messages.length === 0 && (
+                  <div className="flex min-h-full flex-col justify-center pb-8">
+                    <div className="mb-8">
+                      <div className="mb-5 flex items-center gap-3">
+                        <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10">
+                          <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
+
+                          <Leaf
+                            className="relative size-6 text-primary"
+                            strokeWidth={1.9}
+                          />
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold text-primary">
+                            {location?.place ||
+                              copy.subtitle[lang]}
+                          </p>
+
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {copy.greetingSmall[
+                              lang
+                            ]}
+                          </p>
+                        </div>
+                      </div>
+
+                      <h2 className="text-[27px] font-semibold leading-[1.16] tracking-[-0.04em]">
+                        {copy.greeting[lang]}
+                      </h2>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {suggestions[lang].map(
+                        ({
+                          icon: Icon,
+                          title,
+                          text: suggestionText,
+                        }) => (
+                          <button
+                            key={`${title}-${suggestionText}`}
+                            type="button"
+                            onClick={() =>
+                              send(
+                                suggestionText,
+                              )
+                            }
+                            className="group relative overflow-hidden rounded-[19px] border border-border/70 bg-card/50 p-3.5 text-left transition-all active:scale-[0.98]"
+                          >
+                            <div className="mb-3 flex items-start justify-between">
+                              <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
+                                <Icon className="size-4" />
+                              </span>
+
+                              <ArrowUpRight className="size-3.5 text-muted-foreground/40" />
+                            </div>
+
+                            <p className="text-[12px] font-semibold">
+                              {title}
+                            </p>
+
+                            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                              {suggestionText}
+                            </p>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {messages.map((message) => {
+                  const body = message.parts
+                    .map((part) =>
+                      part.type === "text"
+                        ? part.text
+                        : "",
+                    )
+                    .join("");
+
+                  if (!body.trim()) {
+                    return null;
+                  }
+
+                  const isAssistant =
+                    message.role ===
+                    "assistant";
+
+                  return (
+                    <Message
+                      from={message.role}
+                      key={message.id}
+                    >
+                      {isAssistant && (
+                        <div className="mb-1 flex items-center gap-1.5 px-1">
+                          <span className="grid size-5 place-items-center rounded-md bg-primary/10">
+                            <Leaf
+                              className="size-3 text-primary"
+                              strokeWidth={2}
+                            />
+                          </span>
+
+                          <span className="text-[10px] font-semibold text-muted-foreground">
+                            Mitra
+                          </span>
+                        </div>
+                      )}
+
+                      <MessageContent
+                        className={
+                          isAssistant
+                            ? "rounded-2xl bg-transparent px-1 text-foreground"
+                            : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground"
+                        }
+                      >
+                        <MessageResponse>
+                          {body}
+                        </MessageResponse>
+                      </MessageContent>
+
+                      {isAssistant &&
+                        message.id ===
+                          lastAssistantId &&
+                        !busy && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              retry(
+                                message.id,
+                              )
+                            }
+                            className="press ml-1 mt-1 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground"
+                          >
+                            <RefreshCw className="size-3" />
+                            {copy.retry[lang]}
+                          </button>
+                        )}
+                    </Message>
+                  );
+                })}
+
+                {busy && (
+                  <div className="flex items-center gap-3 px-1">
+                    <div className="relative grid size-8 place-items-center rounded-xl bg-primary/8">
+                      <span className="absolute inset-0 rounded-xl bg-primary/10 animate-pulse" />
+
+                      <Leaf
+                        className="relative size-4 text-primary"
+                        strokeWidth={2}
+                      />
+                    </div>
+
+                    <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Shimmer className="text-[12px]">
+                          {copy.thinking[lang]}
+                        </Shimmer>
+
+                        <div className="flex gap-0.5">
+                          <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="[animation-delay:120ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="[animation-delay:240ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {error && !busy && (
+                  <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.045] px-3.5 py-3">
+                    <p className="text-sm text-destructive">
+                      {copy.error[lang]}
+                    </p>
+
+                    {lastAssistantId && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          retry(
+                            lastAssistantId,
+                          )
+                        }
+                        className="press mt-2 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10px] font-semibold"
+                      >
+                        <RefreshCw className="size-3" />
+                        {copy.retry[lang]}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </ConversationContent>
+
+              <ConversationScrollButton />
+            </Conversation>
+
+            <div className="shrink-0 border-t border-border/60 bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+              <div className="mb-2 flex min-h-5 items-center gap-2 px-1">
+                {mic.listening ||
+                speech.speaking ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-4 items-end gap-0.5">
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "45%" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "85%", animationDelay: "100ms" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "60%", animationDelay: "180ms" }} />
+                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "95%", animationDelay: "260ms" }} />
+                    </div>
+
+                    <p className="text-[10px] font-medium text-primary">
+                      {voiceStatus}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="flex-1 truncate text-[10px] text-muted-foreground">
+                    {voiceStatus}
+                  </p>
+                )}
 
                 {mic.listening && (
                   <button
                     type="button"
                     onClick={mic.cancel}
                     aria-label={
-                      copy.cancelMic[lang]
+                      copy.cancelMic[
+                        lang
+                      ]
                     }
-                    className="grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-muted-foreground active:scale-95"
+                    className="press grid size-7 place-items-center rounded-full border border-border/60"
                   >
                     <X className="size-3.5" />
                   </button>
                 )}
+
+                {lastAssistantText &&
+                  !mic.listening && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        speech.speaking
+                          ? speech.stop()
+                          : speech.speak(
+                              lastAssistantText,
+                            )
+                      }
+                      aria-label={
+                        speech.speaking
+                          ? copy.stopSpeak[
+                              lang
+                            ]
+                          : copy.replay[
+                              lang
+                            ]
+                      }
+                      className="press grid size-7 place-items-center rounded-full border border-border/60"
+                    >
+                      {speech.speaking ? (
+                        <VolumeX className="size-3.5" />
+                      ) : spokenRef.current ===
+                        lastAssistantText ? (
+                        <RotateCcw className="size-3.5" />
+                      ) : (
+                        <Volume2 className="size-3.5" />
+                      )}
+                    </button>
+                  )}
               </div>
 
               <PromptInput
-                onSubmit={(_message, event) => {
+                onSubmit={(
+                  _message,
+                  event,
+                ) => {
                   event.preventDefault();
                   send(text);
                 }}
               >
-                <div className="rounded-[20px] border border-border/70 bg-background/75 p-1.5 shadow-[0_8px_30px_-25px_hsl(var(--foreground)/0.4)] transition-all focus-within:border-primary/35 focus-within:shadow-[0_12px_35px_-25px_hsl(var(--primary)/0.45)]">
-                  <PromptInputTextarea
-                    ref={inputRef}
-                    value={text}
-                    onChange={(event) =>
-                      setText(
-                        event.currentTarget.value,
-                      )
+                <PromptInputTextarea
+                  ref={inputRef}
+                  value={text}
+                  onChange={(event) =>
+                    setText(
+                      event.currentTarget
+                        .value,
+                    )
+                  }
+                  placeholder={
+                    copy.placeholder[
+                      lang
+                    ]
+                  }
+                />
+
+                <PromptInputFooter className="justify-end gap-1.5">
+                  <button
+                    type="button"
+                    disabled={
+                      !mic.supported
                     }
-                    placeholder={
-                      copy.placeholder[lang]
+                    onClick={() =>
+                      mic.listening
+                        ? mic.stop()
+                        : mic.start()
                     }
-                    className="min-h-[44px] border-0 bg-transparent px-3 pt-3 text-[13px] shadow-none focus:ring-0"
+                    aria-label={
+                      mic.listening
+                        ? copy.stopMic[
+                            lang
+                          ]
+                        : copy.mic[lang]
+                    }
+                    className={[
+                      "press relative grid size-9 shrink-0 place-items-center rounded-full border",
+                      mic.listening
+                        ? "border-primary/40 bg-primary text-primary-foreground"
+                        : "border-border/70 bg-background/70",
+                    ].join(" ")}
+                  >
+                    {mic.listening && (
+                      <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                    )}
+
+                    {mic.listening ? (
+                      <Square className="relative size-4" />
+                    ) : (
+                      <Mic className="relative size-4" />
+                    )}
+                  </button>
+
+                  <PromptInputSubmit
+                    status={status}
+                    disabled={
+                      !text.trim() &&
+                      !busy
+                    }
                   />
-
-                  <PromptInputFooter className="justify-between gap-1.5 px-1 pb-1">
-                    <button
-                      type="button"
-                      disabled={!mic.supported}
-                      onClick={() =>
-                        mic.listening
-                          ? mic.stop()
-                          : mic.start()
-                      }
-                      aria-label={
-                        mic.listening
-                          ? copy.stopMic[lang]
-                          : copy.mic[lang]
-                      }
-                      className={[
-                        "relative grid size-9 shrink-0",
-                        "place-items-center rounded-full",
-                        "border transition-all",
-                        "disabled:opacity-35",
-                        "active:scale-90",
-                        mic.listening
-                          ? "border-primary/40 bg-primary text-primary-foreground"
-                          : "border-border/60 bg-background/70 text-muted-foreground hover:border-primary/30 hover:text-primary",
-                      ].join(" ")}
-                    >
-                      {mic.listening && (
-                        <>
-                          <span className="absolute inset-0 animate-ping rounded-full bg-primary/25" />
-                          <span className="absolute inset-1 rounded-full border border-white/15" />
-                        </>
-                      )}
-
-                      {mic.listening ? (
-                        <Square
-                          className="relative size-3.5"
-                          strokeWidth={2.4}
-                        />
-                      ) : (
-                        <Mic
-                          className="relative size-4"
-                          strokeWidth={2.2}
-                        />
-                      )}
-                    </button>
-
-                    <PromptInputSubmit
-                      status={status}
-                      disabled={!text.trim() && !busy}
-                      className="size-9 rounded-full"
-                    />
-                  </PromptInputFooter>
-                </div>
+                </PromptInputFooter>
               </PromptInput>
-
-              {/* Tiny product signature */}
-
-              <div className="mt-2 flex items-center justify-center gap-1.5 text-[8px] font-medium uppercase tracking-[0.16em] text-muted-foreground/40">
-                <Leaf className="size-2.5" />
-                <span>Market Mitra</span>
-                <span>·</span>
-                <span>Sell Smarter. Earn Better.</span>
-              </div>
             </div>
           </div>
         </div>
