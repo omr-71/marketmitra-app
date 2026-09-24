@@ -79,11 +79,19 @@ export function PhoneVerifyCard() {
     setBusy(true);
     try {
       const result = await send({ data: { phone } });
+
       setMasked(result.maskedEmail);
       setStage("code");
       setCode("");
       setCooldown(45);
-      await refresh();
+
+      try {
+        await refresh();
+      } catch {
+        // Profile refresh failed after OTP was successfully sent.
+        // Do not surface this as an email verification failure.
+      }
+
       toast.success(`${copy.sentTo[lang]} ${result.maskedEmail}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send the code just now.");
