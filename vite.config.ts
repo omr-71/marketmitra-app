@@ -42,6 +42,12 @@ const browserSupabasePublishableKey =
   managedSupabasePublishableKey;
 
 export default defineConfig({
+  // Vercel supplies server environment variables to the Node runtime. The
+  // default Cloudflare output cannot read them through process.env.
+  nitro: {
+    preset: "vercel",
+  },
+
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

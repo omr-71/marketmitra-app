@@ -3,8 +3,6 @@ import { render } from "@react-email/render";
 import { Resend } from "resend";
 import { TEMPLATES } from "./registry";
 
-const resend = new Resend(process.env["RESEND_API_KEY"]);
-
 export type SendTemplateEmailResult =
   | { sent: true }
   | { sent: false; reason: "recipient_suppressed" };
@@ -20,9 +18,11 @@ export async function sendTemplateEmail(
   to: string,
   options: SendTemplateEmailOptions = {},
 ): Promise<SendTemplateEmailResult> {
-  if (!process.env["RESEND_API_KEY"]) {
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) {
     throw new Error("RESEND_API_KEY is not configured");
   }
+  const resend = new Resend(apiKey);
 
   const template = TEMPLATES[templateName];
 
