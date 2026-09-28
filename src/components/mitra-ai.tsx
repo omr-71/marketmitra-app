@@ -482,7 +482,7 @@ function MitraMark({
   );
 }
 
-export function MitraAI() {
+export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
   const { lang } = useLang();
   const { location } = useLocationContext();
 
@@ -492,7 +492,7 @@ export function MitraAI() {
 
   const flag = useFeature("mitra_ai");
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [text, setText] = useState("");
 
   const [orbPosition, setOrbPosition] =

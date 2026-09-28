@@ -20,8 +20,7 @@ import { SettingsProvider } from "../lib/settings";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SplashOverlay } from "@/components/splash-overlay";
-import { MitraAI } from "@/components/mitra-ai";
-
+import { MitraAILauncher } from "@/components/mitra-ai-launcher";
 
 
 function NotFoundComponent() {
@@ -202,7 +201,7 @@ function RootComponent() {
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <SplashOverlay />
           <Outlet />
-          <MitraAI />
+          <MitraAILauncher />
           <Toaster position="top-center" richColors />
 
         </SettingsProvider>
