@@ -58,14 +58,6 @@ export const sendPhoneVerificationCode = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    console.info("[Phone verification] OTP issued", {
-      otpRowId: otpRow.id,
-      createdAt: otpRow.created_at,
-      phone,
-      otpPepperConfigured: Boolean(process.env["OTP_PEPPER"]),
-      codeLength: code.length,
-    });
-
     const { sendTemplateEmail } = await import("./email-templates/send-email");
     const result = await sendTemplateEmail("phone-code", email, {
       templateData: { code, phone },
@@ -80,7 +72,7 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
     z.object({ code: z.string().trim().regex(/^\d{6}$/) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rows } = await supabaseAdmin
@@ -98,17 +90,6 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
 
     const enteredCodeHash = await hashCode(data.code);
     if (enteredCodeHash !== row.code_hash) {
-      console.warn("[Phone verification] OTP mismatch", {
-        userId,
-        otpRowId: row.id,
-        createdAt: row.created_at,
-        expiresAt: row.expires_at,
-        phone: row.phone,
-        otpPepperConfigured: Boolean(process.env["OTP_PEPPER"]),
-        enteredCodeLength: data.code.length,
-        generatedHashLength: enteredCodeHash.length,
-      });
-
       await supabaseAdmin
         .from("phone_verification_codes")
         .update({ attempts: row.attempts + 1 } as never)
@@ -121,7 +102,7 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
       .update({ consumed_at: new Date().toISOString() } as never)
       .eq("id", row.id);
 
-    const { data: updatedProfiles, error } = await supabaseAdmin
+    const { data: updatedProfile, error } = await supabase
       .from("profiles")
       .update({
         phone: row.phone,
@@ -129,18 +110,13 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
         phone_verified_at: new Date().toISOString(),
       } as never)
       .eq("id", userId)
-      .select("id, phone, phone_verified, phone_verified_at");
-
-    const updatedProfile = updatedProfiles?.[0];
-    console.info("[Phone verification] Profile update result", {
-      updateError: error?.message ?? null,
-      returnedRows: updatedProfiles?.length ?? 0,
-      zeroRows: updatedProfiles?.length === 0,
-      phoneVerified: updatedProfile?.phone_verified ?? null,
-      phone: updatedProfile?.phone ?? null,
-    });
+      .select("id")
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
+    if (!updatedProfile) {
+      throw new Error("Your profile could not be found. Phone verification was not saved.");
+    }
 
     return { verified: true, phone: row.phone as string };
   });
