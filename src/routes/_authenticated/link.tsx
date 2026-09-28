@@ -196,30 +196,32 @@ function priceLine(pricing: PricingModel, price: number | null) {
 
 function LinkPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [sheet, setSheet] = useState<null | "need" | "have">(null);
   const [openRequest, setOpenRequest] = useState<string | null>(null);
   const [manageListing, setManageListing] = useState<string | null>(null);
 
   const overview = useQuery({
-    queryKey: ["link-overview"],
+    queryKey: ["link-overview", user?.id],
     queryFn: () => getLinkOverview(),
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const refresh = () =>
     void queryClient.invalidateQueries({
-      queryKey: ["link-overview"],
+      queryKey: ["link-overview", user?.id],
     });
 
   const data = overview.data;
   const verified = Boolean(data?.profile?.phone_verified);
 
   const activeListings =
-    data?.listings.filter((listing) => listing.status === "active").length ?? 0;
+    data?.listings.filter((listing) => listing.status === "available").length ?? 0;
 
   const pausedListings =
-    data?.listings.filter((listing) => listing.status === "paused").length ?? 0;
+    data?.listings.filter((listing) => listing.status === "unavailable").length ?? 0;
 
   const providerMatches =
     data?.matches.filter((match) => match.role === "provider").length ?? 0;
@@ -369,7 +371,26 @@ function LinkPage() {
             Loading your network…
           </p>
         ) : overview.isError ? (
-          <Empty text="Mitra Link could not load right now. Please try again." />
+          <div
+            role="alert"
+            className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4"
+          >
+            <p className="text-sm font-bold text-destructive">
+              Mitra Link could not load right now.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {overview.error instanceof Error
+                ? overview.error.message
+                : "Please check your connection and try again."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void overview.refetch()}
+              className="press mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold"
+            >
+              Try again
+            </button>
+          </div>
         ) : (
           <>
             {/* LIVE OPPORTUNITIES */}
@@ -385,6 +406,18 @@ function LinkPage() {
                 </div>
               ) : (
                 <Empty text="No verified opportunities nearby right now." />
+              )}
+            </Section>
+
+            <Section title="Resources shared nearby" icon={Handshake}>
+              {data?.discoverListings.length ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {data.discoverListings.map((listing) => (
+                    <SharedResourceCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              ) : (
+                <Empty text="No resources shared nearby yet." />
               )}
             </Section>
 
@@ -686,6 +719,81 @@ function ResourceCard({
   );
 }
 
+function SharedResourceCard({
+  listing,
+}: {
+  listing: {
+    id: string;
+    name: string;
+    category: LinkCategory;
+    resource_type: string;
+    description: string | null;
+    condition: string | null;
+    pricing_model: PricingModel;
+    price: number | null;
+    negotiable: boolean;
+    service_area: string | null;
+    district: string | null;
+    available_from: string;
+    available_to: string;
+    status: string;
+    providerName: string | null;
+    providerVerified: true;
+    photoUrls: string[];
+  };
+}) {
+  return (
+    <article className="card-surface hover-lift overflow-hidden p-4">
+      <Photo url={listing.photoUrls[0]} className="h-36 w-full" />
+      <div className="mt-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h4 className="truncate text-sm font-extrabold">{listing.name}</h4>
+            <p className="text-[11px] text-muted-foreground">
+              {listing.category === "machine" ? "Machine" : "Farm resource"} ·{" "}
+              {typeLabel(listing.resource_type)}
+            </p>
+          </div>
+          {listing.providerVerified && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+              <BadgeCheck className="size-3" />
+              Verified
+            </span>
+          )}
+        </div>
+        <p className="text-xs font-semibold">
+          {listing.providerName || "Verified farmer"}
+        </p>
+        {listing.condition && (
+          <p className="text-[11px] text-muted-foreground">
+            Condition: {listing.condition}
+          </p>
+        )}
+        {(listing.service_area || listing.district) && (
+          <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <MapPin className="size-3.5" />
+            {listing.service_area || listing.district}
+          </p>
+        )}
+        <p className="text-sm font-extrabold text-primary">
+          {priceLine(listing.pricing_model, listing.price)}
+          {listing.negotiable ? " · Negotiable" : ""}
+        </p>
+        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <CalendarDays className="size-3.5" />
+          {new Date(listing.available_from).toLocaleDateString("en-IN")} –{" "}
+          {new Date(listing.available_to).toLocaleDateString("en-IN")}
+        </p>
+        {listing.description && (
+          <p className="line-clamp-3 text-[11px] leading-relaxed text-muted-foreground">
+            {listing.description}
+          </p>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function getAvailabilityState(
   from: string,
   to: string,
@@ -702,7 +810,7 @@ function getAvailabilityState(
     };
   }
 
-  if (status === "paused") {
+  if (status === "unavailable" || status === "paused") {
     return {
       label: "Paused",
       progress: 50,
@@ -961,7 +1069,7 @@ function ListingManager({
           Quick actions
         </p>
 
-        {listing.status === "active" && (
+        {listing.status === "available" && (
           <button
             type="button"
             disabled={isBusy}
@@ -984,7 +1092,7 @@ function ListingManager({
           </button>
         )}
 
-        {listing.status === "paused" && (
+        {listing.status === "unavailable" && (
           <button
             type="button"
             disabled={isBusy}
@@ -1035,7 +1143,7 @@ function ListingManager({
 
             <button
               type="button"
-              disabled={!newDate || isBusy}
+              disabled={!newDate || isBusy || listing.status === "removed"}
               onClick={() => extend.mutate()}
               className="press rounded-2xl bg-primary px-4 text-xs font-bold text-primary-foreground disabled:opacity-50"
             >
@@ -1147,9 +1255,9 @@ function StatusPill({ status }: { status: string }) {
   const normalized = status.toLowerCase();
 
   const tone =
-    normalized === "active" || normalized === "accepted"
+    normalized === "active" || normalized === "available" || normalized === "accepted"
       ? "bg-primary/10 text-primary"
-      : normalized === "paused"
+      : normalized === "paused" || normalized === "unavailable"
         ? "bg-earthy/10 text-earthy"
         : normalized === "removed" ||
             normalized === "rejected" ||
@@ -1161,7 +1269,7 @@ function StatusPill({ status }: { status: string }) {
     <span
       className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${tone}`}
     >
-      {status.replace(/\_/g, " ")}
+      {normalized === "unavailable" ? "Paused" : status.replace(/_/g, " ")}
     </span>
   );
 }
@@ -1561,20 +1669,31 @@ function HaveForm({
   ) => {
     if (!files?.length || !user) return;
 
+    const remaining = 5 - photos.length;
+    if (remaining <= 0) {
+      toast.error("You can add up to 5 photos.");
+      return;
+    }
+
+    const selectedFiles = Array.from(files);
+    if (selectedFiles.length > remaining) {
+      toast.info(`Only ${remaining} more photo${remaining === 1 ? "" : "s"} can be added.`);
+    }
+
     setUploading(true);
 
     try {
-      for (const file of Array.from(
-        files,
-      ).slice(0, 5 - photos.length)) {
-        if (!file.type.startsWith("image/"))
+      for (const file of selectedFiles.slice(0, remaining)) {
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          toast.error("Use a JPEG, PNG, or WebP photo.");
           continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error("Each photo must be 5 MB or smaller.");
+          continue;
+        }
 
-        const ext =
-          file.name
-            .split(".")
-            .pop()
-            ?.toLowerCase() || "jpg";
+        const ext = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
 
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
@@ -1612,15 +1731,19 @@ function HaveForm({
   const removePhoto = async (
     path: string,
   ) => {
-    await supabase.storage
+    const { error } = await supabase.storage
       .from("link-photos")
       .remove([path]);
+    if (error) {
+      toast.error(`Could not remove the photo: ${error.message}`);
+      return;
+    }
 
-    setPhotos((prev) =>
-      prev.filter(
-        (photo) => photo.path !== path,
-      ),
-    );
+    setPhotos((prev) => {
+      const removed = prev.find((photo) => photo.path === path);
+      if (removed) URL.revokeObjectURL(removed.preview);
+      return prev.filter((photo) => photo.path !== path);
+    });
   };
 
   const mutation = useMutation({
@@ -1946,12 +2069,12 @@ function HaveForm({
                 type="file"
                 accept="image/*"
                 multiple
+                disabled={uploading || photos.length >= 5}
                 className="hidden"
-                onChange={(e) =>
-                  void upload(
-                    e.target.files,
-                  )
-                }
+                onChange={(e) => {
+                  void upload(e.target.files);
+                  e.currentTarget.value = "";
+                }}
               />
             </label>
           )}
@@ -1978,6 +2101,10 @@ function HaveForm({
           !name.trim() ||
           !availableFrom ||
           !availableTo ||
+          (pricingModel !== "free" &&
+            pricingModel !== "negotiable" &&
+            !price) ||
+          uploading ||
           mutation.isPending
         }
         className="press grad-primary flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold text-primary-foreground disabled:opacity-60"
@@ -2005,8 +2132,9 @@ function MatchPanel({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { user } = useAuth();
   const matches = useQuery({
-    queryKey: ["link-matches", requestId],
+    queryKey: ["link-matches", requestId, user?.id],
     queryFn: () =>
       getRequestMatches({
         data: { requestId },
@@ -2099,7 +2227,22 @@ function MatchPanel({
         </button>
       </div>
 
-      {matches.isPending ? (
+      {matches.isError ? (
+        <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-xs font-semibold text-destructive">
+            {matches.error instanceof Error
+              ? matches.error.message
+              : "Could not load matching resources."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void matches.refetch()}
+            className="press mt-3 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold"
+          >
+            Try again
+          </button>
+        </div>
+      ) : matches.isPending ? (
         <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
           Looking for compatible providers…
@@ -2148,6 +2291,10 @@ function MatchPanel({
                         )}
                       </p>
 
+                      <p className="mt-1 text-[11px] font-semibold">
+                        {candidate.providerName || "Verified farmer"}
+                      </p>
+
                       {candidate.providerVerified && (
                         <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-primary">
                           <BadgeCheck className="size-3.5" />
@@ -2158,12 +2305,17 @@ function MatchPanel({
                       <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
                         <MapPin className="size-3.5" />
 
-                        {approxDistance(
-                          candidate.distanceKm,
-                        ) ??
+                        {listing.service_area ??
+                          approxDistance(candidate.distanceKm) ??
                           listing.district ??
                           "Distance unknown"}
                       </p>
+
+                      {listing.condition && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Condition: {listing.condition}
+                        </p>
+                      )}
 
                       <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         <CalendarDays className="size-3.5" />
@@ -2246,10 +2398,7 @@ function MatchPanel({
                     {candidate.existingMatch ? (
                       <span className="flex-1 rounded-2xl border border-border py-3 text-center text-xs font-bold text-muted-foreground">
                         Match{" "}
-                        {candidate.existingMatch.status.replace(
-                          /\_/g,
-                          " ",
-                        )}
+                        {candidate.existingMatch.status.replace(/_/g, " ")}
                       </span>
                     ) : (
                       <button

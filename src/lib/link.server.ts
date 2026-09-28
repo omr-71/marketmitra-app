@@ -16,13 +16,28 @@ type Client = SupabaseClient<Database>;
 
 const PHOTO_BUCKET = "link-photos";
 
+export function ownerPhotoPaths(ownerId: string, paths: string[]) {
+  const prefix = `${ownerId}/`;
+  return paths.filter((path) => {
+    const filename = path.slice(prefix.length);
+    return (
+      path.startsWith(prefix) &&
+      !filename.includes("/") &&
+      /^[0-9a-f-]+\.(jpg|jpeg|png|webp)$/i.test(filename)
+    );
+  });
+}
+
 /** Signed URLs for the private photo bucket. Missing photos stay missing. */
 export async function signPhotos(supabase: Client, paths: string[]): Promise<string[]> {
   if (!paths.length) return [];
   const { data, error } = await supabase.storage
     .from(PHOTO_BUCKET)
     .createSignedUrls(paths, 60 * 60);
-  if (error || !data) return [];
+  if (error) throw new Error(`Could not load resource photos: ${error.message}`);
+  if (!data) throw new Error("Could not load resource photos.");
+  const failedPhoto = data.find((row) => row.error);
+  if (failedPhoto) throw new Error(`Could not load a resource photo: ${failedPhoto.error}`);
   return data.map((row) => row.signedUrl).filter((url): url is string => Boolean(url));
 }
 
@@ -52,24 +67,29 @@ export async function buildMatches(
   supabase: Client,
   requestId: string,
 ): Promise<{ request: LinkRequest; candidates: LinkMatchCandidate[] } | null> {
-  const { data: requestRow } = await supabase
+  const { data: requestRow, error: requestError } = await supabase
     .from("link_requests")
     .select("*")
     .eq("id", requestId)
     .maybeSingle();
+  if (requestError) throw new Error(`Could not load this Mitra Link request: ${requestError.message}`);
   if (!requestRow) return null;
   const request = requestRow as unknown as LinkRequest;
 
-  const { data: listingRows } = await supabase
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: listingRows, error: listingsError } = await supabaseAdmin
     .from("link_listings")
     .select("*")
+    .eq("category", request.category)
     .eq("resource_type", request.resource_type)
     .in("status", ["available", "needs_confirmation", "reserved"]);
+  if (listingsError) throw new Error(`Could not load matching resources: ${listingsError.message}`);
 
-  const { data: matchRows } = await supabase
+  const { data: matchRows, error: matchesError } = await supabase
     .from("link_matches")
     .select("id, listing_id, status")
     .eq("request_id", requestId);
+  if (matchesError) throw new Error(`Could not load existing matches: ${matchesError.message}`);
 
   const existing = new Map<string, { id: string; status: MatchStatus }>();
   for (const row of matchRows ?? []) {
@@ -83,10 +103,13 @@ export async function buildMatches(
   const ownerIds = [...new Set(listings.map((listing) => listing.owner_id))];
   const providers = new Map<string, { name: string | null; verified: boolean }>();
   if (ownerIds.length) {
-    const { data: profileRows } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone_verified")
-      .in("id", ownerIds);
+    const { data: profileRows, error: profilesError } = await supabase.rpc(
+      "link_verified_provider_profiles",
+      { _user_ids: ownerIds },
+    );
+    if (profilesError) {
+      throw new Error(`Could not load verified provider details: ${profilesError.message}`);
+    }
     for (const row of profileRows ?? []) {
       providers.set(row.id, { name: row.full_name, verified: Boolean(row.phone_verified) });
     }
@@ -95,6 +118,7 @@ export async function buildMatches(
   const candidates: LinkMatchCandidate[] = [];
   for (const listing of listings) {
     const provider = providers.get(listing.owner_id) ?? { name: null, verified: false };
+    if (!provider.verified) continue;
     const distanceKm = haversineKm(request, listing);
     const fit = priceFit(listing, request);
     const reasons: string[] = [];
@@ -141,8 +165,13 @@ export async function buildMatches(
       reasons.push(`${listing.quantity} ${listing.unit ?? "units"} available`);
     }
 
+    const { owner_id: _ownerId, latitude: _latitude, longitude: _longitude, terms: _terms, photos, ...safeListing } =
+      listing;
     candidates.push({
-      listing: { ...listing, photoUrls: await signPhotos(supabase, listing.photos ?? []) },
+      listing: {
+        ...safeListing,
+        photoUrls: await signPhotos(supabaseAdmin, ownerPhotoPaths(listing.owner_id, photos ?? [])),
+      },
       providerVerified: provider.verified,
       providerName: provider.name,
       distanceKm,

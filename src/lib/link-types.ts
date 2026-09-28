@@ -20,7 +20,8 @@ export type ListingStatus =
   | "unavailable"
   | "needs_confirmation"
   | "expired"
-  | "under_review";
+  | "under_review"
+  | "removed";
 
 export type RequestStatus =
   | "searching"
@@ -166,7 +167,17 @@ export type LinkRequest = {
 
 /** A listing enriched with real, computed match facts (never fabricated). */
 export type LinkMatchCandidate = {
-  listing: LinkListing & { photoUrls: string[] };
+  listing: Omit<
+    LinkListing,
+    | "owner_id"
+    | "latitude"
+    | "longitude"
+    | "terms"
+    | "photos"
+    | "last_confirmed_at"
+    | "created_at"
+    | "updated_at"
+  > & { photoUrls: string[] };
   providerVerified: boolean;
   providerName: string | null;
   distanceKm: number | null;

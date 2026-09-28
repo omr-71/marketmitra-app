@@ -1,11 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { buildMatches, signPhotos } from "./link.server";
+import type { Database } from "@/integrations/supabase/types";
+import { buildMatches, ownerPhotoPaths, signPhotos } from "./link.server";
 import {
   isUnsafeResourceText,
   MACHINE_TYPES,
   RESOURCE_TYPES,
+  type LinkCategory,
   type LinkListing,
   type LinkMatchCandidate,
   type LinkRequest,
@@ -33,6 +36,26 @@ const requestSchema = z.object({
   budget_min: z.number().nonnegative().max(10_000_000).optional().nullable(),
   budget_max: z.number().nonnegative().max(10_000_000).optional().nullable(),
   budget_unit: z.string().trim().max(30).optional().nullable(),
+}).superRefine((data, ctx) => {
+  const date = new Date(`${data.needed_date}T00:00:00.000Z`);
+  if (
+    !Number.isFinite(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== data.needed_date
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["needed_date"],
+      message: "Enter a valid required date.",
+    });
+  }
+  const validTypes = data.category === "machine" ? MACHINE_TYPES : RESOURCE_TYPES;
+  if (!validTypes.includes(data.resource_type as never)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["resource_type"],
+      message: "Choose a resource type that matches the selected category.",
+    });
+  }
 });
 
 const listingSchema = z.object({
@@ -69,6 +92,95 @@ const listingUpdateSchema = listingSchema.extend({
   listingId: z.string().uuid(),
 });
 
+function validateCategoryType(category: LinkCategory, resourceType: string) {
+  const validTypes = category === "machine" ? MACHINE_TYPES : RESOURCE_TYPES;
+  if (!validTypes.includes(resourceType as never)) {
+    throw new Error("Choose a resource type that matches the selected category.");
+  }
+}
+
+function normalizeListingDate(value: string, endOfDay: boolean) {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (dateOnly) {
+    const calendarDate = new Date(`${value}T00:00:00.000Z`);
+    if (
+      !Number.isFinite(calendarDate.getTime()) ||
+      calendarDate.toISOString().slice(0, 10) !== value
+    ) {
+      throw new Error("Enter a valid availability date.");
+    }
+  }
+  const timestamp = dateOnly
+    ? new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}+05:30`)
+    : new Date(value);
+  if (!Number.isFinite(timestamp.getTime())) {
+    throw new Error("Enter a valid availability date.");
+  }
+  return timestamp.toISOString();
+}
+
+function listingWindow(availableFrom: string, availableTo: string) {
+  const from = normalizeListingDate(availableFrom, false);
+  const to = normalizeListingDate(availableTo, true);
+  if (new Date(to).getTime() <= new Date(from).getTime()) {
+    throw new Error("Availability end date must be on or after the start date.");
+  }
+  return { available_from: from, available_to: to };
+}
+
+async function validateListingPhotos(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  paths: string[],
+) {
+  if (new Set(paths).size !== paths.length) {
+    throw new Error("A resource photo was selected more than once.");
+  }
+
+  const ownerPrefix = `${userId}/`;
+  if (
+    paths.some(
+      (path) =>
+        !path.startsWith(ownerPrefix) ||
+        path.slice(ownerPrefix.length).includes("/") ||
+        !/^[0-9a-f-]+\.(jpg|jpeg|png|webp)$/i.test(path.slice(ownerPrefix.length)),
+    )
+  ) {
+    throw new Error("Each photo must be uploaded by you before it can be shared.");
+  }
+
+  if (!paths.length) return;
+  const { data, error } = await supabase.storage
+    .from("link-photos")
+    .list(userId, { limit: 1000 });
+  if (error) throw new Error(`Could not verify uploaded resource photos: ${error.message}`);
+
+  const uploadedPaths = new Set((data ?? []).map((file) => `${ownerPrefix}${file.name}`));
+  if (paths.some((path) => !uploadedPaths.has(path))) {
+    throw new Error("One or more selected photos are missing. Upload them again before sharing.");
+  }
+}
+
+type OwnerListing = Omit<LinkListing, "photos"> & {
+  photoUrls: string[];
+};
+
+type LinkDiscoveryListing = Omit<
+  LinkListing,
+  | "owner_id"
+  | "latitude"
+  | "longitude"
+  | "terms"
+  | "photos"
+  | "last_confirmed_at"
+  | "created_at"
+  | "updated_at"
+> & {
+  providerName: string | null;
+  providerVerified: true;
+  photoUrls: string[];
+};
+
 export type LinkOverview = {
   profile: {
     full_name: string | null;
@@ -80,9 +192,9 @@ export type LinkOverview = {
 
   requests: LinkRequest[];
 
-  listings: (LinkListing & {
-    photoUrls: string[];
-  })[];
+  listings: OwnerListing[];
+
+  discoverListings: LinkDiscoveryListing[];
 
   matches: {
     id: string;
@@ -107,11 +219,13 @@ export const getLinkOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<LinkOverview> => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [
       profileRes,
       requestsRes,
       listingsRes,
+      discoverListingsRes,
       matchesRes,
       clustersRes,
     ] = await Promise.all([
@@ -128,12 +242,22 @@ export const getLinkOverview = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(20),
 
-      supabase
+      supabaseAdmin
         .from("link_listings")
         .select("*")
         .eq("owner_id", userId)
         .order("created_at", { ascending: false })
         .limit(20),
+
+      supabaseAdmin
+        .from("link_listings")
+        .select(
+          "id, owner_id, category, resource_type, name, description, condition, pricing_model, price, negotiable, quantity, unit, service_area, state, district, available_from, available_to, photos, status, last_confirmed_at, created_at, updated_at",
+        )
+        .neq("owner_id", userId)
+        .in("status", ["available", "reserved", "needs_confirmation"])
+        .order("created_at", { ascending: false })
+        .limit(50),
 
       supabase
         .from("link_matches")
@@ -148,31 +272,81 @@ export const getLinkOverview = createServerFn({ method: "GET" })
     ]);
 
     if (profileRes.error) {
-      throw new Error(profileRes.error.message);
+      throw new Error(`Could not load your Mitra Link profile: ${profileRes.error.message}`);
     }
 
     if (requestsRes.error) {
-      throw new Error(requestsRes.error.message);
+      throw new Error(`Could not load your Mitra Link requests: ${requestsRes.error.message}`);
     }
 
     if (listingsRes.error) {
-      throw new Error(listingsRes.error.message);
+      throw new Error(`Could not load your Mitra Link listings: ${listingsRes.error.message}`);
+    }
+
+    if (discoverListingsRes.error) {
+      throw new Error(`Could not load shared resources: ${discoverListingsRes.error.message}`);
     }
 
     if (matchesRes.error) {
-      throw new Error(matchesRes.error.message);
+      throw new Error(`Could not load your Mitra Link matches: ${matchesRes.error.message}`);
+    }
+
+    if (clustersRes.error) {
+      throw new Error(`Could not load Mitra Link opportunities: ${clustersRes.error.message}`);
     }
 
     const listings = (listingsRes.data ?? []) as unknown as LinkListing[];
+    const discoverListings = (discoverListingsRes.data ?? []) as unknown as LinkListing[];
+    const providerIds = [...new Set(discoverListings.map((listing) => listing.owner_id))];
+    const { data: providerRows, error: providerError } =
+      providerIds.length > 0
+        ? await supabase.rpc("link_verified_provider_profiles", { _user_ids: providerIds })
+        : { data: [], error: null };
+    if (providerError) {
+      throw new Error(`Could not load verified provider details: ${providerError.message}`);
+    }
 
-    const withPhotos = await Promise.all(
-      listings.map(async (listing) => ({
-        ...listing,
-        photoUrls: await signPhotos(
-          supabase,
-          listing.photos ?? [],
-        ),
-      })),
+    const providers = new Map(
+      (providerRows ?? []).map((provider) => [provider.id, provider.full_name]),
+    );
+
+    const withPhotos: OwnerListing[] = await Promise.all(
+      listings.map(async (listing) => {
+        const { photos, ...ownerListing } = listing;
+        return {
+          ...ownerListing,
+          photoUrls: await signPhotos(
+            supabaseAdmin,
+            ownerPhotoPaths(listing.owner_id, photos ?? []),
+          ),
+        };
+      }),
+    );
+    const sharedListings = await Promise.all(
+      discoverListings
+        .filter((listing) => providers.has(listing.owner_id))
+        .map(async (listing) => {
+          const {
+            owner_id,
+            latitude: _latitude,
+            longitude: _longitude,
+            terms: _terms,
+            photos,
+            last_confirmed_at: _lastConfirmedAt,
+            created_at: _createdAt,
+            updated_at: _updatedAt,
+            ...safeListing
+          } = listing;
+          return {
+            ...safeListing,
+            providerName: providers.get(owner_id) ?? null,
+            providerVerified: true as const,
+            photoUrls: await signPhotos(
+              supabaseAdmin,
+              ownerPhotoPaths(owner_id, photos ?? []),
+            ),
+          };
+        }),
     );
 
     return {
@@ -184,7 +358,16 @@ export const getLinkOverview = createServerFn({ method: "GET" })
 
       listings: withPhotos,
 
-      matches: (matchesRes.data ?? []).map((row: any) => ({
+      discoverListings: sharedListings,
+
+      matches: ((matchesRes.data ?? []) as unknown as {
+        id: string;
+        status: string;
+        requester_id: string;
+        created_at: string;
+        link_listings: { name: string; resource_type: string } | null;
+        link_requests: { needed_date: string } | null;
+      }[]).map((row) => ({
         id: row.id,
         status: row.status as MatchStatus,
         role:
@@ -213,6 +396,7 @@ export const createLinkRequest = createServerFn({
     requestSchema.parse(data),
   )
   .handler(async ({ data, context }) => {
+    validateCategoryType(data.category, data.resource_type);
     if (
       isUnsafeResourceText(
         data.resource_type,
@@ -250,6 +434,7 @@ export const createLinkListing = createServerFn({
     listingSchema.parse(data),
   )
   .handler(async ({ data, context }) => {
+    validateCategoryType(data.category, data.resource_type);
     if (
       isUnsafeResourceText(
         data.resource_type,
@@ -263,12 +448,13 @@ export const createLinkListing = createServerFn({
       );
     }
 
-    const { data: profile } = await context.supabase
+    const { data: profile, error: profileError } = await context.supabase
       .from("profiles")
       .select("phone_verified")
       .eq("id", context.userId)
       .maybeSingle();
 
+    if (profileError) throw new Error(`Could not verify your profile: ${profileError.message}`);
     if (!profile?.phone_verified) {
       throw new Error(
         "Verify your mobile number before listing a machine or resource.",
@@ -285,10 +471,14 @@ export const createLinkListing = createServerFn({
       );
     }
 
+    await validateListingPhotos(context.supabase, context.userId, data.photos);
+    const window = listingWindow(data.available_from, data.available_to);
+
     const { data: row, error } = await context.supabase
       .from("link_listings")
       .insert({
         ...data,
+        ...window,
         owner_id: context.userId,
       } as never)
       .select("id")
@@ -317,6 +507,7 @@ export const updateLinkListing = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (
       isUnsafeResourceText(
@@ -342,7 +533,7 @@ export const updateLinkListing = createServerFn({
     }
 
     const { data: existing, error: existingError } =
-      await supabase
+      await supabaseAdmin
         .from("link_listings")
         .select("id, owner_id")
         .eq("id", data.listingId)
@@ -371,10 +562,12 @@ export const updateLinkListing = createServerFn({
       listingId,
       ...updateData
     } = data;
+    await validateListingPhotos(supabase, userId, data.photos);
+    const window = listingWindow(data.available_from, data.available_to);
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("link_listings")
-      .update(updateData as never)
+      .update({ ...updateData, ...window } as never)
       .eq("id", listingId)
       .eq("owner_id", userId);
 
@@ -405,9 +598,10 @@ export const pauseLinkListing = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: listing, error: lookupError } =
-      await supabase
+      await supabaseAdmin
         .from("link_listings")
         .select("id, owner_id, status")
         .eq("id", data.listingId)
@@ -432,10 +626,10 @@ export const pauseLinkListing = createServerFn({
       );
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("link_listings")
       .update({
-        status: "paused",
+        status: "unavailable",
       } as never)
       .eq("id", data.listingId)
       .eq("owner_id", userId);
@@ -447,7 +641,7 @@ export const pauseLinkListing = createServerFn({
     return {
       ok: true,
       id: data.listingId,
-      status: "paused" as const,
+      status: "unavailable" as const,
     };
   });
 
@@ -465,9 +659,10 @@ export const resumeLinkListing = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: listing, error: lookupError } =
-      await supabase
+      await supabaseAdmin
         .from("link_listings")
         .select(
           "id, owner_id, status, available_from, available_to",
@@ -509,10 +704,10 @@ export const resumeLinkListing = createServerFn({
       );
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("link_listings")
       .update({
-        status: "active",
+        status: "available",
       } as never)
       .eq("id", data.listingId)
       .eq("owner_id", userId);
@@ -524,7 +719,7 @@ export const resumeLinkListing = createServerFn({
     return {
       ok: true,
       id: data.listingId,
-      status: "active" as const,
+      status: "available" as const,
     };
   });
 
@@ -546,9 +741,10 @@ export const extendLinkListing = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: listing, error: lookupError } =
-      await supabase
+      await supabaseAdmin
         .from("link_listings")
         .select(
           "id, owner_id, available_from, available_to",
@@ -581,7 +777,7 @@ export const extendLinkListing = createServerFn({
     };
 
     const newEnd = new Date(
-      data.availableTo,
+      normalizeListingDate(data.availableTo, true),
     ).getTime();
 
     const start = new Date(
@@ -600,11 +796,11 @@ export const extendLinkListing = createServerFn({
       );
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("link_listings")
       .update({
-        available_to: data.availableTo,
-        status: "active",
+        available_to: normalizeListingDate(data.availableTo, true),
+        status: "available",
       } as never)
       .eq("id", data.listingId)
       .eq("owner_id", userId);
@@ -616,8 +812,8 @@ export const extendLinkListing = createServerFn({
     return {
       ok: true,
       id: data.listingId,
-      available_to: data.availableTo,
-      status: "active" as const,
+      available_to: normalizeListingDate(data.availableTo, true),
+      status: "available" as const,
     };
   });
 
@@ -639,9 +835,10 @@ export const removeLinkListing = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: listing, error: lookupError } =
-      await supabase
+      await supabaseAdmin
         .from("link_listings")
         .select("id, owner_id")
         .eq("id", data.listingId)
@@ -666,7 +863,7 @@ export const removeLinkListing = createServerFn({
       );
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("link_listings")
       .update({
         status: "removed",
@@ -722,13 +919,28 @@ export const createMatchRequest = createServerFn({
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: listing } = await supabase
+    const { data: request, error: requestError } = await supabase
+      .from("link_requests")
+      .select("id, requester_id, status")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (requestError) throw new Error(requestError.message);
+    if (!request || request.requester_id !== userId) {
+      throw new Error("You can only request a match for your own request.");
+    }
+    if (!["searching", "match_found", "provider_contacted"].includes(request.status)) {
+      throw new Error("This request is no longer accepting match requests.");
+    }
+
+    const { data: listing, error: listingError } = await supabaseAdmin
       .from("link_listings")
       .select("owner_id, status")
       .eq("id", data.listingId)
       .maybeSingle();
 
+    if (listingError) throw new Error(listingError.message);
     if (!listing) {
       throw new Error(
         "This listing is no longer available.",
@@ -740,9 +952,11 @@ export const createMatchRequest = createServerFn({
       status: string;
     };
 
-    if (
-      listingData.status !== "active"
-    ) {
+    if (listingData.owner_id === userId) {
+      throw new Error("You cannot request a match for your own resource.");
+    }
+
+    if (!["available", "reserved", "needs_confirmation"].includes(listingData.status)) {
       throw new Error(
         "This listing is not currently available.",
       );
@@ -764,12 +978,13 @@ export const createMatchRequest = createServerFn({
       throw new Error(error.message);
     }
 
-    await supabase
+    const { error: requestUpdateError } = await supabase
       .from("link_requests")
       .update({
         status: "provider_contacted",
       } as never)
       .eq("id", data.requestId);
+    if (requestUpdateError) throw new Error(requestUpdateError.message);
 
     return {
       id: (row as { id: string }).id,

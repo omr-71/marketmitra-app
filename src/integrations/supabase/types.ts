@@ -950,6 +950,18 @@ export type Database = {
           phone_verified_at: string
         }[]
       }
+      link_is_verified_provider: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      link_verified_provider_profiles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          full_name: string
+          id: string
+          phone_verified: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
