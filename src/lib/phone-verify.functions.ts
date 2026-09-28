@@ -38,6 +38,13 @@ export const sendPhoneVerificationCode = createServerFn({ method: "POST" })
     if (profileError) throw new Error(profileError.message);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: invalidateError } = await supabaseAdmin
+      .from("phone_verification_codes")
+      .update({ consumed_at: new Date().toISOString() } as never)
+      .eq("user_id", userId)
+      .is("consumed_at", null);
+    if (invalidateError) throw new Error(invalidateError.message);
+
     const { error } = await supabaseAdmin.from("phone_verification_codes").insert({
       user_id: userId,
       phone,
@@ -68,12 +75,12 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
       .select("id, code_hash, attempts, expires_at, consumed_at, phone")
       .eq("user_id", userId)
       .is("consumed_at", null)
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1);
 
     const row = (rows ?? [])[0];
     if (!row) throw new Error("Request a new code first.");
-    if (new Date(row.expires_at).getTime() < Date.now()) throw new Error("That code has expired.");
     if (row.attempts >= 5) throw new Error("Too many attempts. Request a new code.");
 
     if ((await hashCode(data.code)) !== row.code_hash) {
