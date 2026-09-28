@@ -110,7 +110,7 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
         phone_verified_at: new Date().toISOString(),
       } as never)
       .eq("id", userId)
-      .select("id")
+      .select("id, phone, phone_verified, phone_verified_at")
       .maybeSingle();
 
     if (error) throw new Error(error.message);
@@ -118,5 +118,5 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
       throw new Error("Your profile could not be found. Phone verification was not saved.");
     }
 
-    return { verified: true, phone: row.phone as string };
+    return updatedProfile;
   });

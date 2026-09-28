@@ -16,6 +16,7 @@ export type FarmerProfile = {
   full_name: string | null;
   phone: string | null;
   phone_verified: boolean;
+  phone_verified_at: string | null;
   village: string | null;
   language: string;
   state: string | null;
@@ -32,6 +33,7 @@ const EMPTY: FarmerProfile = {
   full_name: null,
   phone: null,
   phone_verified: false,
+  phone_verified_at: null,
   village: null,
   language: "en",
   state: null,
@@ -48,7 +50,7 @@ const EMPTY: FarmerProfile = {
 const CACHE_KEY = "mm-profile";
 
 const COLUMNS =
-  "full_name,phone,phone_verified,village,language,state,district,latitude,longitude,saved_crops,voice_id,voice_lang,voice_provider";
+  "full_name,phone,phone_verified,phone_verified_at,village,language,state,district,latitude,longitude,saved_crops,voice_id,voice_lang,voice_provider";
 
 type SessionCtx = {
   profile: FarmerProfile;
@@ -56,6 +58,7 @@ type SessionCtx = {
   /** True when the saved profile could not be read from the backend. */
   error: string | null;
   updateProfile: (patch: Partial<FarmerProfile>) => Promise<void>;
+  applyPersistedProfile: (patch: Partial<FarmerProfile>) => void;
   refresh: () => Promise<void>;
   clearProfile: () => void;
 };
@@ -65,6 +68,7 @@ const SessionContext = createContext<SessionCtx>({
   loading: true,
   error: null,
   updateProfile: async () => {},
+  applyPersistedProfile: () => {},
   refresh: async () => {},
   clearProfile: () => {},
 });
@@ -158,6 +162,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [load],
   );
 
+  const applyPersistedProfile = useCallback((patch: Partial<FarmerProfile>) => {
+    setProfile((current) => {
+      const next = { ...current, ...patch };
+      writeCache(next);
+      return next;
+    });
+  }, []);
+
   const clearProfile = useCallback(() => {
     try {
       window.localStorage.removeItem(CACHE_KEY);
@@ -168,8 +180,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ profile, loading, error, updateProfile, refresh: load, clearProfile }),
-    [profile, loading, error, updateProfile, load, clearProfile],
+    () => ({
+      profile,
+      loading,
+      error,
+      updateProfile,
+      applyPersistedProfile,
+      refresh: load,
+      clearProfile,
+    }),
+    [profile, loading, error, updateProfile, applyPersistedProfile, load, clearProfile],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

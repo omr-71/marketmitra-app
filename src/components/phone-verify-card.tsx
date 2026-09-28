@@ -18,6 +18,7 @@ const copy = {
     hi: "मित्र लिंक पर दूसरे किसान संपर्क कर सकें, इसलिए नंबर सत्यापित करें.",
   },
   verified: { en: "Verified", mr: "पडताळलेले", hi: "सत्यापित" },
+  verifiedPhone: { en: "Verified phone", mr: "पडताळलेला नंबर", hi: "सत्यापित नंबर" },
   notVerified: { en: "Not verified yet", mr: "अजून पडताळलेले नाही", hi: "अभी सत्यापित नहीं" },
   send: { en: "Send code", mr: "कोड पाठवा", hi: "कोड भेजें" },
   resend: { en: "Send a new code", mr: "नवीन कोड पाठवा", hi: "नया कोड भेजें" },
@@ -40,7 +41,7 @@ const copy = {
 
 export function PhoneVerifyCard() {
   const { lang } = useLang();
-  const { profile, refresh } = useSession();
+  const { profile, refresh, applyPersistedProfile } = useSession();
   const send = useServerFn(sendPhoneVerificationCode);
   const confirm = useServerFn(confirmPhoneVerificationCode);
 
@@ -108,8 +109,15 @@ export function PhoneVerifyCard() {
     setError(null);
     setBusy(true);
     try {
-      await confirm({ data: { code } });
-      await refresh();
+      const result = await confirm({ data: { code } });
+      if (!result.phone_verified) {
+        throw new Error("Phone verification was not saved. Please try again.");
+      }
+      applyPersistedProfile({
+        phone: result.phone,
+        phone_verified: result.phone_verified,
+        phone_verified_at: result.phone_verified_at,
+      });
       setStage("idle");
       setCode("");
       toast.success(copy.done[lang]);
@@ -156,6 +164,11 @@ export function PhoneVerifyCard() {
       </div>
 
       <p className="text-[11px] text-muted-foreground">{copy.hint[lang]}</p>
+      {verified && (
+        <p className="text-[11px] font-semibold text-primary">
+          {copy.verifiedPhone[lang]}: +91{savedDigits}
+        </p>
+      )}
 
       {stage === "code" && (
         <div className="space-y-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3">
