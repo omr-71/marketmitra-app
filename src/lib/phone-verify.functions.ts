@@ -38,6 +38,7 @@ export const sendPhoneVerificationCode = createServerFn({ method: "POST" })
     if (profileError) throw new Error(profileError.message);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const codeHash = await hashCode(code);
     const { error: invalidateError } = await supabaseAdmin
       .from("phone_verification_codes")
       .update({ consumed_at: new Date().toISOString() } as never)
@@ -45,13 +46,25 @@ export const sendPhoneVerificationCode = createServerFn({ method: "POST" })
       .is("consumed_at", null);
     if (invalidateError) throw new Error(invalidateError.message);
 
-    const { error } = await supabaseAdmin.from("phone_verification_codes").insert({
-      user_id: userId,
-      phone,
-      code_hash: await hashCode(code),
-      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    } as never);
+    const { data: otpRow, error } = await supabaseAdmin
+      .from("phone_verification_codes")
+      .insert({
+        user_id: userId,
+        phone,
+        code_hash: codeHash,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      } as never)
+      .select("id, created_at")
+      .single();
     if (error) throw new Error(error.message);
+
+    console.info("[Phone verification] OTP issued", {
+      otpRowId: otpRow.id,
+      createdAt: otpRow.created_at,
+      phone,
+      otpPepperConfigured: Boolean(process.env["OTP_PEPPER"]),
+      codeLength: code.length,
+    });
 
     const { sendTemplateEmail } = await import("./email-templates/send-email");
     const result = await sendTemplateEmail("phone-code", email, {
@@ -72,7 +85,7 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
 
     const { data: rows } = await supabaseAdmin
       .from("phone_verification_codes")
-      .select("id, code_hash, attempts, expires_at, consumed_at, phone")
+      .select("id, code_hash, attempts, expires_at, consumed_at, created_at, phone")
       .eq("user_id", userId)
       .is("consumed_at", null)
       .gt("expires_at", new Date().toISOString())
@@ -83,7 +96,19 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
     if (!row) throw new Error("Request a new code first.");
     if (row.attempts >= 5) throw new Error("Too many attempts. Request a new code.");
 
-    if ((await hashCode(data.code)) !== row.code_hash) {
+    const enteredCodeHash = await hashCode(data.code);
+    if (enteredCodeHash !== row.code_hash) {
+      console.warn("[Phone verification] OTP mismatch", {
+        userId,
+        otpRowId: row.id,
+        createdAt: row.created_at,
+        expiresAt: row.expires_at,
+        phone: row.phone,
+        otpPepperConfigured: Boolean(process.env["OTP_PEPPER"]),
+        enteredCodeLength: data.code.length,
+        generatedHashLength: enteredCodeHash.length,
+      });
+
       await supabaseAdmin
         .from("phone_verification_codes")
         .update({ attempts: row.attempts + 1 } as never)
