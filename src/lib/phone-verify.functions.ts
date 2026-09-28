@@ -121,14 +121,25 @@ export const confirmPhoneVerificationCode = createServerFn({ method: "POST" })
       .update({ consumed_at: new Date().toISOString() } as never)
       .eq("id", row.id);
 
-    const { error } = await supabaseAdmin
+    const { data: updatedProfiles, error } = await supabaseAdmin
       .from("profiles")
       .update({
         phone: row.phone,
         phone_verified: true,
         phone_verified_at: new Date().toISOString(),
       } as never)
-      .eq("id", userId);
+      .eq("id", userId)
+      .select("id, phone, phone_verified, phone_verified_at");
+
+    const updatedProfile = updatedProfiles?.[0];
+    console.info("[Phone verification] Profile update result", {
+      updateError: error?.message ?? null,
+      returnedRows: updatedProfiles?.length ?? 0,
+      zeroRows: updatedProfiles?.length === 0,
+      phoneVerified: updatedProfile?.phone_verified ?? null,
+      phone: updatedProfile?.phone ?? null,
+    });
+
     if (error) throw new Error(error.message);
 
     return { verified: true, phone: row.phone as string };
