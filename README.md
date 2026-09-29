@@ -162,3 +162,11 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Admin Control Center
+
+The private `/admin` route reads operational data from Supabase and existing provider logs. User and control operations require the `admin` role and are rechecked server-side. Service-role access is limited to server functions.
+
+Before deploying these admin additions, apply `supabase/migrations/20260929120000_admin_control_center.sql` to the project database. It adds admin-only user metrics/list RPCs, scheduled system notices, and structured application error logs. The user-facing app reads only active, scheduled notices through row-level security.
+
+Analytics events remain anonymous by design, so individual route/session events are not attributed to users. Existing account sign-ins, profiles, conversation metadata, diagnoses, and user-linked provider failures are shown only where those records exist. Chat message content and phone numbers are not exposed in the admin UI.

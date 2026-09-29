@@ -78,6 +78,9 @@ export type ProviderDiagnostic = {
   /** True when the provider's credential (if any) is present. Never the key itself. */
   configured: boolean;
   status: ProviderStatus;
+  lastAttemptAt: string | null;
+  lastStatusCode: number | null;
+  lastAttemptOk: boolean | null;
   lastSuccessAt: string | null;
   lastFailureAt: string | null;
   lastError: string | null;

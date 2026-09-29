@@ -75,6 +75,14 @@ export const fetchWeather = createServerFn({ method: "POST" })
         console.error(
           `Open-Meteo failed [${response.status}]: ${(await response.text()).slice(0, 300)}`,
         );
+        const { logApplicationError } = await import("./error-logging.server");
+        await logApplicationError({
+          service: "weather",
+          requestId: crypto.randomUUID(),
+          provider: "Open-Meteo",
+          errorType: `http_${response.status}`,
+          message: `Weather provider returned HTTP ${response.status}.`,
+        });
 
         return {
           ok: false,
@@ -104,19 +112,11 @@ export const fetchWeather = createServerFn({ method: "POST" })
         date,
         max: Math.round(json.daily.temperature_2m_max[i] ?? 0),
         min: Math.round(json.daily.temperature_2m_min[i] ?? 0),
-        rainChance: Math.round(
-          json.daily.precipitation_probability_max[i] ?? 0,
-        ),
-        rainMm: Number(
-          (json.daily.precipitation_sum[i] ?? 0).toFixed(1),
-        ),
+        rainChance: Math.round(json.daily.precipitation_probability_max[i] ?? 0),
+        rainMm: Number((json.daily.precipitation_sum[i] ?? 0).toFixed(1)),
         code: json.daily.weather_code[i] ?? 0,
-        uvIndex: Number(
-          (json.daily.uv_index_max[i] ?? 0).toFixed(1),
-        ),
-        windMax: Math.round(
-          json.daily.wind_speed_10m_max[i] ?? 0,
-        ),
+        uvIndex: Number((json.daily.uv_index_max[i] ?? 0).toFixed(1)),
+        windMax: Math.round(json.daily.wind_speed_10m_max[i] ?? 0),
       }));
 
       return {
@@ -133,16 +133,11 @@ export const fetchWeather = createServerFn({ method: "POST" })
           isDay: num("is_day") === 1,
           pressure: Math.round(num("surface_pressure")),
           uvIndex: days[0]?.uvIndex ?? 0,
-          precipitation: Number(
-            num("precipitation").toFixed(1),
-          ),
+          precipitation: Number(num("precipitation").toFixed(1)),
           windGust: Math.round(num("wind_gusts_10m")),
         },
 
-        observedAt:
-          typeof json.current["time"] === "string"
-            ? json.current["time"]
-            : "",
+        observedAt: typeof json.current["time"] === "string" ? json.current["time"] : "",
 
         sunrise: json.daily.sunrise[0] ?? "",
         sunset: json.daily.sunset[0] ?? "",
@@ -152,6 +147,14 @@ export const fetchWeather = createServerFn({ method: "POST" })
       };
     } catch (error) {
       console.error("Open-Meteo network error", error);
+      const { logApplicationError } = await import("./error-logging.server");
+      await logApplicationError({
+        service: "weather",
+        requestId: crypto.randomUUID(),
+        provider: "Open-Meteo",
+        errorType: error instanceof Error ? error.name : "UnknownError",
+        message: "Weather provider request failed.",
+      });
 
       return {
         ok: false,
@@ -174,9 +177,7 @@ export type PlaceResult = {
 export const reverseGeocode = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => geoSchema.parse(data))
   .handler(async ({ data }): Promise<PlaceResult> => {
-    const url = new URL(
-      "https://api.bigdatacloud.net/data/reverse-geocode-client",
-    );
+    const url = new URL("https://api.bigdatacloud.net/data/reverse-geocode-client");
 
     url.searchParams.set("latitude", String(data.latitude));
     url.searchParams.set("longitude", String(data.longitude));

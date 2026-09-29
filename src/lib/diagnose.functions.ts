@@ -52,7 +52,11 @@ function dataUrlToBytes(image: string) {
   const binary = atob(body ?? "");
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return { bytes, mime, ext: mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg" };
+  return {
+    bytes,
+    mime,
+    ext: mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg",
+  };
 }
 
 /**
@@ -63,8 +67,33 @@ export const diagnoseCropImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data, context }): Promise<DiagnosisResult & { savedId?: string }> => {
-    const result = await analyseCropPhoto(data);
-    if (!result.ok) return result;
+    let result: DiagnosisResult;
+    try {
+      result = await analyseCropPhoto(data);
+    } catch (error) {
+      const { logApplicationError } = await import("./error-logging.server");
+      await logApplicationError({
+        service: "diagnosis",
+        userId: context.userId,
+        requestId: crypto.randomUUID(),
+        provider: "Groq",
+        errorType: error instanceof Error ? error.name : "UnknownError",
+        message: "Crop diagnosis provider request failed.",
+      });
+      throw error;
+    }
+    if (!result.ok) {
+      const { logApplicationError } = await import("./error-logging.server");
+      await logApplicationError({
+        service: "diagnosis",
+        userId: context.userId,
+        requestId: crypto.randomUUID(),
+        provider: "Groq",
+        errorType: result.reason,
+        message: result.message,
+      });
+      return result;
+    }
 
     // Persist quietly: a storage/database hiccup must never lose the diagnosis.
     try {
@@ -108,11 +137,7 @@ export const diagnoseCropImage = createServerFn({ method: "POST" })
             advice: result.advice,
           };
 
-      const saved = await supabaseAdmin
-        .from("crop_diagnoses")
-        .insert(row)
-        .select("id")
-        .single();
+      const saved = await supabaseAdmin.from("crop_diagnoses").insert(row).select("id").single();
 
       if (saved.data?.id) return { ...result, savedId: saved.data.id };
     } catch (error) {
@@ -224,4 +249,3 @@ export const latestDiagnosisContext = createServerFn({ method: "GET" })
       checkedAt: data.created_at,
     };
   });
-

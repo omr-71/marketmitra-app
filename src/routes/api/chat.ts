@@ -1,18 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  streamText,
-  tool,
-  stepCountIs,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "ai";
 import { createGroq } from "@ai-sdk/groq";
 import { z } from "zod";
 
-import {
-  readMandiPrices,
-  readWeather,
-} from "@/lib/mitra-tools.server";
+import { readMandiPrices, readWeather } from "@/lib/mitra-tools.server";
 import { schemes } from "@/lib/schemes";
 import { crops } from "@/lib/crops";
 
@@ -51,31 +42,17 @@ function systemPrompt(
   const langName = LANG_NAME[lang] ?? "English";
 
   const loc = location?.place
-    ? `The farmer's current location is ${[
-        location.place,
-        location.district,
-        location.state,
-      ]
+    ? `The farmer's current location is ${[location.place, location.district, location.state]
         .filter(Boolean)
         .join(", ")}.`
     : "The farmer has not shared a location yet.";
 
   const dx = diagnosis?.condition
     ? `RECENT CROP PHOTO CHECK (from this farmer's own saved diagnosis history):
-Crop: ${diagnosis.crop ?? "not identified"}; visible condition: ${
-        diagnosis.condition
-      }${
-        diagnosis.confidence
-          ? `; AI confidence ${diagnosis.confidence}%`
-          : ""
-      }${
-        diagnosis.severity
-          ? `; severity ${diagnosis.severity}`
-          : ""
-      }${
-        diagnosis.checkedAt
-          ? `; checked on ${diagnosis.checkedAt.slice(0, 10)}`
-          : ""
+Crop: ${diagnosis.crop ?? "not identified"}; visible condition: ${diagnosis.condition}${
+        diagnosis.confidence ? `; AI confidence ${diagnosis.confidence}%` : ""
+      }${diagnosis.severity ? `; severity ${diagnosis.severity}` : ""}${
+        diagnosis.checkedAt ? `; checked on ${diagnosis.checkedAt.slice(0, 10)}` : ""
       }.
 Use this ONLY when the farmer's question relates to that crop, its symptoms or its treatment. Say plainly that it comes from their earlier photo check and is not a laboratory confirmation. Do not bring it up in unrelated conversations and never treat it as certain.`
     : "The farmer has no recent crop photo check saved. If they describe symptoms, suggest the in-app crop disease photo check.";
@@ -388,6 +365,7 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
         try {
           const body = (await request.json()) as ChatBody;
 
@@ -401,17 +379,19 @@ export const Route = createFileRoute("/api/chat")({
 
           if (!apiKey) {
             console.error("GROQ_API_KEY is missing");
+            const { logApplicationError } = await import("@/lib/error-logging.server");
+            await logApplicationError({
+              service: "mitra_ai",
+              requestId,
+              provider: "Groq",
+              errorType: "not_configured",
+              message: "Mitra AI provider is not configured.",
+            });
 
-            return new Response(
-              "Groq AI is not configured",
-              { status: 500 },
-            );
+            return new Response("Groq AI is not configured", { status: 500 });
           }
 
-          const lang =
-            typeof body.lang === "string"
-              ? body.lang
-              : "en";
+          const lang = typeof body.lang === "string" ? body.lang : "en";
 
           const location = body.location ?? null;
 
@@ -422,25 +402,16 @@ export const Route = createFileRoute("/api/chat")({
           const result = streamText({
             model: groq("openai/gpt-oss-120b"),
 
-            system: systemPrompt(
-              lang,
-              location,
-              body.diagnosis ?? null,
-            ),
+            system: systemPrompt(lang, location, body.diagnosis ?? null),
 
-            messages:
-              await convertToModelMessages(
-                body.messages as UIMessage[],
-              ),
+            messages: await convertToModelMessages(body.messages as UIMessage[]),
 
             stopWhen: stepCountIs(20),
 
             abortSignal: request.signal,
 
             tools: {
-              browser_search: groq.tools.browserSearch(
-                {},
-              ) as never,
+              browser_search: groq.tools.browserSearch({}) as never,
 
               get_mandi_prices: tool({
                 description:
@@ -452,11 +423,7 @@ export const Route = createFileRoute("/api/chat")({
                   district: z.string().nullable(),
                 }),
 
-                execute: async ({
-                  commodity,
-                  state,
-                  district,
-                }) => {
+                execute: async ({ commodity, state, district }) => {
                   try {
                     return await readMandiPrices({
                       commodity,
@@ -464,76 +431,65 @@ export const Route = createFileRoute("/api/chat")({
                       district,
                     });
                   } catch (error) {
-                    console.error(
-                      "Mandi tool error:",
-                      error,
-                    );
+                    console.error("Mandi tool error:", error);
 
                     return {
-                      error:
-                        "Live mandi data is unavailable right now.",
+                      error: "Live mandi data is unavailable right now.",
                     };
                   }
                 },
               }),
 
               get_weather: tool({
-                description:
-                  "Get current weather and forecast from Open-Meteo using coordinates.",
+                description: "Get current weather and forecast from Open-Meteo using coordinates.",
 
                 inputSchema: z.object({
                   latitude: z.number(),
                   longitude: z.number(),
                 }),
 
-                execute: async ({
-                  latitude,
-                  longitude,
-                }) => {
+                execute: async ({ latitude, longitude }) => {
                   try {
                     return await readWeather({
                       latitude,
                       longitude,
                     });
                   } catch (error) {
-                    console.error(
-                      "Weather tool error:",
-                      error,
-                    );
+                    console.error("Weather tool error:", error);
+                    const { logApplicationError } = await import("@/lib/error-logging.server");
+                    await logApplicationError({
+                      service: "weather",
+                      requestId,
+                      provider: "Open-Meteo",
+                      errorType: error instanceof Error ? error.name : "UnknownError",
+                      message: "Weather lookup from Mitra AI failed.",
+                    });
 
                     return {
-                      error:
-                        "Live weather data is unavailable right now.",
+                      error: "Live weather data is unavailable right now.",
                     };
                   }
                 },
               }),
 
               get_schemes: tool({
-                description:
-                  "Search government schemes available in MarketMitra.",
+                description: "Search government schemes available in MarketMitra.",
 
                 inputSchema: z.object({
                   query: z.string().nullable(),
                 }),
 
                 execute: async ({ query }) => {
-                  const q =
-                    query?.trim().toLowerCase();
+                  const q = query?.trim().toLowerCase();
 
                   const list = q
                     ? schemes.filter((scheme) =>
-                        `${scheme.name} ${scheme.benefit} ${scheme.dept}`
-                          .toLowerCase()
-                          .includes(q),
+                        `${scheme.name} ${scheme.benefit} ${scheme.dept}`.toLowerCase().includes(q),
                       )
                     : schemes;
 
                   return {
-                    schemes:
-                      list.length > 0
-                        ? list
-                        : schemes,
+                    schemes: list.length > 0 ? list : schemes,
                   };
                 },
               }),
@@ -549,19 +505,20 @@ export const Route = createFileRoute("/api/chat")({
           });
 
           return result.toUIMessageStreamResponse({
-            originalMessages:
-              body.messages as UIMessage[],
+            originalMessages: body.messages as UIMessage[],
           });
         } catch (error) {
-          console.error(
-            "Mitra AI request error:",
-            error,
-          );
+          console.error("Mitra AI request error:", error);
+          const { logApplicationError } = await import("@/lib/error-logging.server");
+          await logApplicationError({
+            service: "mitra_ai",
+            requestId,
+            provider: "Groq",
+            errorType: error instanceof Error ? error.name : "UnknownError",
+            message: "Mitra AI provider request failed.",
+          });
 
-          return new Response(
-            "Mitra AI could not process the request.",
-            { status: 500 },
-          );
+          return new Response("Mitra AI could not process the request.", { status: 500 });
         }
       },
     },

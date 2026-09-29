@@ -15,12 +15,9 @@ import {
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/i18n";
 import { usePageTracking } from "@/lib/analytics";
-import {
-  featureKeyForPath,
-  MaintenanceNotice,
-  useFeature,
-} from "@/lib/features";
+import { featureKeyForPath, MaintenanceNotice, useFeature } from "@/lib/features";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
+import { SystemNotices } from "./system-notices";
 
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
@@ -35,8 +32,7 @@ const nav = [
 function useActive() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  return (to: string) =>
-    pathname === to || (to !== "/home" && pathname.startsWith(to));
+  return (to: string) => pathname === to || (to !== "/home" && pathname.startsWith(to));
 }
 
 import { motion } from "motion/react";
@@ -50,7 +46,6 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] lg:hidden">
       <div className="relative mx-auto flex h-[72px] items-center overflow-hidden rounded-[30px] border border-white/30 bg-white/[0.68] px-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.20),0_4px_12px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.18)] backdrop-blur-[28px] backdrop-saturate-[180%] dark:border-white/[0.12] dark:bg-slate-950/[0.70] dark:shadow-[0_20px_55px_rgba(0,0,0,0.45),0_4px_14px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.10)]">
-
         {/* Glass reflection */}
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80 dark:via-white/30" />
 
@@ -66,14 +61,12 @@ export function BottomNav() {
               key={to}
               to={to}
               className={`press group relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-center px-0.5 ${
-                active
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {/* Dynamic liquid bubble with layout animation */}
-              {active && (
-                reducedMotion ? (
+              {active &&
+                (reducedMotion ? (
                   <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]" />
                 ) : (
                   <motion.span
@@ -81,8 +74,7 @@ export function BottomNav() {
                     transition={SPRINGS.navPill}
                     className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]"
                   />
-                )
-              )}
+                ))}
 
               {/* Bubble highlight */}
               {active && (
@@ -101,16 +93,14 @@ export function BottomNav() {
               >
                 <Icon
                   className={`size-[19px] transition-all duration-300 ${
-                    active
-                      ? "drop-shadow-[0_2px_5px_rgba(37,99,235,0.18)]"
-                      : ""
+                    active ? "drop-shadow-[0_2px_5px_rgba(37,99,235,0.18)]" : ""
                   }`}
                   strokeWidth={active ? 2.5 : 1.8}
                 />
 
                 {/* Active floating dot */}
-                {active && (
-                  reducedMotion ? (
+                {active &&
+                  (reducedMotion ? (
                     <span className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]" />
                   ) : (
                     <motion.span
@@ -118,8 +108,7 @@ export function BottomNav() {
                       transition={SPRINGS.tactile}
                       className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]"
                     />
-                  )
-                )}
+                  ))}
               </span>
 
               <span
@@ -168,8 +157,8 @@ export function SideNav() {
                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               }`}
             >
-              {active && (
-                reducedMotion ? (
+              {active &&
+                (reducedMotion ? (
                   <span className="absolute inset-0 -z-10 rounded-xl bg-primary/12" />
                 ) : (
                   <motion.span
@@ -177,15 +166,13 @@ export function SideNav() {
                     transition={SPRINGS.navPill}
                     className="absolute inset-0 -z-10 rounded-xl bg-primary/12"
                   />
-                )
-              )}
+                ))}
               <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
               {t(key)}
             </Link>
           );
         })}
       </nav>
-
 
       <Link
         to="/about"
@@ -229,12 +216,9 @@ export function Screen({
             withNav ? "pb-28 lg:pb-0" : ""
           } ${className}`}
         >
+          {withNav && <SystemNotices />}
           <div key={pathname} className="animate-page">
-            {disabled ? (
-              <MaintenanceNotice flag={disabled} />
-            ) : (
-              children
-            )}
+            {disabled ? <MaintenanceNotice flag={disabled} /> : children}
           </div>
 
           {withNav && <SiteFooter />}
@@ -275,14 +259,10 @@ export function TopBar({
       )}
 
       <div className="min-w-0 text-center lg:text-left">
-        <h1 className="truncate font-display text-base font-bold lg:text-2xl">
-          {title}
-        </h1>
+        <h1 className="truncate font-display text-base font-bold lg:text-2xl">{title}</h1>
 
         {subtitle && (
-          <p className="truncate text-xs text-muted-foreground lg:text-sm">
-            {subtitle}
-          </p>
+          <p className="truncate text-xs text-muted-foreground lg:text-sm">{subtitle}</p>
         )}
       </div>
 
@@ -311,10 +291,7 @@ export function SiteFooter() {
         <p>© 2026 Market Mitra.All rights reserved</p>
         <p>Developed by Om Labhade</p>
 
-        <Link
-          to="/terms"
-          className="transition-colors hover:text-primary"
-        >
+        <Link to="/terms" className="transition-colors hover:text-primary">
           Terms &amp; Conditions
         </Link>
 

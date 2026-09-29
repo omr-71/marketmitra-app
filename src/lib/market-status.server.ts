@@ -6,11 +6,7 @@
 
 import { computeFreshness } from "./market-freshness";
 import { providerCatalogue } from "./market-providers.server";
-import type {
-  MarketServiceStatus,
-  ProviderDiagnostic,
-  ProviderStatus,
-} from "./market-types";
+import type { MarketServiceStatus, ProviderDiagnostic, ProviderStatus } from "./market-types";
 
 type LogRow = {
   provider: string;
@@ -56,11 +52,18 @@ export async function readMarketServiceStatus(): Promise<MarketServiceStatus> {
     const failed = mine.filter((r) => !r.ok);
     const newest = mine[0];
     const latestDataDate =
-      mine.map((r) => r.latest_data_date).filter(Boolean).sort().reverse()[0] ?? null;
+      mine
+        .map((r) => r.latest_data_date)
+        .filter(Boolean)
+        .sort()
+        .reverse()[0] ?? null;
 
     return {
       ...provider,
       status: rollUp(provider.configured, mine.length, ok.length),
+      lastAttemptAt: newest?.created_at ?? null,
+      lastStatusCode: newest?.status_code ?? null,
+      lastAttemptOk: newest?.ok ?? null,
       lastSuccessAt: ok[0]?.created_at ?? null,
       lastFailureAt: failed[0]?.created_at ?? null,
       lastError: failed[0]?.error ?? null,
