@@ -1,165 +1,249 @@
-# Market Mitra
+# MarketMitra
 
-Create a premium, modern mobile app called "MarketMitra" that helps farmers choose the best market to sell their crops.
+### Sell Smarter. Earn Better.
 
+**MarketMitra** is a farmer-focused market intelligence platform designed to help farmers make better selling decisions by comparing crop prices, market distance, transportation costs, weather conditions, and available government schemes — all in one place.
 
+> **Mitra AI — Agriculture Intelligence, built for better decisions.**
 
-Design Requirements:
+---
 
-- Beautiful green, white, and dark theme
+## What is MarketMitra?
 
-- Clean, minimal UI with modern cards
+Farmers often have to compare information from multiple places before deciding where and when to sell their crops.
 
-- Premium startup-quality design
+MarketMitra brings those important signals together into one simple interface.
 
-- Rounded corners, smooth animations, glassmorphism where appropriate
+Select a crop, enter the quantity, and compare markets based on:
 
-- Responsive mobile interface
+- Current market prices
+- Distance from the farmer
+- Estimated transportation cost
+- Expected net value
+- Market conditions
+- Weather conditions
+- Price trends
+- Government schemes
 
-- Use realistic agriculture icons and illustrations
+The goal is simple:
 
-- Support English, Marathi, and Hindi
+**Give farmers clearer information before they sell.**
 
+---
 
+## Core Features
 
-Screens to create:
+### Market Intelligence
 
+Compare available markets and understand how different prices and transportation costs affect the final value of a sale.
 
+### Market Comparison
 
-1. Splash Screen
+View important market information side-by-side:
 
-- MarketMitra logo
+| Information | Description |
+|---|---|
+| Market | Mandi / APMC market |
+| Price | Current available crop price |
+| Distance | Approximate distance |
+| Transport | Estimated transportation cost |
+| Net Value | Estimated value after transport |
 
-- Tagline: "Sell Smarter. Earn Better."
+### Mitra AI
 
+**Mitra AI stands for Agriculture Intelligence.**
 
+It helps organize agricultural information into easier-to-understand insights and assists users in interpreting market and crop information.
 
-2. Login & Sign Up
+### Weather Intelligence
 
-- Phone number login
+Get relevant weather information for the farmer's location, including:
 
-- Language selection
-
-
-
-3. Home Dashboard
-
-- Welcome message
-
-- Weather card
-
-- Today's crop prices
-
-- Quick actions
-
-- AI Recommendation card
-
-
-
-4. Crop Selection
-
-- Select crop (Onion, Tomato, Wheat, Cotton, Soybean, Sugarcane, etc.)
-
-- Enter quantity
-
-
-
-5. Best Market Comparison
-
-Display:
-
-- Market Name
-
-- Today's Price
-
-- Distance
-
-- Transport Cost
-
-- Estimated Net Profit
-
-
-
-Highlight the recommended market with a green "Best Choice" badge.
-
-
-
-6. AI Price Prediction
-
-Show a simple graph of price trends for the next 7 days with a recommendation like:
-
-"Prices may increase by 8% in the next 3 days."
-
-
-
-7. Market Details
-
-- Price history
-
-- Demand level
-
-- Distance
-
-- Estimated travel time
-
-
-
-8. Weather
-
-- Current weather
-
+- Current conditions
 - Rain alerts
+- Weather-based agricultural information
 
-- Harvest recommendations
+### Price Trends
 
+Explore historical and available price trends to understand how market prices have changed over time.
 
+### Government Schemes
 
-9. Government Schemes
+Discover agricultural government schemes with information such as:
 
-- List available schemes
+- Scheme details
+- Eligibility
+- Benefits
+- Application information
 
-- Eligibility cards
+### Mitra Link
 
+A farmer-to-farmer resource-sharing section where users can find or share agricultural resources and equipment.
 
+### Multilingual Experience
 
-10. Farmer Profile
+MarketMitra is designed for a multilingual agricultural audience with support for:
 
-- Personal details
+- English
+- Marathi
+- Hindi
 
-- Saved crops
+---
 
-- Selling history
+## Product Experience
 
-- Language settings
+MarketMitra follows a clean, mobile-first design philosophy.
 
+### Design Principles
 
+- Premium and minimal interface
+- Fast navigation
+- Clear information hierarchy
+- Accessible typography
+- Rounded modern components
+- Subtle motion and transitions
+- Responsive layouts
+- Light and dark visual experiences
+- Farmer-friendly information presentation
 
-Use realistic sample data throughout the app.
+The interface is intentionally designed to avoid unnecessary complexity.
 
+**Important information should be understandable at a glance.**
 
+---
 
-The UI should look like it was designed by Apple or Google Material Design teams—clean, elegant, and highly professional. Avoid cartoonish graphics. Focus on usability and visual appeal suitable for an AI-powered agriculture startup.
+## Application Structure
 
-This project was built with [Lovable](https://lovable.dev).
+```text
+MarketMitra
+│
+├── Home
+│   ├── Market Overview
+│   ├── Weather
+│   ├── Quick Actions
+│   └── Agriculture Intelligence
+│
+├── Market
+│   ├── Crop Selection
+│   ├── Market Comparison
+│   ├── Price Information
+│   └── Market Details
+│
+├── Diagnose
+│   └── Crop Health Intelligence
+│
+├── Weather
+│   ├── Current Conditions
+│   └── Weather Alerts
+│
+├── Schemes
+│   └── Government Schemes
+│
+├── Mitra Link
+│   └── Resource Sharing
+│
+├── Profile
+│   ├── Farmer Information
+│   ├── Saved Crops
+│   └── Preferences
+│
+└── Admin
+    ├── Users
+    ├── Platform Monitoring
+    ├── Feature Controls
+    └── System Status
+```
 
-**Live app**: https://marketmitra-app.lovable.app
+---
 
-## Build with Lovable
+## Data & Reliability
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/1f0dfdaa-c120-4ff4-aa20-ea74627b101b).
+MarketMitra is designed around **real agricultural information rather than fabricated market results**.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Market information can be sourced and cross-checked using official agricultural datasets and market sources.
 
-## Development
+The application distinguishes between different data states, including:
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+```text
+LIVE
+UPDATED TODAY
+RECENT
+STALE
+UNAVAILABLE
+```
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+When reliable information is unavailable, MarketMitra should clearly communicate that instead of presenting invented values.
+
+---
+
+## Technology
+
+MarketMitra is built using a modern web application stack.
+
+```text
+Frontend
+├── React
+├── TypeScript
+├── TanStack Start
+└── TanStack Router
+
+Backend & Data
+├── Supabase
+├── PostgreSQL
+└── Edge Functions
+
+Development
+├── Git
+├── GitHub
+└── Vercel
+```
+
+The architecture is designed to support a scalable application while keeping the user experience fast and lightweight.
+
+---
+
+## Project Structure
+
+```text
+src/
+├── components/
+├── lib/
+├── routes/
+├── styles/
+└── integrations/
+
+public/
+└── assets/
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+Make sure you have:
+
+- Node.js
+- npm
+- Git
+
+### Clone the repository
+
+```bash
+git clone <repository-url>
+cd marketmitra-app
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Start the development server
+
+```bash
 npm run dev
 ```
 
@@ -170,3 +254,99 @@ The private `/admin` route reads operational data from Supabase and existing pro
 Before deploying these admin additions, apply `supabase/migrations/20260929120000_admin_control_center.sql` to the project database. It adds admin-only user metrics/list RPCs, scheduled system notices, and structured application error logs. The user-facing app reads only active, scheduled notices through row-level security.
 
 Analytics events remain anonymous by design, so individual route/session events are not attributed to users. Existing account sign-ins, profiles, conversation metadata, diagnoses, and user-linked provider failures are shown only where those records exist. Chat message content and phone numbers are not exposed in the admin UI.
+
+The application will be available locally at:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file for your local environment and configure the required project credentials.
+
+Example:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+Additional server-side variables may be required for specific MarketMitra services.
+
+**Never commit secrets, private API keys, service-role keys, or credentials to GitHub.**
+
+---
+
+## Product Modules
+
+| Module | Purpose |
+|---|---|
+| Market | Compare agricultural markets |
+| Mitra AI | Agriculture intelligence |
+| Diagnose | Crop health assistance |
+| Weather | Weather information |
+| Schemes | Government scheme discovery |
+| Mitra Link | Resource sharing |
+| Profile | Farmer preferences and history |
+| Admin | Platform management |
+
+---
+
+## Vision
+
+MarketMitra is being built around a simple idea:
+
+> **Agricultural information should be easier to access, understand, and act upon.**
+
+Instead of forcing farmers to search across multiple sources, MarketMitra aims to bring useful agricultural intelligence into one practical platform.
+
+**Better information. Better decisions. Better selling.**
+
+---
+
+## Status
+
+**MarketMitra is actively under development.**
+
+The platform is continuously being improved across:
+
+- Market intelligence
+- Data reliability
+- Weather information
+- Crop diagnosis
+- Agriculture intelligence
+- Farmer experience
+- Performance
+- Accessibility
+- Platform administration
+
+---
+
+## Brand
+
+**MarketMitra**
+
+**Tagline:** *Sell Smarter. Earn Better.*
+
+**Mitra AI:** *Agriculture Intelligence*
+
+Built with a focus on technology that is practical, understandable, and useful for farmers.
+
+---
+
+## License
+
+This project is currently maintained as a private product/project.
+
+All rights reserved unless otherwise specified.
+
+---
+
+### MarketMitra
+
+**Agriculture Intelligence for Better Decisions.**
+
+*Sell Smarter. Earn Better.*
