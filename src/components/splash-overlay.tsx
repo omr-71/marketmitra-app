@@ -3,10 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { LogoMark } from "./brand";
 import { useLang } from "@/lib/i18n";
 
-/**
- * Premium animated splash shown on every app open (one per page load).
- * Skipped on the "/" route, which is itself a full-screen splash.
- */
+/** Brief branded transition while the authenticated route checks the session. */
 export function SplashOverlay() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isSplashRoute = pathname === "/";
@@ -15,8 +12,8 @@ export function SplashOverlay() {
 
   useEffect(() => {
     if (phase !== "in") return;
-    const out = window.setTimeout(() => setPhase("out"), 1150);
-    const done = window.setTimeout(() => setPhase("done"), 1650);
+    const out = window.setTimeout(() => setPhase("out"), 120);
+    const done = window.setTimeout(() => setPhase("done"), 270);
     return () => {
       window.clearTimeout(out);
       window.clearTimeout(done);
@@ -28,7 +25,7 @@ export function SplashOverlay() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[100] grid place-items-center bg-[var(--gradient-ink)] transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[100] grid place-items-center bg-[var(--gradient-ink)] transition-opacity duration-150 ${
         phase === "out" ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >

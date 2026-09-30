@@ -597,7 +597,6 @@
     transform:
       translate3d(0, 12px, 0)
       scale(0.995);
-    filter: blur(4px);
   }
 
   to {
@@ -605,7 +604,6 @@
     transform:
       translate3d(0, 0, 0)
       scale(1);
-    filter: blur(0);
   }
 }
 
@@ -615,7 +613,6 @@
     transform:
       translate3d(0, 18px, 0)
       scale(0.985);
-    filter: blur(3px);
   }
 
   to {
@@ -623,15 +620,12 @@
     transform:
       translate3d(0, 0, 0)
       scale(1);
-    filter: blur(0);
   }
 }
 
 @utility animate-page {
   animation:
     page-in 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
-
-  will-change: transform, opacity;
 
   & > *:nth-child(-n + 6) {
     animation:

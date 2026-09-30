@@ -1,12 +1,13 @@
-import logo from "@/assets/marketmitra-logo.png";
+import logo from "@/assets/marketmitra-logo-256.png";
 
 export function LogoMark({ className = "size-10" }: { className?: string }) {
   return (
     <img
       src={logo}
       alt="Market Mitra logo"
-      width={1024}
-      height={1024}
+      width={256}
+      height={256}
+      decoding="async"
       className={`${className} object-contain`}
     />
   );

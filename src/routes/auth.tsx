@@ -21,7 +21,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import marketMitraLogo from "@/assets/marketmitra-logo.png";
+import marketMitraLogo from "@/assets/marketmitra-logo-256.png";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,

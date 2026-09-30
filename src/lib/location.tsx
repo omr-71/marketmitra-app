@@ -60,28 +60,27 @@ function normalize(raw: unknown): FarmLocation | null {
   };
 }
 
+function readSavedLocation(): FarmLocation | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? normalize(JSON.parse(raw)) : null;
+  } catch {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Storage may be unavailable in private browsing.
+    }
+    return null;
+  }
+}
+
 export function LocationProvider({ children }: { children: ReactNode }) {
   const { profile, updateProfile } = useSession();
-  const [location, setLocation] = useState<FarmLocation | null>(null);
-  const [status, setStatus] = useState<Ctx["status"]>("idle");
+  const [location, setLocation] = useState<FarmLocation | null>(readSavedLocation);
+  const [status, setStatus] = useState<Ctx["status"]>(() => (location ? "ready" : "idle"));
   const [error, setError] = useState<string | null>(null);
-  const hydrated = useRef(false);
-
-  // Restore the saved preference so the farmer never re-enters it.
-  useEffect(() => {
-    hydrated.current = true;
-    let saved: FarmLocation | null = null;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      saved = raw ? normalize(JSON.parse(raw)) : null;
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-    if (saved) {
-      setLocation(saved);
-      setStatus("ready");
-    }
-  }, []);
 
   // Fall back to whatever the profile already knows.
   useEffect(() => {
@@ -223,7 +222,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   // First load: ask the device only when nothing is saved and permission is not blocked.
   const autoTried = useRef(false);
   useEffect(() => {
-    if (!hydrated.current || autoTried.current || location || status !== "idle") return;
+    if (autoTried.current || location || status !== "idle") return;
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) return;
     autoTried.current = true;
     if (!("permissions" in navigator)) {

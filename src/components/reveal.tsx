@@ -20,7 +20,6 @@ interface RevealProps {
  *
  * Designed to feel like a polished product interface:
  * - soft depth
- * - subtle blur correction
  * - smooth upward movement
  * - slight scale settling
  * - one-time viewport activation
@@ -47,7 +46,7 @@ export function Reveal({
 
     const reducedMotion =
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      document.documentElement.dataset.motion === "reduced";
+      document.documentElement.dataset["motion"] === "reduced";
 
     if (reducedMotion) {
       setVisible(true);
@@ -82,8 +81,6 @@ export function Reveal({
     };
   }, []);
 
-  const hiddenBlur = duration >= 500 ? 5 : 3;
-
   const style: CSSProperties = {
     opacity: visible ? 1 : 0,
 
@@ -91,9 +88,7 @@ export function Reveal({
       ? "translate3d(0, 0, 0) scale(1)"
       : `translate3d(0, ${y}px, 0) scale(${scale})`,
 
-    filter: visible ? "blur(0px)" : `blur(${hiddenBlur}px)`,
-
-    transitionProperty: "opacity, transform, filter",
+    transitionProperty: "opacity, transform",
 
     transitionDuration: `${duration}ms`,
 
@@ -101,12 +96,6 @@ export function Reveal({
 
     transitionTimingFunction:
       "cubic-bezier(0.22, 1, 0.36, 1)",
-
-    willChange: visible
-      ? "auto"
-      : "opacity, transform, filter",
-
-    backfaceVisibility: "hidden",
 
     transformOrigin: "center center",
   };

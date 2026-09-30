@@ -106,8 +106,6 @@ function HomePage() {
   const { t, lang } = useLang();
   const { profile } = useSession();
   const { location } = useLocationContext();
-  const now = useIstNow();
-
   const savedIds = profile?.saved_crops?.length
     ? profile.saved_crops
     : ["onion"];
@@ -206,7 +204,6 @@ function HomePage() {
                 location?.district ||
                 t("locationNeeded")
               }
-              timeLabel={now.timeLabel}
               weather={weather}
               weatherIcon={WeatherIcon}
               farmingWindow={farmingWindow}
@@ -330,80 +327,18 @@ function HomePage() {
   );
 }
 
+function LiveClock() {
+  const { timeLabel } = useIstNow();
+  return <>{timeLabel} IST</>;
+}
+
 /* =========================================================
    IMMERSIVE HOME ATMOSPHERE
 ========================================================= */
 
 function HomeAtmosphere() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const springX = useSpring(x, {
-    stiffness: 45,
-    damping: 24,
-    mass: 0.8,
-  });
-
-  const springY = useSpring(y, {
-    stiffness: 45,
-    damping: 24,
-    mass: 0.8,
-  });
-
-  const glowX = useTransform(
-    springX,
-    [-1, 1],
-    ["15%", "85%"],
-  );
-
-  const glowY = useTransform(
-    springY,
-    [-1, 1],
-    ["20%", "70%"],
-  );
-
-  const handleMove = (
-    event: PointerEvent<HTMLDivElement>,
-  ) => {
-    if (!ref.current) return;
-
-    const rect = ref.current.getBoundingClientRect();
-
-    const nx =
-      ((event.clientX - rect.left) / rect.width - 0.5) *
-      2;
-
-    const ny =
-      ((event.clientY - rect.top) / rect.height - 0.5) *
-      2;
-
-    x.set(Math.max(-1, Math.min(1, nx)));
-    y.set(Math.max(-1, Math.min(1, ny)));
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
-  const particles = Array.from(
-    { length: 34 },
-    (_, index) => ({
-      left: `${(index * 37) % 100}%`,
-      top: `${(index * 61) % 100}%`,
-      size: index % 5 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
-      duration: 5 + (index % 7),
-      delay: (index % 9) * 0.35,
-    }),
-  );
-
   return (
     <div
-      ref={ref}
-      onPointerMove={handleMove}
-      onPointerLeave={handleLeave}
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       aria-hidden="true"
     >
@@ -413,8 +348,8 @@ function HomeAtmosphere() {
       {/* Mouse-following energy */}
       <motion.div
         style={{
-          left: glowX,
-          top: glowY,
+          left: "15%",
+          top: "20%",
         }}
         className="absolute size-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.045] blur-[110px]"
       />
@@ -478,31 +413,6 @@ function HomeAtmosphere() {
         className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent"
       />
 
-      {/* Tiny ambient particles */}
-      {particles.map((particle, index) => (
-        <motion.span
-          key={index}
-          animate={{
-            y: [0, -18, 0],
-            x: [0, index % 2 ? 5 : -5, 0],
-            opacity: [0.08, 0.35, 0.08],
-            scale: [0.7, 1, 0.7],
-          }}
-          transition={{
-            duration: particle.duration,
-            delay: particle.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            left: particle.left,
-            top: particle.top,
-            width: particle.size,
-            height: particle.size,
-          }}
-          className="absolute rounded-full bg-primary"
-        />
-      ))}
     </div>
   );
 }
@@ -514,7 +424,6 @@ function HomeAtmosphere() {
 function LiveWeatherHero({
   profileName,
   locationLabel,
-  timeLabel,
   weather,
   weatherIcon: WeatherIcon,
   farmingWindow,
@@ -525,7 +434,6 @@ function LiveWeatherHero({
 }: {
   profileName: string;
   locationLabel: string;
-  timeLabel: string;
   weather: any;
   weatherIcon: ComponentType<{
     className?: string;
@@ -841,7 +749,7 @@ function LiveWeatherHero({
               </span>
               <span>·</span>
               <span className="shrink-0 tabular-nums">
-                {timeLabel} IST
+                <LiveClock />
               </span>
             </motion.div>
           </div>
