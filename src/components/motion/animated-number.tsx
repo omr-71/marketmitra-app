@@ -171,9 +171,10 @@ export function AnimatedNumber({
 
   const formattedNumber = () => {
     if (decimals > 0) {
-      return displayValue
-        .toFixed(decimals)
-        .toLocaleString("en-IN");
+      return displayValue.toLocaleString("en-IN", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
     }
 
     return Math.round(displayValue).toLocaleString(

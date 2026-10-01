@@ -78,7 +78,7 @@ export function useReducedMotion(): boolean {
       ).matches;
 
       const dataAttr =
-        document.documentElement.dataset.motion === "reduced";
+        document.documentElement.dataset["motion"] === "reduced";
 
       setPrefersReduced(mediaMatch || dataAttr);
     };

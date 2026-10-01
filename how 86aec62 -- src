@@ -1,0 +1,13 @@
+[33mcommit 86aec623cb840f2f3bdd4d5ca0d1d9f961301fc6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Om <labhadeom623@gmail.com>
+Date:   Tue Sep 29 00:00:18 2026 +0530
+
+    perf: improve MarketMitra loading performance
+    
+    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+ src/components/mitra-ai-launcher.tsx | 306 [32m+++++++++++++++++++++++++++++++++++[m
+ src/components/mitra-ai.tsx          |   4 [32m+[m[31m-[m
+ src/routes/__root.tsx                |   5 [32m+[m[31m-[m
+ src/styles.css                       |  10 [31m--[m
+ 4 files changed, 310 insertions(+), 15 deletions(-)
