@@ -41,13 +41,13 @@ Compare available markets and understand how different prices and transportation
 
 View important market information side-by-side:
 
-| Information | Description |
-|---|---|
-| Market | Mandi / APMC market |
-| Price | Current available crop price |
-| Distance | Approximate distance |
-| Transport | Estimated transportation cost |
-| Net Value | Estimated value after transport |
+| Information | Description                     |
+| ----------- | ------------------------------- |
+| Market      | Mandi / APMC market             |
+| Price       | Current available crop price    |
+| Distance    | Approximate distance            |
+| Transport   | Estimated transportation cost   |
+| Net Value   | Estimated value after transport |
 
 ### Mitra AI
 
@@ -265,16 +265,17 @@ http://localhost:3000
 
 ## Environment Variables
 
-Create a `.env` file for your local environment and configure the required project credentials.
+Copy `.env.example` to `.env.local` for local development and configure the required project credentials.
 
 Example:
 
 ```env
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
+AGMARKNET_API_KEY=
 ```
 
-Additional server-side variables may be required for specific MarketMitra services.
+`AGMARKNET_API_KEY` is server-side only and is read by the centralized market-data service. Prices come from the official data.gov.in resource and should be interpreted using their reported arrival date; upstream publication may be delayed. Configure production and preview secrets separately in Vercel.
 
 **Never commit secrets, private API keys, service-role keys, or credentials to GitHub.**
 
@@ -282,16 +283,16 @@ Additional server-side variables may be required for specific MarketMitra servic
 
 ## Product Modules
 
-| Module | Purpose |
-|---|---|
-| Market | Compare agricultural markets |
-| Mitra AI | Agriculture intelligence |
-| Diagnose | Crop health assistance |
-| Weather | Weather information |
-| Schemes | Government scheme discovery |
-| Mitra Link | Resource sharing |
-| Profile | Farmer preferences and history |
-| Admin | Platform management |
+| Module     | Purpose                        |
+| ---------- | ------------------------------ |
+| Market     | Compare agricultural markets   |
+| Mitra AI   | Agriculture intelligence       |
+| Diagnose   | Crop health assistance         |
+| Weather    | Weather information            |
+| Schemes    | Government scheme discovery    |
+| Mitra Link | Resource sharing               |
+| Profile    | Farmer preferences and history |
+| Admin      | Platform management            |
 
 ---
 
@@ -329,9 +330,9 @@ The platform is continuously being improved across:
 
 **MarketMitra**
 
-**Tagline:** *Sell Smarter. Earn Better.*
+**Tagline:** _Sell Smarter. Earn Better._
 
-**Mitra AI:** *Agriculture Intelligence*
+**Mitra AI:** _Agriculture Intelligence_
 
 Built with a focus on technology that is practical, understandable, and useful for farmers.
 
@@ -349,4 +350,4 @@ All rights reserved unless otherwise specified.
 
 **Agriculture Intelligence for Better Decisions.**
 
-*Sell Smarter. Earn Better.*
+_Sell Smarter. Earn Better._

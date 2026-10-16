@@ -11,13 +11,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Live APMC mandi prices, transport cost and net profit comparison plus real Open-Meteo farm weather, in English, Marathi and Hindi.",
+          "Latest reported APMC mandi prices, transport cost and net profit comparison plus real Open-Meteo farm weather, in English, Marathi and Hindi.",
       },
       { property: "og:title", content: "MarketMitra — Sell smarter at the right mandi" },
       {
         property: "og:description",
         content:
-          "Compare mandi prices, transport cost and net profit before you sell, with live weather for your farm.",
+          "Compare reported mandi prices, transport cost and net profit before you sell, with live weather for your farm.",
       },
       { property: "og:url", content: "https://marketmitra.app/" },
       { property: "og:type", content: "website" },
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
           name: "MarketMitra",
           url: "https://marketmitra.app/",
           description:
-            "Compare official APMC mandi prices, transport cost and net profit, with live farm weather, in English, Marathi and Hindi.",
+            "Compare the latest published official APMC mandi prices, transport cost and net profit, with live farm weather, in English, Marathi and Hindi.",
           inLanguage: ["en", "mr", "hi"],
         }),
       },
@@ -84,10 +84,10 @@ function Splash() {
           className="animate-rise mt-3 max-w-2xl text-sm leading-relaxed text-[oklch(0.82_0.02_145)] lg:text-base"
           style={{ animationDelay: "200ms" }}
         >
-          MarketMitra shows the day's official APMC rates for your crop across nearby markets,
-          subtracts the transport cost to each one, and tells you which mandi leaves the most money in
-          your hand. Add live farm weather, government scheme details, crop disease help and
-          farmer-to-farmer equipment sharing — all in English, मराठी and हिंदी.
+          MarketMitra shows the latest published official APMC rates for your crop across nearby
+          markets, subtracts the transport cost to each one, and tells you which mandi leaves the
+          most money in your hand. Add live farm weather, government scheme details, crop disease
+          help and farmer-to-farmer equipment sharing — all in English, मराठी and हिंदी.
         </p>
 
         <div
@@ -139,15 +139,7 @@ function Splash() {
   );
 }
 
-function Highlight({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
+function Highlight({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
     <div className="glass-dark rounded-3xl p-5 text-left">
       {icon}

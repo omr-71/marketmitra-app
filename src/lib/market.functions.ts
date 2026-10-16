@@ -35,191 +35,53 @@ export type MandiPricesResult =
     }
   | { ok: false; error: string; code: "no_key" | "upstream" | "network" };
 
-/** "Variety-wise Daily Market Prices Data of Commodity" — AGMARKNET via data.gov.in. */
-const RESOURCE_ID = "35985678-0d79-46b4-9ed6-6f13308a1d24";
 const SOURCE = "AGMARKNET · Government of India";
-
-function pick(row: Record<string, unknown>, ...keys: string[]) {
-  const normalized = new Map<string, unknown>();
-  for (const [k, v] of Object.entries(row)) {
-    normalized.set(k.toLowerCase().replace(/[^a-z]/g, ""), v);
-  }
-  for (const key of keys) {
-    const value = normalized.get(key.toLowerCase().replace(/[^a-z]/g, ""));
-    if (value !== undefined && value !== null && String(value).trim() !== "")
-      return String(value).trim();
-  }
-  return "";
-}
-
-/** Agmarknet returns dd/MM/yyyy */
-function toIsoDate(value: string) {
-  const dmy = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
-  const iso = value.match(/^\d{4}-\d{2}-\d{2}/);
-  return iso ? value.slice(0, 10) : "";
-}
-
-type ApiPayload = {
-  records?: Record<string, unknown>[];
-  updated_date?: string;
-  updated?: number;
-};
-
-/**
- * The dataset is the full AGMARKNET archive (80M+ rows) and its default order
- * is by market/commodity, NOT by date — so a plain filtered query returns the
- * OLDEST rows. `sort[Arrival_Date]=desc` is essential: without it the app shows
- * years-old prices. Field ids are case-sensitive (Commodity, State, District,
- * Market).
- */
-function buildUrl(
-  apiKey: string,
-  filters: {
-    commodity: string;
-    state: string;
-    district?: string | undefined;
-    market?: string | undefined;
-  },
-  limit: number,
-) {
-  const url = new URL(`https://api.data.gov.in/resource/${RESOURCE_ID}`);
-  url.searchParams.set("api-key", apiKey);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("sort[Arrival_Date]", "desc");
-  url.searchParams.set("filters[Commodity]", filters.commodity);
-  url.searchParams.set("filters[State]", filters.state);
-  if (filters.district) url.searchParams.set("filters[District]", filters.district);
-  if (filters.market) url.searchParams.set("filters[Market]", filters.market);
-  return url;
-}
-
-function parseRecords(payload: ApiPayload): MandiRecord[] {
-  return (payload.records ?? [])
-    .map((row) => {
-      const variety = pick(row, "variety");
-      return {
-        commodity: pick(row, "commodity"),
-        variety: variety || null,
-        state: pick(row, "state"),
-        district: pick(row, "district"),
-        market: pick(row, "market"),
-        minPrice: Number(pick(row, "min_price", "minprice")),
-        maxPrice: Number(pick(row, "max_price", "maxprice")),
-        modalPrice: Number(pick(row, "modal_price", "modalprice")),
-        arrivalDate: toIsoDate(pick(row, "arrival_date", "arrivaldate")),
-      };
-    })
-    .filter(
-      (r) =>
-        r.market &&
-        r.arrivalDate &&
-        Number.isFinite(r.modalPrice) &&
-        r.modalPrice > 0 &&
-        Number.isFinite(r.minPrice) &&
-        Number.isFinite(r.maxPrice),
-    )
-    .sort((a, b) =>
-      a.arrivalDate === b.arrivalDate
-        ? b.modalPrice - a.modalPrice
-        : a.arrivalDate < b.arrivalDate
-          ? 1
-          : -1,
-    );
-}
-
-function sourceUpdatedAt(payload: ApiPayload): string | null {
-  if (payload.updated_date) {
-    const parsed = new Date(payload.updated_date);
-    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
-  }
-  if (typeof payload.updated === "number") {
-    return new Date(payload.updated * 1000).toISOString();
-  }
-  return null;
-}
-
-async function persist(records: MandiRecord[]) {
-  if (records.length === 0) return;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.from("market_prices").upsert(
-    records.map((r) => ({
-      commodity: r.commodity,
-      variety: r.variety,
-      state: r.state,
-      district: r.district,
-      market: r.market,
-      min_price: r.minPrice,
-      max_price: r.maxPrice,
-      modal_price: r.modalPrice,
-      arrival_date: r.arrivalDate,
-      fetched_at: new Date().toISOString(),
-    })),
-    { onConflict: "commodity,state,district,market,variety,arrival_date" },
-  );
-  if (error) console.error("market_prices upsert failed", error.message);
-}
 
 export const fetchMandiPrices = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data }): Promise<MandiPricesResult> => {
-    const apiKey = process.env["DATA_GOV_IN_API_KEY"];
-    if (!apiKey) {
-      return { ok: false, code: "no_key", error: "Market price service is not configured yet." };
-    }
-
-    const request = async (filters: Parameters<typeof buildUrl>[1]) => {
-      const response = await fetch(buildUrl(apiKey, filters, 250), {
-        headers: { accept: "application/json" },
-      });
-      if (!response.ok) {
-        const body = await response.text();
-        console.error(`data.gov.in request failed [${response.status}]: ${body.slice(0, 400)}`);
-        throw new Error(String(response.status));
-      }
-      return (await response.json()) as ApiPayload;
-    };
-
-    let payload: ApiPayload;
+    const { aggregateMarketPrices, providerCatalogue } = await import("./market-providers.server");
     try {
-      payload = await request(data);
-      // District filters can be narrow or spelled differently in AGMARKNET.
-      // Widen to the state (still the same official source) rather than showing nothing.
-      if ((payload.records?.length ?? 0) === 0 && data.district && !data.market) {
-        payload = await request({ commodity: data.commodity, state: data.state });
+      const result = await aggregateMarketPrices(data);
+      if (result.records.length === 0) {
+        const configured =
+          providerCatalogue().find((provider) => provider.id === "agmarknet_variety")?.configured ??
+          false;
+        return {
+          ok: false,
+          code: configured ? "upstream" : "no_key",
+          error: configured
+            ? "No recent official mandi records are currently available."
+            : "Market price service is not configured yet.",
+        };
       }
+
+      return {
+        ok: true,
+        records: result.records.map((record) => ({
+          commodity: record.commodity,
+          variety: record.variety,
+          state: record.state,
+          district: record.district,
+          market: record.market,
+          minPrice: record.minPrice,
+          maxPrice: record.maxPrice,
+          modalPrice: record.modalPrice,
+          arrivalDate: record.date,
+        })),
+        latestDate: result.latestDate,
+        sourceUpdatedAt: result.sourceUpdatedAt,
+        fetchedAt: result.fetchedAt,
+        source: result.source ?? SOURCE,
+      };
     } catch (error) {
-      const status = (error as Error).message;
-      if (status === "403" || status === "401") {
-        return {
-          ok: false,
-          code: "upstream",
-          error: "The government market price service rejected the request.",
-        };
-      }
-      if (/^\d+$/.test(status)) {
-        return {
-          ok: false,
-          code: "upstream",
-          error: "The government market price service is temporarily unavailable.",
-        };
-      }
-      console.error("data.gov.in network error", error);
-      return { ok: false, code: "network", error: "Could not reach the market price service." };
+      console.error("market price service failed", error);
+      return {
+        ok: false,
+        code: "upstream",
+        error: "The government market price service is temporarily unavailable.",
+      };
     }
-
-    const records = parseRecords(payload);
-    await persist(records);
-
-    return {
-      ok: true,
-      records,
-      latestDate: records[0]?.arrivalDate ?? "",
-      sourceUpdatedAt: sourceUpdatedAt(payload),
-      fetchedAt: new Date().toISOString(),
-      source: SOURCE,
-    };
   });
 
 const historySchema = z.object({
@@ -238,34 +100,23 @@ export type PricePoint = { date: string; min: number; max: number; modal: number
 export const fetchPriceHistory = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => historySchema.parse(data))
   .handler(async ({ data }): Promise<{ points: PricePoint[] }> => {
-    const apiKey = process.env["DATA_GOV_IN_API_KEY"];
     const byDate = new Map<string, PricePoint>();
 
-    if (apiKey) {
-      try {
-        const response = await fetch(
-          buildUrl(
-            apiKey,
-            { commodity: data.commodity, state: data.state, market: data.market },
-            60,
-          ),
-          { headers: { accept: "application/json" } },
-        );
-        if (response.ok) {
-          for (const r of parseRecords((await response.json()) as ApiPayload)) {
-            if (!byDate.has(r.arrivalDate)) {
-              byDate.set(r.arrivalDate, {
-                date: r.arrivalDate,
-                min: r.minPrice,
-                max: r.maxPrice,
-                modal: r.modalPrice,
-              });
-            }
-          }
+    try {
+      const { fetchAgmarknetHistory } = await import("./market-providers.server");
+      const records = await fetchAgmarknetHistory(data);
+      for (const record of records) {
+        if (!byDate.has(record.date)) {
+          byDate.set(record.date, {
+            date: record.date,
+            min: record.minPrice,
+            max: record.maxPrice,
+            modal: record.modalPrice,
+          });
         }
-      } catch (error) {
-        console.error("price history fetch failed", error);
       }
+    } catch (error) {
+      console.error("price history fetch failed", error);
     }
 
     if (byDate.size === 0) {

@@ -1,1374 +1,1364 @@
 /**
 
- * Market price provider abstraction.
+ * Market price provider abstraction.
 
- *
+ *
 
- * Every provider returns the SAME normalized record shape, so the frontend and
+ * Every provider returns the SAME normalized record shape, so the frontend and
 
- * Mitra AI never care which source answered. Providers are tried in priority
+ * Mitra AI never care which source answered. Providers are tried in priority
 
- * order; each attempt is logged for admin diagnostics. Nothing here ever
+ * order; each attempt is logged for admin diagnostics. Nothing here ever
 
- * invents, averages across dates, or synthesises a price.
+ * invents, averages across dates, or synthesises a price.
 
- */
-
-
+ */
 
 import {
-
-  computeFreshness,
-
-  isCurrentMarketDate,
-
-  istToday,
-
-  type Freshness,
-
+  computeFreshness,
+  isCurrentMarketDate,
+  istToday,
+  type Freshness,
 } from "./market-freshness";
 
-
-
 export type PriceRecord = {
+  providerId: string;
 
-  providerId: string;
+  source: string;
 
-  source: string;
+  commodity: string;
 
-  commodity: string;
+  variety: string | null;
 
-  variety: string | null;
+  grade: string | null;
 
-  grade: string | null;
+  state: string;
 
-  state: string;
+  district: string;
 
-  district: string;
+  market: string;
 
-  market: string;
+  /** Official reporting date, yyyy-MM-dd. */
 
-  /** Official reporting date, yyyy-MM-dd. */
+  date: string;
 
-  date: string;
+  arrival: number | null;
 
-  arrival: number | null;
+  minPrice: number;
 
-  minPrice: number;
+  maxPrice: number;
 
-  maxPrice: number;
+  modalPrice: number;
 
-  modalPrice: number;
+  currency: "INR";
 
-  currency: "INR";
+  fetchedAt: string;
 
-  fetchedAt: string;
-
-  sourceUpdatedAt: string | null;
-
+  sourceUpdatedAt: string | null;
 };
-
-
 
 export type ProviderAttempt = {
+  providerId: string;
 
-  providerId: string;
+  provider: string;
 
-  provider: string;
+  ok: boolean;
 
-  ok: boolean;
+  statusCode: number | null;
 
-  statusCode: number | null;
+  recordCount: number;
 
-  recordCount: number;
+  latestDataDate: string | null;
 
-  latestDataDate: string | null;
+  durationMs: number;
 
-  durationMs: number;
-
-  error: string | null;
-
+  error: string | null;
 };
-
-
 
 export type MarketFilters = {
+  commodity: string;
 
-  commodity: string;
+  state: string;
 
-  state: string;
+  district?: string | undefined;
 
-  district?: string | undefined;
-
-  market?: string | undefined;
-
+  market?: string | undefined;
 };
-
-
 
 type ProviderResult = {
+  records: PriceRecord[];
 
-  records: PriceRecord[];
+  sourceUpdatedAt: string | null;
 
-  sourceUpdatedAt: string | null;
-
-  statusCode: number | null;
-
+  statusCode: number | null;
 };
-
-
 
 type Provider = {
+  id: string;
 
-  id: string;
+  name: string;
 
-  name: string;
+  /** Lower runs first. */
 
-  /** Lower runs first. */
+  priority: number;
 
-  priority: number;
+  envKey: string | null;
 
-  envKey: string | null;
+  coverage: string;
 
-  coverage: string;
+  /** Archive providers must never be presented as current data. */
 
-  /** Archive providers must never be presented as current data. */
+  archive: boolean;
 
-  archive: boolean;
-
-  fetch: (filters: MarketFilters) => Promise<ProviderResult>;
-
+  fetch: (filters: MarketFilters) => Promise<ProviderResult>;
 };
-
-
 
 /* ------------------------------------------------------------------ helpers */
 
-
-
 function pick(row: Record<string, unknown>, ...keys: string[]) {
+  const normalized = new Map<string, unknown>();
 
-  const normalized = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(row)) {
+    normalized.set(k.toLowerCase().replace(/[^a-z]/g, ""), v);
+  }
 
-  for (const [k, v] of Object.entries(row)) {
+  for (const key of keys) {
+    const value = normalized.get(key.toLowerCase().replace(/[^a-z]/g, ""));
 
-    normalized.set(k.toLowerCase().replace(/[^a-z]/g, ""), v);
+    if (value !== undefined && value !== null && String(value).trim() !== "")
+      return String(value).trim();
+  }
 
-  }
-
-  for (const key of keys) {
-
-    const value = normalized.get(key.toLowerCase().replace(/[^a-z]/g, ""));
-
-    if (value !== undefined && value !== null && String(value).trim() !== "")
-
-      return String(value).trim();
-
-  }
-
-  return "";
-
+  return "";
 }
-
-
 
 /** data.gov.in returns dd/MM/yyyy for arrival dates. */
 
 function toIsoDate(value: string) {
+  const dmy = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
 
-  const dmy = value.match(/^(\d{2})**\\/**(\d{2})**\\/**(\d{4})$/);
+  const dashedDmy = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/);
+  const parts = dmy
+    ? [dmy[3]!, dmy[2]!, dmy[1]!]
+    : dashedDmy
+      ? [dashedDmy[3]!, dashedDmy[2]!, dashedDmy[1]!]
+      : iso
+        ? [iso[1]!, iso[2]!, iso[3]!]
+        : null;
 
-  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
-
-  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "";
-
+  if (!parts) return "";
+  const [year, month, day] = parts.map(Number);
+  const parsed = new Date(Date.UTC(year!, month! - 1, day!));
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month! - 1 &&
+    parsed.getUTCDate() === day
+    ? `${parts[0]}-${parts[1]}-${parts[2]}`
+    : "";
 }
 
+function datasetUpdatedAt(payload: Record<string, unknown>): string | null {
+  const updatedDate = pick(payload, "updated_date", "updated_at");
+  if (updatedDate) {
+    const parsed = new Date(updatedDate);
 
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
 
-function datasetUpdatedAt(payload: { updated_date?: string; updated?: number }): string | null {
+  const updated = Number(pick(payload, "updated"));
+  if (Number.isFinite(updated) && updated > 0)
+    return new Date(updated < 10_000_000_000 ? updated * 1000 : updated).toISOString();
 
-  if (payload.updated_date) {
-
-    const parsed = new Date(payload.updated_date);
-
-    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
-
-  }
-
-  if (typeof payload.updated === "number") return new Date(payload.updated * 1000).toISOString();
-
-  return null;
-
+  return null;
 }
 
+function payloadRows(payload: unknown, depth = 0): Record<string, unknown>[] {
+  if (Array.isArray(payload))
+    return payload.filter(
+      (row): row is Record<string, unknown> =>
+        Boolean(row) && typeof row === "object" && !Array.isArray(row),
+    );
+  if (!payload || typeof payload !== "object" || depth > 3) return [];
 
+  const object = payload as Record<string, unknown>;
+  for (const key of ["records", "data", "result", "response", "results", "prices", "rows"]) {
+    const value = Object.entries(object).find(
+      ([field]) => normalizedName(field) === normalizedName(key),
+    )?.[1];
+    if (Array.isArray(value)) {
+      const rows = payloadRows(value, depth + 1);
+      if (rows.length > 0) return rows;
+    }
+    if (value && typeof value === "object") {
+      const rows = payloadRows(value, depth + 1);
+      if (rows.length > 0) return rows;
+    }
+  }
+  return [];
+}
+
+function numericValue(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  const normalized = /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(trimmed)
+    ? trimmed.replace(/,/g, "")
+    : trimmed;
+  if (!/^-?\d+(?:\.\d+)?$/.test(normalized)) return null;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 const normalizedName = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-
-
 const DISTRICT_ALIASES: string[][] = [
+  ["Nashik", "Nasik"],
 
-  ["Nashik", "Nasik"],
+  ["Chhatrapati Sambhajinagar", "Chattrapati Sambhajinagar", "Aurangabad"],
 
-  ["Chhatrapati Sambhajinagar", "Chattrapati Sambhajinagar", "Aurangabad"],
+  ["Ahilyanagar", "Ahmednagar"],
 
-  ["Ahilyanagar", "Ahmednagar"],
+  ["Dharashiv", "Osmanabad"],
 
-  ["Dharashiv", "Osmanabad"],
+  ["Gurugram", "Gurgaon"],
 
-  ["Gurugram", "Gurgaon"],
+  ["Prayagraj", "Allahabad"],
 
-  ["Prayagraj", "Allahabad"],
+  ["Ayodhya", "Faizabad"],
 
-  ["Ayodhya", "Faizabad"],
+  ["Bengaluru Urban", "Bangalore Urban", "Bangalore"],
 
-  ["Bengaluru Urban", "Bangalore Urban", "Bangalore"],
+  ["Mysuru", "Mysore"],
 
-  ["Mysuru", "Mysore"],
+  ["Belagavi", "Belgaum"],
 
-  ["Belagavi", "Belgaum"],
+  ["Kalaburagi", "Gulbarga"],
 
-  ["Kalaburagi", "Gulbarga"],
+  ["Vijayapura", "Bijapur"],
 
-  ["Vijayapura", "Bijapur"],
+  ["Ballari", "Bellary"],
 
-  ["Ballari", "Bellary"],
+  ["Shivamogga", "Shimoga"],
 
-  ["Shivamogga", "Shimoga"],
-
-  ["Tumakuru", "Tumkur"],
-
+  ["Tumakuru", "Tumkur"],
 ];
 
-
-
 function titleCase(value: string) {
+  return value
 
-  return value
+    .trim()
 
-    .trim()
+    .toLowerCase()
 
-    .toLowerCase()
-
-    .replace(/(^|[\s()-])**\p**{L}/gu, (letter) => letter.toUpperCase());
-
+    .replace(/(^|[\s()-])\p{L}/gu, (letter) => letter.toUpperCase());
 }
-
-
 
 function districtVariants(value: string) {
+  const normalized = normalizedName(value);
 
-  const normalized = normalizedName(value);
+  const aliases = DISTRICT_ALIASES.find((group) =>
+    group.some((candidate) => normalizedName(candidate) === normalized),
+  );
 
-  const aliases = DISTRICT_ALIASES.find((group) =>
-
-    group.some((candidate) => normalizedName(candidate) === normalized),
-
-  );
-
-  return [...new Set([titleCase(value), ...(aliases ?? [])])];
-
+  return [...new Set([titleCase(value), ...(aliases ?? [])])];
 }
-
-
 
 const looseEq = (a: string, b: string) => normalizedName(a) === normalizedName(b);
 
-
-
 function districtEq(a: string, b: string) {
+  const accepted = districtVariants(b).map(normalizedName);
 
-  const accepted = districtVariants(b).map(normalizedName);
-
-  return accepted.includes(normalizedName(a));
-
+  return accepted.includes(normalizedName(a));
 }
-
-
 
 /** Rejects malformed / impossible rows so bad upstream data can never render. */
 
 function isValid(record: PriceRecord) {
-
-  return (
-
-    Boolean(record.market) &&
-
-    Boolean(record.date) &&
-
-    Number.isFinite(record.minPrice) &&
-
-    Number.isFinite(record.maxPrice) &&
-
-    Number.isFinite(record.modalPrice) &&
-
-    record.modalPrice > 0 &&
-
-    record.minPrice >= 0 &&
-
-    record.maxPrice >= record.minPrice &&
-
-    record.modalPrice <= record.maxPrice * 1.5
-
-  );
-
+  return (
+    Boolean(record.market) &&
+    Boolean(record.date) &&
+    Number.isFinite(record.minPrice) &&
+    Number.isFinite(record.maxPrice) &&
+    Number.isFinite(record.modalPrice) &&
+    record.modalPrice > 0 &&
+    record.minPrice >= 0 &&
+    record.maxPrice >= record.minPrice &&
+    record.modalPrice <= record.maxPrice * 1.5
+  );
 }
-
-
 
 /** Re-check every normalized row, even when an upstream API claims it applied filters. */
 
 export function matchesMarketFilters(record: PriceRecord, filters: MarketFilters) {
-
-  return (
-
-    looseEq(record.commodity, filters.commodity) &&
-
-    looseEq(record.state, filters.state) &&
-
-    (!filters.district || districtEq(record.district, filters.district)) &&
-
-    (!filters.market || looseEq(record.market, filters.market))
-
-  );
-
+  return (
+    looseEq(record.commodity, filters.commodity) &&
+    looseEq(record.state, filters.state) &&
+    (!filters.district || districtEq(record.district, filters.district)) &&
+    (!filters.market || looseEq(record.market, filters.market))
+  );
 }
-
-
 
 export function currentMarketRecords(
+  records: PriceRecord[],
 
-  records: PriceRecord[],
+  filters: MarketFilters,
 
-  filters: MarketFilters,
-
-  now: Date = new Date(),
-
+  now: Date = new Date(),
 ) {
-
-  return dedupe(
-
-    sortRecords(
-
-      records.filter(
-
-        (record) =>
-
-          isValid(record) &&
-
-          matchesMarketFilters(record, filters) &&
-
-          isCurrentMarketDate(record.date, now),
-
-      ),
-
-    ),
-
-  );
-
+  return dedupe(
+    sortRecords(
+      records.filter(
+        (record) =>
+          isValid(record) &&
+          matchesMarketFilters(record, filters) &&
+          isCurrentMarketDate(record.date, now),
+      ),
+    ),
+  );
 }
-
-
 
 /** Newest reporting date first, then highest modal price. */
 
 export function sortRecords(records: PriceRecord[]) {
-
-  return [...records].sort((a, b) =>
-
-    a.date === b.date ? b.modalPrice - a.modalPrice : a.date < b.date ? 1 : -1,
-
-  );
-
+  return [...records].sort((a, b) =>
+    a.date === b.date ? b.modalPrice - a.modalPrice : a.date < b.date ? 1 : -1,
+  );
 }
-
-
 
 /** Drops exact duplicates reported by the same source for the same day. */
 
 function dedupe(records: PriceRecord[]) {
+  const seen = new Set<string>();
 
-  const seen = new Set<string>();
+  const out: PriceRecord[] = [];
 
-  const out: PriceRecord[] = [];
+  for (const r of records) {
+    const key = [r.providerId, r.market, r.district, r.variety, r.grade, r.date, r.modalPrice].join(
+      "|",
+    );
 
-  for (const r of records) {
+    if (seen.has(key)) continue;
 
-    const key = [r.providerId, r.market, r.district, r.variety, r.grade, r.date, r.modalPrice].join(
+    seen.add(key);
 
-      "|",
+    out.push(r);
+  }
 
-    );
-
-    if (seen.has(key)) continue;
-
-    seen.add(key);
-
-    out.push(r);
-
-  }
-
-  return out;
-
+  return out;
 }
-
-
 
 function normalizeRows(
+  rows: Record<string, unknown>[],
 
-  rows: Record<string, unknown>[],
-
-  meta: { providerId: string; source: string; sourceUpdatedAt: string | null; fetchedAt: string },
-
+  meta: { providerId: string; source: string; sourceUpdatedAt: string | null; fetchedAt: string },
 ): PriceRecord[] {
+  const records = rows.map<PriceRecord | null>((row) => {
+    const minPrice = numericValue(pick(row, "min_price", "minprice"));
+    const maxPrice = numericValue(pick(row, "max_price", "maxprice"));
+    const modalPrice = numericValue(pick(row, "modal_price", "modalprice"));
+    const date = toIsoDate(pick(row, "arrival_date", "arrivaldate", "date"));
+    if (minPrice == null || maxPrice == null || modalPrice == null || !date) return null;
 
-  const records = rows.map<PriceRecord>((row) => {
+    const arrival = numericValue(pick(row, "arrivals", "arrival", "tonnes"));
 
-    const arrival = Number(pick(row, "arrivals", "arrival", "tonnes"));
+    return {
+      providerId: meta.providerId,
 
-    return {
+      source: meta.source,
 
-      providerId: meta.providerId,
+      commodity: pick(row, "commodity"),
 
-      source: meta.source,
+      variety: pick(row, "variety") || null,
 
-      commodity: pick(row, "commodity"),
+      grade: pick(row, "grade") || null,
 
-      variety: pick(row, "variety") || null,
+      state: pick(row, "state"),
 
-      grade: pick(row, "grade") || null,
+      district: pick(row, "district"),
 
-      state: pick(row, "state"),
+      market: pick(row, "market"),
 
-      district: pick(row, "district"),
+      date,
 
-      market: pick(row, "market"),
+      arrival: arrival != null && arrival > 0 ? arrival : null,
 
-      date: toIsoDate(pick(row, "arrival_date", "arrivaldate", "date")),
+      minPrice,
 
-      arrival: Number.isFinite(arrival) && arrival > 0 ? arrival : null,
+      maxPrice,
 
-      minPrice: Number(pick(row, "min_price", "minprice")),
+      modalPrice,
 
-      maxPrice: Number(pick(row, "max_price", "maxprice")),
+      currency: "INR",
 
-      modalPrice: Number(pick(row, "modal_price", "modalprice")),
+      fetchedAt: meta.fetchedAt,
 
-      currency: "INR",
+      sourceUpdatedAt: meta.sourceUpdatedAt,
+    };
+  });
 
-      fetchedAt: meta.fetchedAt,
-
-      sourceUpdatedAt: meta.sourceUpdatedAt,
-
-    };
-
-  });
-
-  return dedupe(sortRecords(records.filter(isValid)));
-
+  return dedupe(
+    sortRecords(
+      records.filter((record): record is PriceRecord => record !== null && isValid(record)),
+    ),
+  );
 }
-
-
 
 async function getJson(url: URL) {
+  const method = "GET";
+  const timeoutMs = 15_000;
+  const startedAt = Date.now();
+  const apiKey = url.searchParams.get("api-key");
+  const cacheUrl = new URL(url);
+  cacheUrl.searchParams.delete("api-key");
+  const cacheKey = cacheUrl.toString();
+  const cached = dataGovCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { payload: cached.payload, statusCode: cached.statusCode };
+  }
+  if (cached) dataGovCache.delete(cacheKey);
 
-  const response = await fetch(url, {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    const cause =
+      err.cause && typeof err.cause === "object"
+        ? (err.cause as { name?: unknown; code?: unknown; message?: unknown })
+        : null;
+    const sanitize = (value: unknown) => {
+      if (typeof value !== "string") return null;
+      const withoutKey = apiKey ? value.split(apiKey).join("[REDACTED]") : value;
+      return withoutKey.replace(/(https?:\/\/[^\s"'<>?]+)\?[^\s"'<>]*/gi, "$1?[REDACTED]");
+    };
+    console.error("[market] data.gov.in fetch diagnostic", {
+      hostname: url.hostname,
+      pathname: url.pathname,
+      method,
+      timeoutMs,
+      elapsedMs: Date.now() - startedAt,
+      errorName: sanitize(err.name),
+      errorMessage: sanitize(err.message),
+      causeName: sanitize(cause?.name),
+      causeCode: sanitize(cause?.code),
+      causeMessage: sanitize(cause?.message),
+    });
+    throw new Error("data.gov.in request failed or timed out");
+  }
 
-    headers: { accept: "application/json" },
+  if (!response.ok) {
+    const error = new Error(`HTTP ${response.status}`) as Error & { statusCode: number };
+    error.statusCode = response.status;
+    console.error(`[market] ${url.host} failed ${response.status}`);
 
-    signal: AbortSignal.timeout(30_000),
+    throw error;
+  }
 
-  });
-
-  if (!response.ok) {
-
-    const body = await response.text().catch(() => "");
-
-    const error = new Error(`HTTP ${response.status}`) as Error & { statusCode: number };
-
-    error.statusCode = response.status;
-
-    console.error(`[market] ${url.host} failed ${response.status}: ${body.slice(0, 300)}`);
-
-    throw error;
-
-  }
-
-  return { payload: await response.json(), statusCode: response.status };
-
+  const payload: unknown = await response.json();
+  if (dataGovCache.size >= 100) {
+    const firstKey = dataGovCache.keys().next().value;
+    if (firstKey) dataGovCache.delete(firstKey);
+  }
+  dataGovCache.set(cacheKey, {
+    payload,
+    statusCode: response.status,
+    expiresAt: Date.now() + 15 * 60_000,
+  });
+  return { payload, statusCode: response.status };
 }
-
-
 
 /* ---------------------------------------------------------------- providers */
 
-
-
 /**
 
- * PRIMARY — "Variety-wise Daily Market Prices Data of Commodity" (AGMARKNET).
+ * PRIMARY — "Variety-wise Daily Market Prices Data of Commodity" (AGMARKNET).
 
- * The dataset is the full archive and its natural order is by market, NOT by
+ * The dataset is the full archive and its natural order is by market, NOT by
 
- * date, so `sort[Arrival_Date]=desc` is mandatory or years-old rows come back.
+ * date, so `sort[Arrival_Date]=desc` is mandatory or years-old rows come back.
 
- */
+ */
 
 const AGMARKNET_VARIETY = "35985678-0d79-46b4-9ed6-6f13308a1d24";
 
 /** SECONDARY — "Current Daily Price of Various Commodities from Various Markets". */
 
 const AGMARKNET_DAILY = "9ef84268-d588-465a-a308-a864a43d0070";
+const AGMARKNET_KEY_ENV = "AGMARKNET_API_KEY";
+const AGMARKNET_PAGE_SIZE = 1000;
+const AGMARKNET_MAX_RECORDS = 5000;
 
+const dataGovCache = new Map<string, { payload: unknown; statusCode: number; expiresAt: number }>();
 
-
-const agmarknetVariety: Provider = {
-
-  id: "agmarknet_variety",
-
-  name: "AGMARKNET · Variety-wise daily prices (data.gov.in)",
-
-  priority: 1,
-
-  envKey: "DATA_GOV_IN_API_KEY",
-
-  coverage: "All states · full mandi archive · daily",
-
-  archive: false,
-
-  async fetch(filters) {
-
-    const apiKey = process.env["DATA_GOV_IN_API_KEY"];
-
-    if (!apiKey) throw new Error("missing_api_key");
-
-    const fetchedAt = new Date().toISOString();
-
-
-
-    const request = async (f: MarketFilters, arrivalDate?: string, limit = 250) => {
-
-      const url = new URL(`https\://api.data.gov.in/resource/${AGMARKNET_VARIETY}`);
-
-      url.searchParams.set("api-key", apiKey);
-
-      url.searchParams.set("format", "json");
-
-      url.searchParams.set("limit", String(limit));
-
-      url.searchParams.set("sort[Arrival_Date]", "desc");
-
-      url.searchParams.set("filters[Commodity]", titleCase(f.commodity));
-
-      url.searchParams.set("filters[State]", titleCase(f.state));
-
-      if (f.district) url.searchParams.set("filters[District]", titleCase(f.district));
-
-      if (f.market) url.searchParams.set("filters[Market]", titleCase(f.market));
-
-      if (arrivalDate) url.searchParams.set("filters[Arrival_Date]", arrivalDate);
-
-      return getJson(url);
-
-    };
-
-
-
-    const districtAttempts = filters.district ? districtVariants(filters.district) : [undefined];
-
-    let payload: unknown = null;
-
-    let statusCode: number | null = null;
-
-    let rows: Record<string, unknown>[] = [];
-
-
-
-    for (const district of districtAttempts) {
-
-      const response = await request({ ...filters, ...(district ? { district } : {}) });
-
-      payload = response.payload;
-
-      statusCode = response.statusCode;
-
-      rows = (payload as { records?: Record<string, unknown>[] }).records ?? [];
-
-      if (rows.length > 0) break;
-
-    }
-
-
-
-    // Geocoders and the official dataset often use different district spellings.
-
-    // Retry only today's two official reporting dates without a server-side district
-
-    // filter, then strictly re-check every row below before it can reach the UI.
-
-    if (rows.length === 0 && filters.district) {
-
-      const today = istToday();
-
-      const yesterdayDate = new Date(`${today}T00:00:00Z`);
-
-      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-
-      const toDmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-
-      const fallbackFilters = { commodity: filters.commodity, state: filters.state };
-
-      const fallback = await Promise.all([
-
-        request(fallbackFilters, toDmy(today), 5000),
-
-        request(fallbackFilters, toDmy(yesterdayDate.toISOString().slice(0, 10)), 5000),
-
-      ]);
-
-      payload = fallback[0]?.payload ?? fallback[1]?.payload ?? null;
-
-      statusCode = fallback.find((response) => response.statusCode)?.statusCode ?? statusCode;
-
-      rows = fallback.flatMap(
-
-        (response) =>
-
-          ((response.payload as { records?: Record<string, unknown>[] }).records ?? []),
-
-      );
-
-    }
-
-
-
-    const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
-
-    return {
-
-      records: normalizeRows(rows, {
-
-        providerId: this.id,
-
-        source: "AGMARKNET · Government of India",
-
-        sourceUpdatedAt,
-
-        fetchedAt,
-
-      }),
-
-      sourceUpdatedAt,
-
-      statusCode,
-
-    };
-
-  },
-
-};
-
-
-
-const agmarknetDaily: Provider = {
-
-  id: "agmarknet_daily",
-
-  name: "AGMARKNET · Current daily mandi prices (data.gov.in)",
-
-  priority: 2,
-
-  envKey: "DATA_GOV_IN_API_KEY",
-
-  coverage: "Today's published snapshot · matched in memory",
-
-  archive: false,
-
-  async fetch(filters) {
-
-    const apiKey = process.env["DATA_GOV_IN_API_KEY"];
-
-    if (!apiKey) throw new Error("missing_api_key");
-
-    const fetchedAt = new Date().toISOString();
-
-    // This resource ignores server-side filters, so we strictly match all
-
-    // requested location and crop fields ourselves.
-
-    const url = new URL(`https\://api.data.gov.in/resource/${AGMARKNET_DAILY}`);
-
-    url.searchParams.set("api-key", apiKey);
-
-    url.searchParams.set("format", "json");
-
-    url.searchParams.set("limit", "5000");
-
-    const { payload, statusCode } = await getJson(url);
-
-    const rows = ((payload as { records?: Record<string, unknown>[] }).records ?? []).filter(
-
-      (row) =>
-
-        looseEq(pick(row, "commodity"), filters.commodity) &&
-
-        looseEq(pick(row, "state"), filters.state) &&
-
-        (!filters.district || districtEq(pick(row, "district"), filters.district)) &&
-
-        (!filters.market || looseEq(pick(row, "market"), filters.market)),
-
-    );
-
-    const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
-
-    return {
-
-      records: normalizeRows(rows, {
-
-        providerId: this.id,
-
-        source: "AGMARKNET daily snapshot · Government of India",
-
-        sourceUpdatedAt,
-
-        fetchedAt,
-
-      }),
-
-      sourceUpdatedAt,
-
-      statusCode,
-
-    };
-
-  },
-
-};
-
-
-
-/**
-
- * LAST RESORT — officially reported records MarketMitra already stored. Flagged
-
- * as an archive so the UI always labels it "last available data", never today's.
-
- */
-
-const storedArchive: Provider = {
-
-  id: "marketmitra_archive",
-
-  name: "MarketMitra archive of official AGMARKNET records",
-
-  priority: 9,
-
-  envKey: null,
-
-  coverage: "Previously fetched official records only",
-
-  archive: true,
-
-  async fetch(filters) {
-
-    const fetchedAt = new Date().toISOString();
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    let query = supabaseAdmin
-
-      .from("market_prices")
-
-      .select("commodity, variety, state, district, market, min_price, max_price, modal_price, arrival_date")
-
-      .eq("commodity", filters.commodity)
-
-      .eq("state", filters.state)
-
-      .gte("arrival_date", (() => {
-
-        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
-
-          new Date(),
-
-        );
-
-        const yesterday = new Date(`${today}T00:00:00Z`);
-
-        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-
-        return yesterday.toISOString().slice(0, 10);
-
-      })())
-
-      .lte(
-
-        "arrival_date",
-
-        new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()),
-
-      )
-
-      .order("arrival_date", { ascending: false })
-
-      .limit(250);
-
-    if (filters.district) query = query.eq("district", filters.district);
-
-    if (filters.market) query = query.eq("market", filters.market);
-
-    const { data, error } = await query;
-
-    if (error) throw new Error(error.message);
-
-    return {
-
-      records: normalizeRows((data ?? []) as unknown as Record<string, unknown>[], {
-
-        providerId: this.id,
-
-        source: "AGMARKNET (last stored official record)",
-
-        sourceUpdatedAt: null,
-
-        fetchedAt,
-
-      }),
-
-      sourceUpdatedAt: null,
-
-      statusCode: null,
-
-    };
-
-  },
-
-};
-
-
-
-export const providers: Provider[] = [agmarknetVariety, agmarknetDaily, storedArchive].sort(
-
-  (a, b) => a.priority - b.priority,
-
-);
-
-
-
-export function providerCatalogue() {
-
-  return [
-
-    ...providers.map((p) => ({
-
-      id: p.id,
-
-      name: p.name,
-
-      priority: p.priority,
-
-      coverage: p.coverage,
-
-      archive: p.archive,
-
-      requiresKey: Boolean(p.envKey),
-
-      configured: p.envKey ? Boolean(process.env[p.envKey]) : true,
-
-    })),
-
-    {
-
-      id: CEDA_ID,
-
-      name: "CEDA Agmarknet open research API (state-level cross-check)",
-
-      priority: 5,
-
-      coverage: "State-level daily averages · used only to cross-check prices",
-
-      archive: true,
-
-      requiresKey: false,
-
-      configured: true,
-
-    },
-
-  ];
-
+function getAgmarknetApiKey() {
+  return process.env[AGMARKNET_KEY_ENV]?.trim() || null;
 }
 
+function buildAgmarknetUrl(
+  resourceId: string,
+  apiKey: string,
+  filters: MarketFilters,
+  limit: number,
+  offset: number,
+  arrivalDate?: string,
+) {
+  const url = new URL(`https://api.data.gov.in/resource/${resourceId}`);
+  url.searchParams.set("api-key", apiKey);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
+  if (resourceId === AGMARKNET_VARIETY) {
+    url.searchParams.set("sort[Arrival_Date]", "desc");
+    if (filters.commodity) url.searchParams.set("filters[Commodity]", titleCase(filters.commodity));
+    if (filters.state) url.searchParams.set("filters[State]", titleCase(filters.state));
+    if (filters.district) url.searchParams.set("filters[District]", titleCase(filters.district));
+    if (filters.market) url.searchParams.set("filters[Market]", titleCase(filters.market));
+    if (arrivalDate) url.searchParams.set("filters[Arrival_Date]", arrivalDate);
+  }
+  return url;
+}
 
+async function fetchAgmarknetRows(
+  resourceId: string,
+  apiKey: string,
+  filters: MarketFilters,
+  maxRecords: number,
+  arrivalDate?: string,
+) {
+  const rows: Record<string, unknown>[] = [];
+  let payload: unknown = null;
+  let statusCode: number | null = null;
+  const limit = Math.min(AGMARKNET_PAGE_SIZE, maxRecords);
 
-/* ------------------------------------------------- cross-check: CEDA (open) */
+  for (let offset = 0; offset < maxRecords; offset += limit) {
+    const response = await getJson(
+      buildAgmarknetUrl(resourceId, apiKey, filters, limit, offset, arrivalDate),
+    );
+    payload = response.payload;
+    statusCode = response.statusCode;
+    const pageRows = payloadRows(payload);
+    rows.push(...pageRows);
 
+    const total =
+      payload && typeof payload === "object" && !Array.isArray(payload)
+        ? numericValue((payload as Record<string, unknown>)["total"])
+        : null;
+    if (
+      pageRows.length < limit ||
+      rows.length >= maxRecords ||
+      (total !== null && rows.length >= total)
+    ) {
+      break;
+    }
+  }
 
+  return { rows, payload, statusCode };
+}
+
+export async function fetchAgmarknetHistory(filters: MarketFilters): Promise<PriceRecord[]> {
+  const apiKey = getAgmarknetApiKey();
+  if (!apiKey) throw new Error(`${AGMARKNET_KEY_ENV} is not configured`);
+
+  const fetchedAt = new Date().toISOString();
+  const result = await fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, filters, 60);
+  return normalizeRows(result.rows, {
+    providerId: "agmarknet_variety",
+    source: "AGMARKNET · Government of India",
+    sourceUpdatedAt: datasetUpdatedAt((result.payload ?? {}) as Record<string, unknown>),
+    fetchedAt,
+  }).filter((record) => matchesMarketFilters(record, filters));
+}
+
+export async function probeAgmarknet() {
+  const startedAt = Date.now();
+  const apiKey = getAgmarknetApiKey();
+  if (!apiKey) {
+    return {
+      ok: false,
+      statusCode: null,
+      latencyMs: null,
+      records: null,
+      latestArrivalDate: null,
+      sourceUpdatedAt: null,
+      detail: `${AGMARKNET_KEY_ENV} is not configured`,
+    };
+  }
+
+  try {
+    const response = await getJson(
+      buildAgmarknetUrl(AGMARKNET_VARIETY, apiKey, { commodity: "", state: "" }, 1, 0),
+    );
+    const payload =
+      response.payload && typeof response.payload === "object" && !Array.isArray(response.payload)
+        ? (response.payload as Record<string, unknown>)
+        : {};
+    const firstRecord = payloadRows(payload)[0];
+    return {
+      ok: true,
+      statusCode: response.statusCode,
+      latencyMs: Date.now() - startedAt,
+      records: numericValue(payload["total"]),
+      latestArrivalDate: firstRecord
+        ? toIsoDate(pick(firstRecord, "arrival_date", "date")) || null
+        : null,
+      sourceUpdatedAt: datasetUpdatedAt(payload),
+      detail: "Latest record read directly from the government dataset",
+    };
+  } catch (error) {
+    const statusCode =
+      error && typeof error === "object" && "statusCode" in error
+        ? Number((error as { statusCode: unknown }).statusCode)
+        : null;
+    return {
+      ok: false,
+      statusCode: Number.isFinite(statusCode) ? statusCode : null,
+      latencyMs: Date.now() - startedAt,
+      records: null,
+      latestArrivalDate: null,
+      sourceUpdatedAt: null,
+      detail: statusCode
+        ? `Government market data source responded with HTTP ${statusCode}`
+        : "Could not reach the government market data source",
+    };
+  }
+}
+
+const agmarknetVariety: Provider = {
+  id: "agmarknet_variety",
+
+  name: "AGMARKNET · Variety-wise daily prices (data.gov.in)",
+
+  priority: 2,
+
+  envKey: AGMARKNET_KEY_ENV,
+
+  coverage: "All states · full mandi archive · daily",
+
+  archive: false,
+
+  async fetch(filters) {
+    const apiKey = getAgmarknetApiKey();
+
+    if (!apiKey) throw new Error("missing_api_key");
+
+    const fetchedAt = new Date().toISOString();
+
+    const request = (f: MarketFilters, arrivalDate?: string, limit = AGMARKNET_MAX_RECORDS) =>
+      fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, f, limit, arrivalDate);
+
+    const districtAttempts = filters.district ? districtVariants(filters.district) : [undefined];
+
+    let payload: unknown = null;
+
+    let statusCode: number | null = null;
+
+    let rows: Record<string, unknown>[] = [];
+
+    for (const district of districtAttempts) {
+      const response = await request({ ...filters, ...(district ? { district } : {}) });
+
+      payload = response.payload;
+
+      statusCode = response.statusCode;
+
+      rows = response.rows;
+
+      if (rows.length > 0) break;
+    }
+
+    // Geocoders and the official dataset often use different district spellings.
+
+    // Retry only today's two official reporting dates without a server-side district
+
+    // filter, then strictly re-check every row below before it can reach the UI.
+
+    if (rows.length === 0 && filters.district) {
+      const today = istToday();
+
+      const yesterdayDate = new Date(`${today}T00:00:00Z`);
+
+      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+
+      const toDmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+      const fallbackFilters = { commodity: filters.commodity, state: filters.state };
+
+      const fallback = await Promise.all([
+        request(fallbackFilters, toDmy(today), AGMARKNET_MAX_RECORDS),
+
+        request(
+          fallbackFilters,
+          toDmy(yesterdayDate.toISOString().slice(0, 10)),
+          AGMARKNET_MAX_RECORDS,
+        ),
+      ]);
+
+      payload = fallback[0]?.payload ?? fallback[1]?.payload ?? null;
+
+      statusCode = fallback.find((response) => response.statusCode)?.statusCode ?? statusCode;
+
+      rows = fallback.flatMap((response) => response.rows);
+    }
+
+    const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
+
+    return {
+      records: normalizeRows(rows, {
+        providerId: this.id,
+
+        source: "AGMARKNET · Government of India",
+
+        sourceUpdatedAt,
+
+        fetchedAt,
+      }),
+
+      sourceUpdatedAt,
+
+      statusCode,
+    };
+  },
+};
+
+const agmarknetDaily: Provider = {
+  id: "agmarknet_daily",
+
+  name: "AGMARKNET · Current daily mandi prices (data.gov.in)",
+
+  priority: 3,
+
+  envKey: AGMARKNET_KEY_ENV,
+
+  coverage: "Today's published snapshot · matched in memory",
+
+  archive: false,
+
+  async fetch(filters) {
+    const apiKey = getAgmarknetApiKey();
+
+    if (!apiKey) throw new Error("missing_api_key");
+
+    const fetchedAt = new Date().toISOString();
+
+    // This resource ignores server-side filters, so we strictly match all
+
+    // requested location and crop fields ourselves.
+
+    const url = buildAgmarknetUrl(AGMARKNET_DAILY, apiKey, filters, AGMARKNET_MAX_RECORDS, 0);
+
+    const { payload, statusCode } = await getJson(url);
+
+    const rows = ((payload as { records?: Record<string, unknown>[] }).records ?? []).filter(
+      (row) =>
+        looseEq(pick(row, "commodity"), filters.commodity) &&
+        looseEq(pick(row, "state"), filters.state) &&
+        (!filters.district || districtEq(pick(row, "district"), filters.district)) &&
+        (!filters.market || looseEq(pick(row, "market"), filters.market)),
+    );
+
+    const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
+
+    return {
+      records: normalizeRows(rows, {
+        providerId: this.id,
+
+        source: "AGMARKNET daily snapshot · Government of India",
+
+        sourceUpdatedAt,
+
+        fetchedAt,
+      }),
+
+      sourceUpdatedAt,
+
+      statusCode,
+    };
+  },
+};
 
 /**
 
- * CEDA (Centre for Economic Data & Analysis, Ashoka University) publishes an
+ * LAST RESORT — officially reported records MarketMitra already stored. Flagged
 
- * open, keyless API over the same official AGMARKNET reporting, aggregated to
+ * as an archive so the UI always labels it "last available data", never today's.
 
- * state-level daily averages. It is NOT per-mandi and it lags the portal, so it
+ */
 
- * is never shown as a price — it is used purely to sanity-check the mandi
+const storedArchive: Provider = {
+  id: "marketmitra_archive",
 
- * numbers we do show and to flag source disagreement.
+  name: "MarketMitra archive of official AGMARKNET records",
 
- */
+  priority: 9,
+
+  envKey: null,
+
+  coverage: "Previously fetched official records only",
+
+  archive: true,
+
+  async fetch(filters) {
+    const fetchedAt = new Date().toISOString();
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let query = supabaseAdmin
+
+      .from("market_prices")
+
+      .select(
+        "commodity, variety, state, district, market, min_price, max_price, modal_price, arrival_date",
+      )
+
+      .eq("commodity", filters.commodity)
+
+      .eq("state", filters.state)
+
+      .gte(
+        "arrival_date",
+        (() => {
+          const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(
+            new Date(),
+          );
+
+          const yesterday = new Date(`${today}T00:00:00Z`);
+
+          yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+          return yesterday.toISOString().slice(0, 10);
+        })(),
+      )
+
+      .lte(
+        "arrival_date",
+
+        new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()),
+      )
+
+      .order("arrival_date", { ascending: false })
+
+      .limit(250);
+
+    if (filters.district) query = query.eq("district", filters.district);
+
+    if (filters.market) query = query.eq("market", filters.market);
+
+    const { data, error } = await query;
+
+    if (error) throw new Error(error.message);
+
+    return {
+      records: normalizeRows((data ?? []) as unknown as Record<string, unknown>[], {
+        providerId: this.id,
+
+        source: "AGMARKNET (last stored official record)",
+
+        sourceUpdatedAt: null,
+
+        fetchedAt,
+      }),
+
+      sourceUpdatedAt: null,
+
+      statusCode: null,
+    };
+  },
+};
 
 const CEDA_ID = "ceda_agmarknet";
+const CEDA_BASE = "https://agmarknet.ceda.ashoka.edu.in/api";
 
-const CEDA_BASE = "https\://agmarknet.ceda.ashoka.edu.in/api";
+const STATE_ALIASES: Record<string, string> = {
+  chattisgarh: "chhattisgarh",
+  jammuandkashmir: "jammukashmir",
+  pondicherry: "puducherry",
+  uttrakhand: "uttarakhand",
+};
 
+function findCedaState(states: { id: number; name: string }[], stateName: string) {
+  const normTarget = normalizedName(stateName);
+  const aliased = STATE_ALIASES[normTarget] || normTarget;
+  const match = states.find((s) => looseEq(s.name, stateName) || looseEq(s.name, aliased));
+  if (match) return match;
+  return states.find((s) => {
+    const sNorm = normalizedName(s.name);
+    return sNorm.includes(aliased) || aliased.includes(sNorm);
+  });
+}
 
+const cedaAgmarknet: Provider = {
+  id: CEDA_ID,
+  name: "CEDA Agmarknet open research API",
+  priority: 1,
+  envKey: null,
+  coverage: "State and district daily averages (CEDA AGMARKNET open data)",
+  archive: false,
+  async fetch(filters) {
+    if (filters.market) {
+      return { records: [], sourceUpdatedAt: null, statusCode: 200 };
+    }
 
-type CedaLookup = { states: { id: number; name: string }[]; commodities: { id: number; name: string }[] };
+    const lookup = await loadCedaLookup();
+
+    const stateMatch = findCedaState(lookup.states, filters.state);
+    if (!stateMatch) {
+      return { records: [], sourceUpdatedAt: null, statusCode: 200 };
+    }
+
+    let commMatch = lookup.commodities.find((c) => looseEq(c.name, filters.commodity));
+    if (!commMatch && filters.commodity.includes("(")) {
+      const cleanName = filters.commodity.split("(")[0]!.trim();
+      commMatch = lookup.commodities.find(
+        (c) => looseEq(c.name, cleanName) || c.name.toLowerCase().includes(cleanName.toLowerCase()),
+      );
+    }
+    if (!commMatch) {
+      return { records: [], sourceUpdatedAt: null, statusCode: 200 };
+    }
+
+    let districtMatch: CedaDistrict | null = null;
+    if (filters.district) {
+      const districts = await loadCedaDistricts(stateMatch.id);
+      districtMatch =
+        districts.find((district) => districtEq(district.name, filters.district!)) ?? null;
+      if (!districtMatch) return { records: [], sourceUpdatedAt: null, statusCode: 200 };
+    }
+
+    const endDate = istToday();
+    const startDate = new Date(`${endDate}T00:00:00Z`);
+    startDate.setUTCDate(startDate.getUTCDate() - 1);
+    const response = await fetch(`${CEDA_BASE}/prices`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      signal: AbortSignal.timeout(45_000),
+      body: JSON.stringify({
+        state_id: stateMatch.id,
+        commodity_id: commMatch.id,
+        district_id: districtMatch?.id ?? null,
+        calculation_type: "d",
+        start_date: startDate.toISOString().slice(0, 10),
+        end_date: endDate,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      const error = new Error(`HTTP ${response.status}`) as Error & { statusCode: number };
+      error.statusCode = response.status;
+      console.error(`[market] CEDA prices failed ${response.status}: ${body.slice(0, 300)}`);
+      throw error;
+    }
+
+    const payload = await response.json();
+    const sourceUpdatedAt =
+      payload && typeof payload === "object" && !Array.isArray(payload)
+        ? datasetUpdatedAt(payload as Record<string, unknown>)
+        : null;
+    const fetchedAt = new Date().toISOString();
+
+    return {
+      records: normalizeCedaPriceRecords(payload, {
+        filters,
+        stateName: stateMatch.name,
+        districtName: districtMatch?.name ?? null,
+        fetchedAt,
+        sourceUpdatedAt,
+      }),
+      sourceUpdatedAt,
+      statusCode: response.status,
+    };
+  },
+};
+
+export const providers: Provider[] = [
+  agmarknetVariety,
+  agmarknetDaily,
+  cedaAgmarknet,
+  storedArchive,
+].sort((a, b) => a.priority - b.priority);
+
+export function providerCatalogue() {
+  return providers.map((p) => ({
+    id: p.id,
+    name: p.name,
+    priority: p.priority,
+    coverage: p.coverage,
+    archive: p.archive,
+    requiresKey: Boolean(p.envKey),
+    configured: p.envKey ? Boolean(process.env[p.envKey]) : true,
+  }));
+}
+
+/* ---------------------------------------------------------- CEDA provider */
+
+/**
+ * CEDA (Centre for Economic Data & Analysis, Ashoka University) publishes an
+ * open, keyless API over official AGMARKNET reporting, aggregated to
+ * state- or district-level daily averages. It does not provide mandi-level
+ * prices, so those averages are labelled by their actual aggregation level.
+ */
+type CedaLookup = {
+  states: { id: number; name: string }[];
+  commodities: { id: number; name: string }[];
+};
 
 let cedaLookup: { at: number; value: CedaLookup } | null = null;
 
-
-
 async function loadCedaLookup(): Promise<CedaLookup> {
+  if (cedaLookup && Date.now() - cedaLookup.at < 6 * 3600_000) return cedaLookup.value;
 
-  if (cedaLookup && Date.now() - cedaLookup.at < 6 * 3600_000) return cedaLookup.value;
+  const [statesRes, commoditiesRes] = await Promise.all([
+    fetch(`${CEDA_BASE}/states`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(30_000),
+    }),
+    fetch(`${CEDA_BASE}/commodities`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(30_000),
+    }),
+  ]);
 
-  const [statesRes, commoditiesRes] = await Promise.all([
+  if (!statesRes.ok || !commoditiesRes.ok) {
+    throw new Error(
+      `CEDA lookup failed (states=${statesRes.status}, commodities=${commoditiesRes.status})`,
+    );
+  }
 
-    fetch(`${CEDA_BASE}/states`, { headers: { accept: "application/json" } }),
+  const [statesPayload, commoditiesPayload] = await Promise.all([
+    statesRes.json(),
+    commoditiesRes.json(),
+  ]);
 
-    fetch(`${CEDA_BASE}/commodities`, { headers: { accept: "application/json" } }),
+  const value: CedaLookup = {
+    states: payloadRows(statesPayload)
+      .map((row) => ({
+        id: numericValue(pick(row, "census_state_id", "state_id", "id")),
+        name: pick(row, "census_state_name", "state_name", "name"),
+      }))
+      .filter((row): row is { id: number; name: string } => row.id != null && Boolean(row.name)),
+    commodities: payloadRows(commoditiesPayload)
+      .map((row) => ({
+        id: numericValue(pick(row, "commodity_id", "id")),
+        name: pick(row, "commodity_disp_name", "commodity_name", "name"),
+      }))
+      .filter((row): row is { id: number; name: string } => row.id != null && Boolean(row.name)),
+  };
 
-  ]);
+  if (value.states.length === 0 || value.commodities.length === 0)
+    throw new Error("CEDA lookup returned no usable states or commodities");
 
-  if (!statesRes.ok || !commoditiesRes.ok) throw new Error("ceda_lookup_failed");
+  cedaLookup = { at: Date.now(), value };
 
-  const states = (await statesRes.json()) as {
-
-    data?: { census_state_id: number; census_state_name: string }[];
-
-  };
-
-  const commodities = (await commoditiesRes.json()) as {
-
-    data?: { commodity_id: number; commodity_disp_name: string }[];
-
-  };
-
-  const value: CedaLookup = {
-
-    states: (states.data ?? []).map((s) => ({ id: s.census_state_id, name: s.census_state_name })),
-
-    commodities: (commodities.data ?? []).map((c) => ({
-
-      id: c.commodity_id,
-
-      name: c.commodity_disp_name,
-
-    })),
-
-  };
-
-  cedaLookup = { at: Date.now(), value };
-
-  return value;
-
+  return value;
 }
 
+type CedaDistrict = { id: number; name: string };
 
+async function loadCedaDistricts(stateId: number): Promise<CedaDistrict[]> {
+  const response = await fetch(`${CEDA_BASE}/districts?state_id=${stateId}`, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`CEDA district lookup failed (HTTP ${response.status})`);
 
-export type StateBenchmark = {
-
-  date: string;
-
-  minPrice: number;
-
-  maxPrice: number;
-
-  modalPrice: number;
-
-};
-
-
-
-/** Latest state-level daily average for this commodity, or null. Never a price shown as current. */
-
-async function fetchStateBenchmark(filters: MarketFilters): Promise<StateBenchmark | null> {
-
-  const lookup = await loadCedaLookup();
-
-  const state = lookup.states.find((s) => looseEq(s.name, filters.state));
-
-  const commodity = lookup.commodities.find((c) => looseEq(c.name, filters.commodity));
-
-  if (!state || !commodity) return null;
-
-
-
-  const end = new Date();
-
-  const start = new Date(end.getTime() - 400 * 86_400_000);
-
-  const response = await fetch(`${CEDA_BASE}/prices`, {
-
-    method: "POST",
-
-    headers: { "content-type": "application/json", accept: "application/json" },
-
-    body: JSON.stringify({
-
-      state_id: state.id,
-
-      commodity_id: commodity.id,
-
-      district_id: null,
-
-      calculation_type: "d",
-
-      start_date: start.toISOString().slice(0, 10),
-
-      end_date: end.toISOString().slice(0, 10),
-
-    }),
-
-  });
-
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-  const payload = (await response.json()) as {
-
-    data?: { t: string; p_min: number; p_max: number; p_modal: number }[];
-
-  };
-
-  const rows = (payload.data ?? [])
-
-    .filter((r) => typeof r.t === "string" && Number.isFinite(r.p_modal) && r.p_modal > 0)
-
-    .sort((a, b) => (a.t < b.t ? 1 : -1));
-
-  const newest = rows[0];
-
-  if (!newest) return null;
-
-  return {
-
-    date: newest.t.slice(0, 10),
-
-    minPrice: Math.round(newest.p_min),
-
-    maxPrice: Math.round(newest.p_max),
-
-    modalPrice: Math.round(newest.p_modal),
-
-  };
-
+  return payloadRows(await response.json())
+    .map((row) => ({
+      id: numericValue(pick(row, "census_district_id", "district_id", "id")),
+      name: pick(row, "census_district_name", "district_name", "name"),
+    }))
+    .filter((row): row is CedaDistrict => row.id != null && Boolean(row.name));
 }
 
+export function normalizeCedaPriceRecords(
+  payload: unknown,
+  options: {
+    filters: MarketFilters;
+    stateName: string;
+    districtName: string | null;
+    providerId?: string;
+    fetchedAt: string;
+    sourceUpdatedAt: string | null;
+  },
+): PriceRecord[] {
+  const rows = payloadRows(payload);
+  const records = rows.map<PriceRecord | null>((row) => {
+    const date = toIsoDate(pick(row, "t", "arrival_date", "date"));
+    const minPrice = numericValue(pick(row, "p_min", "min_price", "minPrice"));
+    const maxPrice = numericValue(pick(row, "p_max", "max_price", "maxPrice"));
+    const modalPrice = numericValue(pick(row, "p_modal", "modal_price", "modalPrice"));
+    if (!date || minPrice == null || maxPrice == null || modalPrice == null) return null;
 
+    const actualMarket = pick(row, "market", "mandi");
+    if (options.filters.market && !looseEq(actualMarket, options.filters.market)) return null;
+    if (options.filters.market && !actualMarket) return null;
+
+    const district = pick(row, "district") || options.districtName || "All districts";
+    const market =
+      actualMarket ||
+      (options.districtName
+        ? `${options.districtName} District Average`
+        : `${options.stateName} State Average`);
+
+    return {
+      providerId: options.providerId ?? CEDA_ID,
+      source: "CEDA Agmarknet open research API",
+      commodity: pick(row, "cmdty", "commodity") || options.filters.commodity,
+      variety: pick(row, "variety") || null,
+      grade: pick(row, "grade") || null,
+      state: pick(row, "state") || options.stateName,
+      district,
+      market,
+      date,
+      arrival: numericValue(pick(row, "arrivals", "arrival")) ?? null,
+      minPrice,
+      maxPrice,
+      modalPrice,
+      currency: "INR",
+      fetchedAt: options.fetchedAt,
+      sourceUpdatedAt: options.sourceUpdatedAt,
+    };
+  });
+
+  return dedupe(
+    sortRecords(records.filter((row): row is PriceRecord => row != null && isValid(row))),
+  );
+}
 
 /* --------------------------------------------------------------- aggregator */
 
-
-
 export type Consensus = "single" | "corroborated" | "conflict";
 
-
-
 export type AggregateResult = {
+  records: PriceRecord[];
 
-  records: PriceRecord[];
+  /** Strict India-time reporting-day groups. Never contains any other date. */
 
-  /** Strict India-time reporting-day groups. Never contains any other date. */
+  todayRecords: PriceRecord[];
 
-  todayRecords: PriceRecord[];
+  yesterdayRecords: PriceRecord[];
 
-  yesterdayRecords: PriceRecord[];
+  todayAvailable: boolean;
 
-  todayAvailable: boolean;
+  attempts: ProviderAttempt[];
 
-  attempts: ProviderAttempt[];
+  providerId: string | null;
 
-  providerId: string | null;
+  source: string | null;
 
-  source: string | null;
+  archive: boolean;
 
-  archive: boolean;
+  latestDate: string;
 
-  latestDate: string;
+  sourceUpdatedAt: string | null;
 
-  sourceUpdatedAt: string | null;
+  fetchedAt: string;
 
-  fetchedAt: string;
+  freshness: Freshness;
 
-  freshness: Freshness;
+  /** Other sources that also reported the same latest date, for transparency. */
 
-  /** Other sources that also reported the same latest date, for transparency. */
+  corroboratedBy: string[];
 
-  corroboratedBy: string[];
+  /** Internal confidence signal — never rendered as technical text. */
 
-  /** Internal confidence signal — never rendered as technical text. */
-
-  consensus: Consensus;
-
+  consensus: Consensus;
 };
 
-
-
 async function logAttempts(attempts: ProviderAttempt[], filters: MarketFilters) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  try {
+    const { error } = await supabaseAdmin.from("api_fetch_logs").insert(
+      attempts.map((a) => ({
+        provider: a.providerId,
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        ok: a.ok,
 
-    await supabaseAdmin.from("api_fetch_logs").insert(
+        status_code: a.statusCode,
 
-      attempts.map((a) => ({
+        record_count: a.recordCount,
 
-        provider: a.providerId,
+        latest_data_date: a.latestDataDate,
 
-        ok: a.ok,
+        duration_ms: a.durationMs,
 
-        status_code: a.statusCode,
+        commodity: filters.commodity,
 
-        record_count: a.recordCount,
+        state: filters.state,
 
-        latest_data_date: a.latestDataDate,
-
-        duration_ms: a.durationMs,
-
-        commodity: filters.commodity,
-
-        state: filters.state,
-
-        error: a.error,
-
-      })),
-
-    );
-
-  } catch (error) {
-
-    console.error("[market] diagnostics log failed", error);
-
-  }
-
+        error: a.error,
+      })),
+    );
+    if (error) console.error("[market] diagnostics log failed", error.message);
+  } catch (error) {
+    console.error("[market] diagnostics log failed", error);
+  }
 }
-
-
 
 async function persist(records: PriceRecord[]) {
+  const live = records.filter((r) => r.providerId !== storedArchive.id);
 
-  const live = records.filter((r) => r.providerId !== storedArchive.id);
+  if (live.length === 0) return;
 
-  if (live.length === 0) return;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  try {
+    const { error } = await supabaseAdmin.from("market_prices").upsert(
+      live.map((r) => ({
+        commodity: r.commodity,
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        variety: r.variety,
 
-    const { error } = await supabaseAdmin.from("market_prices").upsert(
+        state: r.state,
 
-      live.map((r) => ({
+        district: r.district,
 
-        commodity: r.commodity,
+        market: r.market,
 
-        variety: r.variety,
+        min_price: r.minPrice,
 
-        state: r.state,
+        max_price: r.maxPrice,
 
-        district: r.district,
+        modal_price: r.modalPrice,
 
-        market: r.market,
+        arrival_date: r.date,
 
-        min_price: r.minPrice,
+        fetched_at: r.fetchedAt,
+      })),
 
-        max_price: r.maxPrice,
+      { onConflict: "commodity,state,district,market,variety,arrival_date" },
+    );
 
-        modal_price: r.modalPrice,
-
-        arrival_date: r.date,
-
-        fetched_at: r.fetchedAt,
-
-      })),
-
-      { onConflict: "commodity,state,district,market,variety,arrival_date" },
-
-    );
-
-    if (error) console.error("[market] upsert failed", error.message);
-
-  } catch (error) {
-
-    console.error("[market] upsert threw", error);
-
-  }
-
+    if (error) console.error("[market] upsert failed", error.message);
+  } catch (error) {
+    console.error("[market] upsert threw", error);
+  }
 }
-
-
 
 const marketKey = (r: PriceRecord) =>
-
-  `${r.market}|${r.district}|${r.variety ?? ""}`.toLowerCase().replace(/[^a-z0-9|]/g, "");
-
-
+  `${r.market}|${r.district}|${r.variety ?? ""}`.toLowerCase().replace(/[^a-z0-9|]/g, "");
 
 /**
 
- * Merges records from several sources that all report the same reporting date.
+ * Merges records from several sources that all report the same reporting date.
 
- * Same mandi + variety reported twice: keep the record from the higher-priority
+ * Same mandi + variety reported twice: keep the record from the higher-priority
 
- * source, and flag a conflict when the two modal prices differ materially
+ * source, and flag a conflict when the two modal prices differ materially
 
- * (>12%) instead of averaging unrelated numbers.
+ * (>12%) instead of averaging unrelated numbers.
 
- */
+ */
 
 function mergeSameDate(groups: { priority: number; records: PriceRecord[] }[]) {
+  const chosen = new Map<string, PriceRecord>();
 
-  const chosen = new Map<string, PriceRecord>();
+  let conflict = false;
 
-  let conflict = false;
+  for (const group of [...groups].sort((a, b) => a.priority - b.priority)) {
+    for (const record of group.records) {
+      const key = marketKey(record);
 
-  for (const group of [...groups].sort((a, b) => a.priority - b.priority)) {
+      const existing = chosen.get(key);
 
-    for (const record of group.records) {
+      if (!existing) {
+        chosen.set(key, record);
 
-      const key = marketKey(record);
+        continue;
+      }
 
-      const existing = chosen.get(key);
+      const spread =
+        Math.abs(existing.modalPrice - record.modalPrice) /
+        Math.max(existing.modalPrice, record.modalPrice);
 
-      if (!existing) {
+      if (spread > 0.12) conflict = true;
+    }
+  }
 
-        chosen.set(key, record);
-
-        continue;
-
-      }
-
-      const spread =
-
-        Math.abs(existing.modalPrice - record.modalPrice) /
-
-        Math.max(existing.modalPrice, record.modalPrice);
-
-      if (spread > 0.12) conflict = true;
-
-    }
-
-  }
-
-  return { records: sortRecords([...chosen.values()]), conflict };
-
+  return { records: sortRecords([...chosen.values()]), conflict };
 }
-
-
 
 /**
 
- * Queries every configured provider in PARALLEL and returns the set whose
+ * Queries every configured provider in PARALLEL and returns the set whose
 
- * underlying MARKET DATA DATE is newest — not whichever API answered first.
+ * underlying MARKET DATA DATE is newest — not whichever API answered first.
 
- * Records are normalized, validated, deduped across sources and cross-checked
+ * Records are normalized, validated, deduped across sources and cross-checked
 
- * against the state-level benchmark. Nothing is ever fabricated or averaged.
+ * by the source. Nothing is ever fabricated, averaged locally, or synthesized.
 
- */
+ */
 
 export async function aggregateMarketPrices(filters: MarketFilters): Promise<AggregateResult> {
+  const attempts: ProviderAttempt[] = [];
 
-  const attempts: ProviderAttempt[] = [];
+  const successes: { provider: Provider; result: ProviderResult }[] = [];
 
-  const successes: { provider: Provider; result: ProviderResult }[] = [];
+  const runnable = providers.filter((p) => !p.envKey || Boolean(process.env[p.envKey]));
 
+  for (const provider of providers) {
+    if (provider.envKey && !process.env[provider.envKey]) {
+      attempts.push({
+        providerId: provider.id,
 
+        provider: provider.name,
 
-  const runnable = providers.filter((p) => !p.envKey || Boolean(process.env[p.envKey]));
+        ok: false,
 
-  for (const provider of providers) {
+        statusCode: null,
 
-    if (provider.envKey && !process.env[provider.envKey]) {
+        recordCount: 0,
 
-      attempts.push({
+        latestDataDate: null,
 
-        providerId: provider.id,
+        durationMs: 0,
 
-        provider: provider.name,
+        error: "API key not configured",
+      });
+    }
+  }
 
-        ok: false,
+  await Promise.all(
+    runnable.map(async (provider) => {
+      const started = Date.now();
 
-        statusCode: null,
+      try {
+        const rawResult = await provider.fetch(filters);
 
-        recordCount: 0,
+        const result = {
+          ...rawResult,
 
-        latestDataDate: null,
+          records: currentMarketRecords(rawResult.records, filters),
+        };
 
-        durationMs: 0,
+        attempts.push({
+          providerId: provider.id,
 
-        error: "API key not configured",
+          provider: provider.name,
 
-      });
+          ok: result.records.length > 0,
 
-    }
+          statusCode: result.statusCode,
 
-  }
+          recordCount: result.records.length,
 
+          latestDataDate: result.records[0]?.date ?? rawResult.records[0]?.date ?? null,
 
+          durationMs: Date.now() - started,
 
-  const benchmarkStarted = Date.now();
+          error: result.records.length === 0 ? "No current records returned" : null,
+        });
 
-  const settled = await Promise.allSettled([
-
-    ...runnable.map(async (provider) => {
-
-      const started = Date.now();
-
-      try {
-
-        const rawResult = await provider.fetch(filters);
-
-        const result = {
-
-          ...rawResult,
-
-          records: currentMarketRecords(rawResult.records, filters),
-
-        };
-
-        attempts.push({
-
-          providerId: provider.id,
-
-          provider: provider.name,
-
-          ok: result.records.length > 0,
-
-          statusCode: result.statusCode,
-
-          recordCount: result.records.length,
-
-          latestDataDate: result.records[0]?.date ?? null,
-
-          durationMs: Date.now() - started,
-
-          error: result.records.length === 0 ? "No records returned" : null,
-
-        });
-
-        if (result.records.length > 0) successes.push({ provider, result });
-
-      } catch (error) {
-
-        const err = error as Error & { statusCode?: number; cause?: unknown };
+        if (result.records.length > 0) successes.push({ provider, result });
+      } catch (error) {
+        const err = error as Error & { statusCode?: number; cause?: unknown };
         console.error("[market] provider fetch failed", {
           provider: provider.id,
           message: err.message,
@@ -1376,270 +1366,151 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
           stack: err.stack,
         });
 
-        attempts.push({
+        attempts.push({
+          providerId: provider.id,
 
-          providerId: provider.id,
+          provider: provider.name,
 
-          provider: provider.name,
+          ok: false,
 
-          ok: false,
+          statusCode: err.statusCode ?? null,
 
-          statusCode: err.statusCode ?? null,
+          recordCount: 0,
 
-          recordCount: 0,
+          latestDataDate: null,
 
-          latestDataDate: null,
+          durationMs: Date.now() - started,
 
-          durationMs: Date.now() - started,
+          error: err.message.slice(0, 300),
+        });
+      }
+    }),
+  );
 
-          error: err.message.slice(0, 300),
+  await logAttempts(attempts, filters);
 
-        });
+  // Prefer live sources; stored official rows are eligible only inside the same
 
-      }
+  // today/yesterday window already enforced above.
 
-    }),
+  const live = successes.filter((s) => !s.provider.archive);
 
-    (async () => {
+  const pool = live.length > 0 ? live : successes;
 
-      try {
+  if (pool.length === 0) {
+    return {
+      records: [],
 
-        const benchmark = await fetchStateBenchmark(filters);
+      todayRecords: [],
 
-        attempts.push({
+      yesterdayRecords: [],
 
-          providerId: CEDA_ID,
+      todayAvailable: false,
 
-          provider: "CEDA Agmarknet open research API",
+      attempts,
 
-          ok: Boolean(benchmark),
+      providerId: null,
 
-          statusCode: 200,
+      source: null,
 
-          recordCount: benchmark ? 1 : 0,
+      archive: false,
 
-          latestDataDate: benchmark?.date ?? null,
+      latestDate: "",
 
-          durationMs: Date.now() - benchmarkStarted,
+      sourceUpdatedAt: null,
 
-          error: benchmark ? null : "No benchmark rows",
+      fetchedAt: new Date().toISOString(),
 
-        });
+      freshness: { level: "unavailable", label: "UNAVAILABLE", ageDays: null },
 
-        return benchmark;
+      corroboratedBy: [],
 
-      } catch (error) {
+      consensus: "single",
+    };
+  }
 
-        attempts.push({
+  const today = istToday();
 
-          providerId: CEDA_ID,
+  const yesterdayDate = new Date(`${today}T00:00:00Z`);
 
-          provider: "CEDA Agmarknet open research API",
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
 
-          ok: false,
+  const yesterday = yesterdayDate.toISOString().slice(0, 10);
 
-          statusCode: null,
+  const mergeDate = (date: string) =>
+    mergeSameDate(
+      pool
 
-          recordCount: 0,
+        .map((s) => ({
+          priority: s.provider.priority,
 
-          latestDataDate: null,
+          records: s.result.records.filter((record) => record.date === date),
+        }))
 
-          durationMs: Date.now() - benchmarkStarted,
+        .filter((group) => group.records.length > 0),
+    );
 
-          error: (error as Error).message.slice(0, 300),
+  const todayMerged = mergeDate(today);
 
-        });
+  const yesterdayMerged = mergeDate(yesterday);
 
-        return null;
+  const todayRecords = todayMerged.records;
 
-      }
+  const yesterdayRecords = yesterdayMerged.records;
 
-    })(),
+  const todayAvailable = todayRecords.length > 0;
 
-  ]);
+  const records = todayAvailable ? [...todayRecords, ...yesterdayRecords] : yesterdayRecords;
 
+  const latestDate = todayAvailable ? today : yesterday;
 
+  const onLatest = pool.filter((s) =>
+    s.result.records.some((record) => record.date === latestDate),
+  );
 
-  const benchmark =
+  const primary = [...onLatest].sort((a, b) => a.provider.priority - b.provider.priority)[0]!;
 
-    settled[settled.length - 1]?.status === "fulfilled"
+  await persist(records);
 
-      ? ((settled[settled.length - 1] as PromiseFulfilledResult<StateBenchmark | null>)
+  const conflict = todayMerged.conflict || yesterdayMerged.conflict;
 
-          .value ?? null)
+  const corroboratedBy = onLatest
 
-      : null;
+    .filter((s) => s.provider.id !== primary.provider.id)
 
+    .map((s) => s.provider.name);
 
+  return {
+    records,
 
-  void logAttempts(attempts, filters);
+    todayRecords,
 
+    yesterdayRecords,
 
+    todayAvailable,
 
-  // Prefer live sources; stored official rows are eligible only inside the same
+    attempts,
 
-  // today/yesterday window already enforced above.
+    providerId: primary.provider.id,
 
-  const live = successes.filter((s) => !s.provider.archive);
+    source: records[0]?.source ?? primary.provider.name,
 
-  const pool = live.length > 0 ? live : successes;
+    archive: primary.provider.archive,
 
+    latestDate,
 
+    sourceUpdatedAt: primary.result.sourceUpdatedAt,
 
-  if (pool.length === 0) {
+    fetchedAt: records[0]?.fetchedAt ?? new Date().toISOString(),
 
-    return {
+    freshness: computeFreshness({
+      dataDate: latestDate,
 
-      records: [],
+      sourceUpdatedAt: primary.provider.archive ? null : primary.result.sourceUpdatedAt,
+    }),
 
-      todayRecords: [],
+    corroboratedBy,
 
-      yesterdayRecords: [],
-
-      todayAvailable: false,
-
-      attempts,
-
-      providerId: null,
-
-      source: null,
-
-      archive: false,
-
-      latestDate: "",
-
-      sourceUpdatedAt: null,
-
-      fetchedAt: new Date().toISOString(),
-
-      freshness: { level: "unavailable", label: "UNAVAILABLE", ageDays: null },
-
-      corroboratedBy: [],
-
-      consensus: "single",
-
-    };
-
-  }
-
-
-
-  const today = istToday();
-
-  const yesterdayDate = new Date(`${today}T00:00:00Z`);
-
-  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-
-  const yesterday = yesterdayDate.toISOString().slice(0, 10);
-
-  const mergeDate = (date: string) =>
-
-    mergeSameDate(
-
-      pool
-
-        .map((s) => ({
-
-          priority: s.provider.priority,
-
-          records: s.result.records.filter((record) => record.date === date),
-
-        }))
-
-        .filter((group) => group.records.length > 0),
-
-    );
-
-  const todayMerged = mergeDate(today);
-
-  const yesterdayMerged = mergeDate(yesterday);
-
-  const todayRecords = todayMerged.records;
-
-  const yesterdayRecords = yesterdayMerged.records;
-
-  const todayAvailable = todayRecords.length > 0;
-
-  const records = todayAvailable ? [...todayRecords, ...yesterdayRecords] : yesterdayRecords;
-
-  const latestDate = todayAvailable ? today : yesterday;
-
-  const onLatest = pool.filter((s) => s.result.records.some((record) => record.date === latestDate));
-
-  const primary = [...onLatest].sort((a, b) => a.provider.priority - b.provider.priority)[0]!;
-
-
-
-  await persist(records);
-
-
-
-  let conflict = todayMerged.conflict || yesterdayMerged.conflict;
-
-  if (benchmark && benchmark.date === latestDate && records[0]) {
-
-    const spread =
-
-      Math.abs(benchmark.modalPrice - records[0].modalPrice) /
-
-      Math.max(benchmark.modalPrice, records[0].modalPrice);
-
-    if (spread > 0.4) conflict = true;
-
-  }
-
-
-
-  const corroboratedBy = onLatest
-
-    .filter((s) => s.provider.id !== primary.provider.id)
-
-    .map((s) => s.provider.name);
-
-  if (benchmark && benchmark.date === latestDate) {
-
-    corroboratedBy.push("CEDA Agmarknet open research API");
-
-  }
-
-
-
-  return {
-
-    records,
-
-    todayRecords,
-
-    yesterdayRecords,
-
-    todayAvailable,
-
-    attempts,
-
-    providerId: primary.provider.id,
-
-    source: records[0]?.source ?? primary.provider.name,
-
-    archive: primary.provider.archive,
-
-    latestDate,
-
-    sourceUpdatedAt: primary.result.sourceUpdatedAt,
-
-    fetchedAt: records[0]?.fetchedAt ?? new Date().toISOString(),
-
-    freshness: computeFreshness({
-
-      dataDate: latestDate,
-
-      sourceUpdatedAt: primary.provider.archive ? null : primary.result.sourceUpdatedAt,
-
-    }),
-
-    corroboratedBy,
-
-    consensus: conflict ? "conflict" : corroboratedBy.length > 0 ? "corroborated" : "single",
-
-  };
-
+    consensus: conflict ? "conflict" : corroboratedBy.length > 0 ? "corroborated" : "single",
+  };
 }

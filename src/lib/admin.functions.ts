@@ -209,101 +209,27 @@ async function probe(
   }
 }
 
-async function checkMarketData(
-  url: string | null,
-): Promise<{ service: ServiceHealth; data: AdminMarketData }> {
-  if (!url) {
-    return {
-      service: {
-        name: "AGMARKNET market data",
-        ok: false,
-        status: null,
-        latencyMs: null,
-        detail: "Market data key is not configured",
-      },
-      data: {
-        source: "AGMARKNET · data.gov.in",
-        ok: false,
-        statusCode: null,
-        records: null,
-        latestArrivalDate: null,
-        sourceUpdatedAt: null,
-        detail: "Market data key is not configured",
-      },
-    };
-  }
-
-  const started = Date.now();
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) {
-      const detail = `Government market data source responded with HTTP ${response.status}`;
-      return {
-        service: {
-          name: "AGMARKNET market data",
-          ok: false,
-          status: response.status,
-          latencyMs: Date.now() - started,
-          detail,
-        },
-        data: {
-          source: "AGMARKNET · data.gov.in",
-          ok: false,
-          statusCode: response.status,
-          records: null,
-          latestArrivalDate: null,
-          sourceUpdatedAt: null,
-          detail,
-        },
-      };
-    }
-
-    const json = (await response.json()) as {
-      total?: number;
-      updated_date?: string;
-      records?: { arrival_date?: string; Arrival_Date?: string }[];
-    };
-    const firstRecord = json.records?.[0];
-    const data: AdminMarketData = {
+async function checkMarketData(): Promise<{ service: ServiceHealth; data: AdminMarketData }> {
+  const { probeAgmarknet } = await import("./market-providers.server");
+  const result = await probeAgmarknet();
+  return {
+    service: {
+      name: "AGMARKNET market data",
+      ok: result.ok,
+      status: result.statusCode,
+      latencyMs: result.latencyMs,
+      detail: result.ok ? "Government market data reachable" : result.detail,
+    },
+    data: {
       source: "AGMARKNET · data.gov.in",
-      ok: true,
-      statusCode: response.status,
-      records: typeof json.total === "number" ? json.total : null,
-      latestArrivalDate: firstRecord?.arrival_date ?? firstRecord?.Arrival_Date ?? null,
-      sourceUpdatedAt: json.updated_date ?? null,
-      detail: "Latest record read directly from the government dataset",
-    };
-    return {
-      service: {
-        name: "AGMARKNET market data",
-        ok: true,
-        status: response.status,
-        latencyMs: Date.now() - started,
-        detail: "Government market data reachable",
-      },
-      data,
-    };
-  } catch {
-    const detail = "Could not reach the government market data source";
-    return {
-      service: {
-        name: "AGMARKNET market data",
-        ok: false,
-        status: null,
-        latencyMs: Date.now() - started,
-        detail,
-      },
-      data: {
-        source: "AGMARKNET · data.gov.in",
-        ok: false,
-        statusCode: null,
-        records: null,
-        latestArrivalDate: null,
-        sourceUpdatedAt: null,
-        detail,
-      },
-    };
-  }
+      ok: result.ok,
+      statusCode: result.statusCode,
+      records: result.records,
+      latestArrivalDate: result.latestArrivalDate,
+      sourceUpdatedAt: result.sourceUpdatedAt,
+      detail: result.detail,
+    },
+  };
 }
 
 /**
@@ -506,13 +432,6 @@ export const getAdminHealth = createServerFn({ method: "GET" })
       "https://api.open-meteo.com/v1/forecast?latitude=19.99&longitude=73.79&current=temperature_2m&timezone=Asia%2FKolkata";
 
     const groqApiKey = process.env["GROQ_API_KEY"];
-    const dataGovKey = process.env["DATA_GOV_IN_API_KEY"];
-    const marketUrl = dataGovKey
-      ? `https://api.data.gov.in/resource/35985678-0d79-46b4-9ed6-6f13308a1d24?api-key=${encodeURIComponent(
-          dataGovKey,
-        )}&format=json&limit=1&sort%5BArrival_Date%5D=desc`
-      : null;
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [weather, aiProvider, marketCheck, database] = await Promise.all([
       probe("Open-Meteo weather", weatherUrl, "Weather provider reachable"),
@@ -529,7 +448,7 @@ export const getAdminHealth = createServerFn({ method: "GET" })
             detail: "GROQ_API_KEY is not configured",
           }),
 
-      checkMarketData(marketUrl),
+      checkMarketData(),
 
       (async (): Promise<ServiceHealth> => {
         const started = Date.now();

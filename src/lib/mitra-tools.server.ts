@@ -4,28 +4,6 @@
  * weather — so the assistant never invents numbers.
  */
 
-const RESOURCE_ID = "35985678-0d79-46b4-9ed6-6f13308a1d24";
-const MARKET_SOURCE = "AGMARKNET · Government of India";
-
-function pick(row: Record<string, unknown>, ...keys: string[]) {
-  const normalized = new Map<string, unknown>();
-  for (const [k, v] of Object.entries(row)) {
-    normalized.set(k.toLowerCase().replace(/[^a-z]/g, ""), v);
-  }
-  for (const key of keys) {
-    const value = normalized.get(key.toLowerCase().replace(/[^a-z]/g, ""));
-    if (value !== undefined && value !== null && String(value).trim() !== "")
-      return String(value).trim();
-  }
-  return "";
-}
-
-function toIsoDate(value: string) {
-  const dmy = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
-  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "";
-}
-
 export type MitraMandiRow = {
   market: string;
   district: string;
@@ -42,64 +20,33 @@ export async function readMandiPrices(input: {
   state: string;
   district?: string | null;
 }) {
-  const apiKey = process.env["DATA_GOV_IN_API_KEY"];
-  if (!apiKey) {
-    return { ok: false as const, error: "Market price service is not configured." };
-  }
-
-  const request = async (district?: string | null) => {
-    const url = new URL(`https://api.data.gov.in/resource/${RESOURCE_ID}`);
-    url.searchParams.set("api-key", apiKey);
-    url.searchParams.set("format", "json");
-    url.searchParams.set("limit", "250");
-    url.searchParams.set("sort[Arrival_Date]", "desc");
-    url.searchParams.set("filters[Commodity]", input.commodity);
-    url.searchParams.set("filters[State]", input.state);
-    if (district) url.searchParams.set("filters[District]", district);
-    const response = await fetch(url, { headers: { accept: "application/json" } });
-    if (!response.ok) throw new Error(String(response.status));
-    return (await response.json()) as { records?: Record<string, unknown>[] };
-  };
-
   try {
-    let payload = await request(input.district);
-    if ((payload.records?.length ?? 0) === 0 && input.district) payload = await request(null);
-
-    const rows: MitraMandiRow[] = (payload.records ?? [])
-      .map((row) => ({
-        market: pick(row, "market"),
-        district: pick(row, "district"),
-        state: pick(row, "state"),
-        variety: pick(row, "variety") || null,
-        minPrice: Number(pick(row, "min_price", "minprice")),
-        maxPrice: Number(pick(row, "max_price", "maxprice")),
-        modalPrice: Number(pick(row, "modal_price", "modalprice")),
-        arrivalDate: toIsoDate(pick(row, "arrival_date", "arrivaldate")),
-      }))
-      .filter((r) => r.market && r.arrivalDate && Number.isFinite(r.modalPrice) && r.modalPrice > 0)
-      .sort((a, b) =>
-        a.arrivalDate === b.arrivalDate
-          ? b.modalPrice - a.modalPrice
-          : a.arrivalDate < b.arrivalDate
-            ? 1
-            : -1,
-      );
+    const { aggregateMarketPrices } = await import("./market-providers.server");
+    const result = await aggregateMarketPrices({
+      commodity: input.commodity,
+      state: input.state,
+      ...(input.district ? { district: input.district } : {}),
+    });
+    const rows: MitraMandiRow[] = result.records.slice(0, 25).map((record) => ({
+      market: record.market,
+      district: record.district,
+      state: record.state,
+      variety: record.variety,
+      minPrice: record.minPrice,
+      maxPrice: record.maxPrice,
+      modalPrice: record.modalPrice,
+      arrivalDate: record.date,
+    }));
 
     if (rows.length === 0) {
-      return {
-        ok: true as const,
-        rows: [],
-        latestDate: "",
-        source: MARKET_SOURCE,
-        note: "No recent official record for this crop in that state.",
-      };
+      return { ok: false as const, error: "No recent official mandi records are available." };
     }
 
     return {
       ok: true as const,
-      rows: rows.slice(0, 25),
-      latestDate: rows[0]!.arrivalDate,
-      source: MARKET_SOURCE,
+      rows,
+      latestDate: result.latestDate,
+      source: result.source ?? "AGMARKNET · Government of India",
       note: null,
     };
   } catch (error) {
