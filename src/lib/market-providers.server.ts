@@ -178,27 +178,41 @@ function pick(row: Record<string, unknown>, ...keys: string[]) {
 
 /** data.gov.in returns dd/MM/yyyy for arrival dates. */
 
-function toIsoDate(value: string) {
+export function toIsoDate(value: string) {
   const dmy = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-
   const dashedDmy = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/);
+  const isoDate = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const isoTimestamp = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/i,
+  );
   const parts = dmy
     ? [dmy[3]!, dmy[2]!, dmy[1]!]
     : dashedDmy
       ? [dashedDmy[3]!, dashedDmy[2]!, dashedDmy[1]!]
-      : iso
-        ? [iso[1]!, iso[2]!, iso[3]!]
-        : null;
-
+      : isoDate
+        ? [isoDate[1]!, isoDate[2]!, isoDate[3]!]
+        : isoTimestamp
+          ? [isoTimestamp[1]!, isoTimestamp[2]!, isoTimestamp[3]!]
+          : null;
   if (!parts) return "";
   const [year, month, day] = parts.map(Number);
-  const parsed = new Date(Date.UTC(year!, month! - 1, day!));
-  return parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === month! - 1 &&
-    parsed.getUTCDate() === day
-    ? `${parts[0]}-${parts[1]}-${parts[2]}`
-    : "";
+  const parsedDate = new Date(Date.UTC(year!, month! - 1, day!));
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month! - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    return "";
+  }
+
+  if (!isoTimestamp || isoDate) return `${parts[0]}-${parts[1]}-${parts[2]}`;
+
+  const normalizedTimestamp = value.replace(" ", "T");
+  const timestamp = isoTimestamp[4] ? normalizedTimestamp : `${normalizedTimestamp}+05:30`;
+  const instant = new Date(timestamp);
+  if (Number.isNaN(instant.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(instant);
 }
 
 function datasetUpdatedAt(payload: Record<string, unknown>): string | null {
@@ -239,6 +253,27 @@ function payloadRows(payload: unknown, depth = 0): Record<string, unknown>[] {
     }
   }
   return [];
+}
+
+function hasRowsCollection(payload: unknown, depth = 0): boolean {
+  if (Array.isArray(payload))
+    return payload.every((row) => Boolean(row) && typeof row === "object" && !Array.isArray(row));
+  if (!payload || typeof payload !== "object" || depth > 3) return false;
+
+  const object = payload as Record<string, unknown>;
+  for (const key of ["records", "data", "result", "response", "results", "prices", "rows"]) {
+    const value = Object.entries(object).find(
+      ([field]) => normalizedName(field) === normalizedName(key),
+    )?.[1];
+    if (
+      (Array.isArray(value) &&
+        value.every((row) => Boolean(row) && typeof row === "object" && !Array.isArray(row))) ||
+      (value && hasRowsCollection(value, depth + 1))
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function numericValue(value: unknown): number | null {
@@ -511,7 +546,7 @@ async function getJson(url: URL, deadlineAtMs?: number) {
         kind === "timeout"
           ? "data.gov.in request timed out"
           : kind === "network"
-            ? "data.gov.in network request failed"
+            ? `data.gov.in network request failed${causeCode ? ` (${causeCode})` : ""}`
             : "data.gov.in request failed",
       );
     }
@@ -559,6 +594,14 @@ async function getJson(url: URL, deadlineAtMs?: number) {
           : kind === "network"
             ? "data.gov.in response network error"
             : "data.gov.in returned invalid JSON",
+        response.status,
+      );
+    }
+
+    if (!hasRowsCollection(payload)) {
+      throw new DataGovRequestError(
+        "invalid_json",
+        "data.gov.in returned an unexpected response structure",
         response.status,
       );
     }
@@ -791,17 +834,25 @@ const agmarknetVariety: Provider = {
     }
 
     const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
+    const records = normalizeRows(rows, {
+      providerId: this.id,
+
+      source: "AGMARKNET · Government of India",
+
+      sourceUpdatedAt,
+
+      fetchedAt,
+    });
+    if (rows.length > 0 && records.length === 0) {
+      throw new DataGovRequestError(
+        "invalid_json",
+        "data.gov.in returned no usable market-price records",
+        statusCode ?? undefined,
+      );
+    }
 
     return {
-      records: normalizeRows(rows, {
-        providerId: this.id,
-
-        source: "AGMARKNET · Government of India",
-
-        sourceUpdatedAt,
-
-        fetchedAt,
-      }),
+      records,
 
       sourceUpdatedAt,
 
@@ -847,17 +898,25 @@ const agmarknetDaily: Provider = {
     );
 
     const sourceUpdatedAt = datasetUpdatedAt(payload as { updated_date?: string });
+    const records = normalizeRows(rows, {
+      providerId: this.id,
+
+      source: "AGMARKNET daily snapshot · Government of India",
+
+      sourceUpdatedAt,
+
+      fetchedAt,
+    });
+    if (rows.length > 0 && records.length === 0) {
+      throw new DataGovRequestError(
+        "invalid_json",
+        "data.gov.in returned no usable market-price records",
+        statusCode ?? undefined,
+      );
+    }
 
     return {
-      records: normalizeRows(rows, {
-        providerId: this.id,
-
-        source: "AGMARKNET daily snapshot · Government of India",
-
-        sourceUpdatedAt,
-
-        fetchedAt,
-      }),
+      records,
 
       sourceUpdatedAt,
 
@@ -1506,6 +1565,27 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
   const pool = live.length > 0 ? live : successes;
 
   if (pool.length === 0) {
+    const receivedEmptyResponses = attempts.some(
+      (attempt) =>
+        attempt.statusCode !== null &&
+        attempt.statusCode >= 200 &&
+        attempt.statusCode < 300 &&
+        attempt.error === "No current records returned",
+    );
+    if (!receivedEmptyResponses) {
+      const failures = attempts
+        .filter((attempt) => attempt.error && attempt.error !== "No current records returned")
+        .map(
+          (attempt) =>
+            `${attempt.providerId}${attempt.statusCode ? ` HTTP ${attempt.statusCode}` : ""}: ${attempt.error}`,
+        );
+      throw new Error(
+        failures.length > 0
+          ? `All market price providers failed: ${failures.join("; ")}`
+          : "All market price providers failed to return a usable response",
+      );
+    }
+
     return {
       records: [],
 
