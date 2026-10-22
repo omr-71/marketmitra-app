@@ -294,8 +294,8 @@ function MarketsPage() {
             </h1>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              Latest official {crop.name[lang]} prices reported today or
-              yesterday.
+              Latest official {crop.name[lang]} prices, with each market's
+              reporting date shown below.
             </p>
           </Reveal>
 

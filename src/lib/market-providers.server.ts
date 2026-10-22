@@ -110,10 +110,54 @@ type Provider = {
 
   archive: boolean;
 
-  fetch: (filters: MarketFilters) => Promise<ProviderResult>;
+  fetch: (filters: MarketFilters, deadlineAtMs?: number) => Promise<ProviderResult>;
 };
 
+const DATA_GOV_REQUEST_BUDGET_MS = 45_000;
+
 /* ------------------------------------------------------------------ helpers */
+
+type DataGovErrorKind = "timeout" | "network" | "http" | "invalid_json" | "request";
+
+class DataGovRequestError extends Error {
+  constructor(
+    readonly kind: DataGovErrorKind,
+    message: string,
+    readonly statusCode?: number,
+  ) {
+    super(message);
+    this.name = "DataGovRequestError";
+  }
+}
+
+const TRANSIENT_NETWORK_CODES = new Set([
+  "ECONNABORTED",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_SOCKET",
+]);
+
+function getNetworkErrorCode(error: unknown) {
+  if (!(error instanceof Error) || !error.cause || typeof error.cause !== "object") return null;
+  const code = (error.cause as { code?: unknown }).code;
+  return typeof code === "string" && TRANSIENT_NETWORK_CODES.has(code) ? code : null;
+}
+
+function isTransientNetworkError(error: unknown) {
+  return error instanceof TypeError || getNetworkErrorCode(error) !== null;
+}
+
+function isTimeoutError(error: unknown, signal: AbortSignal) {
+  return (
+    signal.aborted ||
+    (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+  );
+}
 
 function pick(row: Record<string, unknown>, ...keys: string[]) {
   const normalized = new Map<string, unknown>();
@@ -405,11 +449,13 @@ function normalizeRows(
   );
 }
 
-async function getJson(url: URL) {
+async function getJson(url: URL, deadlineAtMs?: number) {
   const method = "GET";
   const timeoutMs = 15_000;
+  const retryDelayMs = 300;
+  const maxAttempts = 2;
   const startedAt = Date.now();
-  const apiKey = url.searchParams.get("api-key");
+  const requestDeadlineAtMs = deadlineAtMs ?? startedAt + DATA_GOV_REQUEST_BUDGET_MS;
   const cacheUrl = new URL(url);
   cacheUrl.searchParams.delete("api-key");
   const cacheKey = cacheUrl.toString();
@@ -419,58 +465,117 @@ async function getJson(url: URL) {
   }
   if (cached) dataGovCache.delete(cacheKey);
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(timeoutMs),
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const remainingMs = requestDeadlineAtMs - Date.now();
+    if (remainingMs <= 0) {
+      console.error("[market] data.gov.in request budget exhausted", {
+        hostname: url.hostname,
+        pathname: url.pathname,
+        elapsedMs: Date.now() - startedAt,
+      });
+      throw new DataGovRequestError("timeout", "data.gov.in request timed out");
+    }
+
+    const attemptTimeoutMs = Math.min(timeoutMs, remainingMs);
+    const signal = AbortSignal.timeout(attemptTimeoutMs);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers: { accept: "application/json" },
+        signal,
+      });
+    } catch (error) {
+      const retryable = isTimeoutError(error, signal) || isTransientNetworkError(error);
+      const kind = isTimeoutError(error, signal) ? "timeout" : retryable ? "network" : "request";
+      const causeCode = getNetworkErrorCode(error);
+      const hasRetryBudget = requestDeadlineAtMs - Date.now() >= retryDelayMs + timeoutMs;
+      const willRetry = retryable && attempt < maxAttempts && hasRetryBudget;
+      console.error("[market] data.gov.in request diagnostic", {
+        hostname: url.hostname,
+        pathname: url.pathname,
+        method,
+        failure: kind,
+        attempt,
+        willRetry,
+        timeoutMs: attemptTimeoutMs,
+        elapsedMs: Date.now() - startedAt,
+        causeCode,
+      });
+      if (willRetry) {
+        await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+      throw new DataGovRequestError(
+        kind,
+        kind === "timeout"
+          ? "data.gov.in request timed out"
+          : kind === "network"
+            ? "data.gov.in network request failed"
+            : "data.gov.in request failed",
+      );
+    }
+
+    if (!response.ok) {
+      console.error("[market] data.gov.in HTTP error", {
+        hostname: url.hostname,
+        pathname: url.pathname,
+        statusCode: response.status,
+      });
+      throw new DataGovRequestError(
+        "http",
+        `data.gov.in responded with HTTP ${response.status}`,
+        response.status,
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      const timeout = isTimeoutError(error, signal);
+      const network = !timeout && isTransientNetworkError(error);
+      const kind = timeout ? "timeout" : network ? "network" : "invalid_json";
+      const hasRetryBudget = requestDeadlineAtMs - Date.now() >= retryDelayMs + timeoutMs;
+      const willRetry = (timeout || network) && attempt < maxAttempts && hasRetryBudget;
+      console.error("[market] data.gov.in response diagnostic", {
+        hostname: url.hostname,
+        pathname: url.pathname,
+        failure: kind,
+        attempt,
+        willRetry,
+        statusCode: response.status,
+        timeoutMs: attemptTimeoutMs,
+        elapsedMs: Date.now() - startedAt,
+      });
+      if (willRetry) {
+        await new Promise<void>((resolve) => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+      throw new DataGovRequestError(
+        kind,
+        kind === "timeout"
+          ? "data.gov.in request timed out"
+          : kind === "network"
+            ? "data.gov.in response network error"
+            : "data.gov.in returned invalid JSON",
+        response.status,
+      );
+    }
+
+    if (dataGovCache.size >= 100) {
+      const firstKey = dataGovCache.keys().next().value;
+      if (firstKey) dataGovCache.delete(firstKey);
+    }
+    dataGovCache.set(cacheKey, {
+      payload,
+      statusCode: response.status,
+      expiresAt: Date.now() + 15 * 60_000,
     });
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    const cause =
-      err.cause && typeof err.cause === "object"
-        ? (err.cause as { name?: unknown; code?: unknown; message?: unknown })
-        : null;
-    const sanitize = (value: unknown) => {
-      if (typeof value !== "string") return null;
-      const withoutKey = apiKey ? value.split(apiKey).join("[REDACTED]") : value;
-      return withoutKey.replace(/(https?:\/\/[^\s"'<>?]+)\?[^\s"'<>]*/gi, "$1?[REDACTED]");
-    };
-    console.error("[market] data.gov.in fetch diagnostic", {
-      hostname: url.hostname,
-      pathname: url.pathname,
-      method,
-      timeoutMs,
-      elapsedMs: Date.now() - startedAt,
-      errorName: sanitize(err.name),
-      errorMessage: sanitize(err.message),
-      causeName: sanitize(cause?.name),
-      causeCode: sanitize(cause?.code),
-      causeMessage: sanitize(cause?.message),
-    });
-    throw new Error("data.gov.in request failed or timed out");
+    return { payload, statusCode: response.status };
   }
 
-  if (!response.ok) {
-    const error = new Error(`HTTP ${response.status}`) as Error & { statusCode: number };
-    error.statusCode = response.status;
-    console.error(`[market] ${url.host} failed ${response.status}`);
-
-    throw error;
-  }
-
-  const payload: unknown = await response.json();
-  if (dataGovCache.size >= 100) {
-    const firstKey = dataGovCache.keys().next().value;
-    if (firstKey) dataGovCache.delete(firstKey);
-  }
-  dataGovCache.set(cacheKey, {
-    payload,
-    statusCode: response.status,
-    expiresAt: Date.now() + 15 * 60_000,
-  });
-  return { payload, statusCode: response.status };
+  throw new DataGovRequestError("request", "data.gov.in request failed");
 }
 
 /* ---------------------------------------------------------------- providers */
@@ -530,15 +635,18 @@ async function fetchAgmarknetRows(
   filters: MarketFilters,
   maxRecords: number,
   arrivalDate?: string,
+  deadlineAtMs?: number,
 ) {
   const rows: Record<string, unknown>[] = [];
   let payload: unknown = null;
   let statusCode: number | null = null;
   const limit = Math.min(AGMARKNET_PAGE_SIZE, maxRecords);
+  const requestDeadlineAtMs = deadlineAtMs ?? Date.now() + DATA_GOV_REQUEST_BUDGET_MS;
 
   for (let offset = 0; offset < maxRecords; offset += limit) {
     const response = await getJson(
       buildAgmarknetUrl(resourceId, apiKey, filters, limit, offset, arrivalDate),
+      requestDeadlineAtMs,
     );
     payload = response.payload;
     statusCode = response.statusCode;
@@ -642,7 +750,7 @@ const agmarknetVariety: Provider = {
 
   archive: false,
 
-  async fetch(filters) {
+  async fetch(filters, deadlineAtMs) {
     const apiKey = getAgmarknetApiKey();
 
     if (!apiKey) throw new Error("missing_api_key");
@@ -650,7 +758,7 @@ const agmarknetVariety: Provider = {
     const fetchedAt = new Date().toISOString();
 
     const request = (f: MarketFilters, arrivalDate?: string, limit = AGMARKNET_MAX_RECORDS) =>
-      fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, f, limit, arrivalDate);
+      fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, f, limit, arrivalDate, deadlineAtMs);
 
     const districtAttempts = filters.district ? districtVariants(filters.district) : [undefined];
 
@@ -673,37 +781,13 @@ const agmarknetVariety: Provider = {
     }
 
     // Geocoders and the official dataset often use different district spellings.
-
-    // Retry only today's two official reporting dates without a server-side district
-
-    // filter, then strictly re-check every row below before it can reach the UI.
-
+    // Retry without a server-side district filter, then strictly re-check every row below before it can reach the UI.
     if (rows.length === 0 && filters.district) {
-      const today = istToday();
-
-      const yesterdayDate = new Date(`${today}T00:00:00Z`);
-
-      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-
-      const toDmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-
       const fallbackFilters = { commodity: filters.commodity, state: filters.state };
-
-      const fallback = await Promise.all([
-        request(fallbackFilters, toDmy(today), AGMARKNET_MAX_RECORDS),
-
-        request(
-          fallbackFilters,
-          toDmy(yesterdayDate.toISOString().slice(0, 10)),
-          AGMARKNET_MAX_RECORDS,
-        ),
-      ]);
-
-      payload = fallback[0]?.payload ?? fallback[1]?.payload ?? null;
-
-      statusCode = fallback.find((response) => response.statusCode)?.statusCode ?? statusCode;
-
-      rows = fallback.flatMap((response) => response.rows);
+      const fallback = await request(fallbackFilters, undefined, AGMARKNET_MAX_RECORDS);
+      payload = fallback.payload;
+      statusCode = fallback.statusCode;
+      rows = fallback.rows;
     }
 
     const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
@@ -739,7 +823,7 @@ const agmarknetDaily: Provider = {
 
   archive: false,
 
-  async fetch(filters) {
+  async fetch(filters, deadlineAtMs) {
     const apiKey = getAgmarknetApiKey();
 
     if (!apiKey) throw new Error("missing_api_key");
@@ -752,7 +836,7 @@ const agmarknetDaily: Provider = {
 
     const url = buildAgmarknetUrl(AGMARKNET_DAILY, apiKey, filters, AGMARKNET_MAX_RECORDS, 0);
 
-    const { payload, statusCode } = await getJson(url);
+    const { payload, statusCode } = await getJson(url, deadlineAtMs);
 
     const rows = ((payload as { records?: Record<string, unknown>[] }).records ?? []).filter(
       (row) =>
@@ -1016,11 +1100,11 @@ async function loadCedaLookup(): Promise<CedaLookup> {
   const [statesRes, commoditiesRes] = await Promise.all([
     fetch(`${CEDA_BASE}/states`, {
       headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(6_000),
     }),
     fetch(`${CEDA_BASE}/commodities`, {
       headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(6_000),
     }),
   ]);
 
@@ -1284,11 +1368,22 @@ function mergeSameDate(groups: { priority: number; records: PriceRecord[] }[]) {
   return { records: sortRecords([...chosen.values()]), conflict };
 }
 
+/** Keeps the newest eligible source record independently for each mandi. */
+export function selectLatestPerMarket(records: PriceRecord[]) {
+  const latest = new Map<string, PriceRecord>();
+
+  for (const record of sortRecords(records)) {
+    const key = marketKey(record);
+    if (!latest.has(key)) latest.set(key, record);
+  }
+
+  return sortRecords([...latest.values()]);
+}
+
 /**
 
- * Queries every configured provider in PARALLEL and returns the set whose
-
- * underlying MARKET DATA DATE is newest — not whichever API answered first.
+ * Queries every configured provider in PARALLEL and retains the newest eligible
+ * record independently for each market — not whichever API answered first.
 
  * Records are normalized, validated, deduped across sources and cross-checked
 
@@ -1300,6 +1395,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
   const attempts: ProviderAttempt[] = [];
 
   const successes: { provider: Provider; result: ProviderResult }[] = [];
+  const providerDeadlineAtMs = Date.now() + DATA_GOV_REQUEST_BUDGET_MS;
 
   const runnable = providers.filter((p) => !p.envKey || Boolean(process.env[p.envKey]));
 
@@ -1330,7 +1426,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
       const started = Date.now();
 
       try {
-        const rawResult = await provider.fetch(filters);
+        const rawResult = await provider.fetch(filters, providerDeadlineAtMs);
 
         const result = {
           ...rawResult,
@@ -1356,14 +1452,26 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
           error: result.records.length === 0 ? "No current records returned" : null,
         });
 
+        if (result.records.length === 0) {
+          console.warn("[market] provider returned no matching records", {
+            provider: provider.id,
+            failure: "empty_records",
+            statusCode: result.statusCode,
+          });
+        }
+
         if (result.records.length > 0) successes.push({ provider, result });
       } catch (error) {
-        const err = error as Error & { statusCode?: number; cause?: unknown };
+        const dataGovError = error instanceof DataGovRequestError ? error : null;
+        const statusCode =
+          dataGovError?.statusCode ??
+          (error && typeof error === "object" && "statusCode" in error
+            ? Number((error as { statusCode: unknown }).statusCode)
+            : null);
         console.error("[market] provider fetch failed", {
           provider: provider.id,
-          message: err.message,
-          cause: err.cause,
-          stack: err.stack,
+          failure: dataGovError?.kind ?? "provider_error",
+          statusCode: Number.isFinite(statusCode) ? statusCode : null,
         });
 
         attempts.push({
@@ -1373,7 +1481,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
           ok: false,
 
-          statusCode: err.statusCode ?? null,
+          statusCode: Number.isFinite(statusCode) ? statusCode : null,
 
           recordCount: 0,
 
@@ -1381,7 +1489,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
           durationMs: Date.now() - started,
 
-          error: err.message.slice(0, 300),
+          error: dataGovError?.message ?? "Provider request failed",
         });
       }
     }),
@@ -1429,56 +1537,79 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
     };
   }
 
+  // Collect all distinct reporting dates across eligible records, ordered newest first
+  const allDates = [...new Set(pool.flatMap((s) => s.result.records.map((record) => record.date)))]
+    .sort()
+    .reverse();
+
+  if (allDates.length === 0) {
+    return {
+      records: [],
+      todayRecords: [],
+      yesterdayRecords: [],
+      todayAvailable: false,
+      attempts,
+      providerId: null,
+      source: null,
+      archive: false,
+      latestDate: "",
+      sourceUpdatedAt: null,
+      fetchedAt: new Date().toISOString(),
+      freshness: { level: "unavailable", label: "UNAVAILABLE", ageDays: null },
+      corroboratedBy: [],
+      consensus: "single",
+    };
+  }
+
   const today = istToday();
-
   const yesterdayDate = new Date(`${today}T00:00:00Z`);
-
   yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-
   const yesterday = yesterdayDate.toISOString().slice(0, 10);
 
   const mergeDate = (date: string) =>
     mergeSameDate(
       pool
-
         .map((s) => ({
           priority: s.provider.priority,
-
           records: s.result.records.filter((record) => record.date === date),
         }))
-
         .filter((group) => group.records.length > 0),
     );
 
-  const todayMerged = mergeDate(today);
-
-  const yesterdayMerged = mergeDate(yesterday);
-
+  const mergedByDate = new Map(allDates.map((date) => [date, mergeDate(date)]));
+  const todayMerged = mergedByDate.get(today) ?? mergeDate(today);
+  const yesterdayMerged = mergedByDate.get(yesterday) ?? mergeDate(yesterday);
   const todayRecords = todayMerged.records;
-
   const yesterdayRecords = yesterdayMerged.records;
-
   const todayAvailable = todayRecords.length > 0;
 
-  const records = todayAvailable ? [...todayRecords, ...yesterdayRecords] : yesterdayRecords;
+  // Determine latest actual reporting date
+  const latestDate = todayAvailable
+    ? today
+    : yesterdayRecords.length > 0
+      ? yesterday
+      : allDates[0]!;
 
-  const latestDate = todayAvailable ? today : yesterday;
+  const records = selectLatestPerMarket(
+    [...mergedByDate.values()].flatMap((group) => group.records),
+  );
 
   const onLatest = pool.filter((s) =>
     s.result.records.some((record) => record.date === latestDate),
   );
 
-  const primary = [...onLatest].sort((a, b) => a.provider.priority - b.provider.priority)[0]!;
+  const primary =
+    [...onLatest].sort((a, b) => a.provider.priority - b.provider.priority)[0] ?? pool[0]!;
 
   await persist(records);
-
-  const conflict = todayMerged.conflict || yesterdayMerged.conflict;
 
   const corroboratedBy = onLatest
 
     .filter((s) => s.provider.id !== primary.provider.id)
 
     .map((s) => s.provider.name);
+  const selectedDates = new Set(records.map((record) => record.date));
+  const hasConflict = [...selectedDates].some((date) => mergedByDate.get(date)?.conflict);
 
   return {
     records,
@@ -1511,6 +1642,6 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
     corroboratedBy,
 
-    consensus: conflict ? "conflict" : corroboratedBy.length > 0 ? "corroborated" : "single",
+    consensus: hasConflict ? "conflict" : corroboratedBy.length > 0 ? "corroborated" : "single",
   };
 }

@@ -6,7 +6,7 @@
  * dated today. Anything older is labelled by its real age, never as current.
  */
 
-export type FreshnessLevel = "today" | "yesterday" | "unavailable";
+export type FreshnessLevel = "today" | "yesterday" | "recent" | "unavailable";
 
 export type Freshness = {
   level: FreshnessLevel;
@@ -27,10 +27,13 @@ function daysBetween(fromIso: string, toIso: string) {
   return Math.round((b - a) / 86_400_000);
 }
 
-/** True only for an official report dated today or yesterday in India time. */
+/** Standard government mandi publishing delay window (7 days). */
+export const MAX_FRESHNESS_DAYS = 7;
+
+/** True for an official report dated within the accepted freshness window in India time. */
 export function isCurrentMarketDate(dataDate: string, now: Date = new Date()): boolean {
   const ageDays = daysBetween(dataDate, istToday(now));
-  return ageDays === 0 || ageDays === 1;
+  return ageDays !== null && ageDays >= 0 && ageDays <= MAX_FRESHNESS_DAYS;
 }
 
 export function computeFreshness(input: {
@@ -44,15 +47,23 @@ export function computeFreshness(input: {
   if (!input.dataDate) return { level: "unavailable", label: "UNAVAILABLE", ageDays: null };
 
   const ageDays = daysBetween(input.dataDate, today);
-  if (ageDays == null) return { level: "unavailable", label: "UNAVAILABLE", ageDays: null };
+  if (ageDays == null || ageDays < 0) return { level: "unavailable", label: "UNAVAILABLE", ageDays: null };
 
   if (ageDays === 0) return { level: "today", label: "UPDATED TODAY", ageDays: 0 };
   if (ageDays === 1) return { level: "yesterday", label: "YESTERDAY'S DATA", ageDays: 1 };
+  if (ageDays <= MAX_FRESHNESS_DAYS) {
+    return {
+      level: "recent",
+      label: `${ageDays} DAYS AGO`,
+      ageDays,
+    };
+  }
   return { level: "unavailable", label: "UNAVAILABLE", ageDays };
 }
 
 export const freshnessTone: Record<FreshnessLevel, string> = {
   today: "bg-primary/10 text-primary ring-primary/20",
   yesterday: "bg-amber-500/12 text-amber-600 ring-amber-500/25 dark:text-amber-400",
+  recent: "bg-amber-500/12 text-amber-600 ring-amber-500/25 dark:text-amber-400",
   unavailable: "bg-muted text-muted-foreground ring-border",
 };
