@@ -1572,7 +1572,19 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
         attempt.statusCode < 300 &&
         attempt.error === "No current records returned",
     );
-    if (!receivedEmptyResponses) {
+    const agmarknetAttempts = attempts.filter((attempt) =>
+      attempt.providerId.startsWith("agmarknet_"),
+    );
+    const agmarknetReturnedEmpty =
+      agmarknetAttempts.length > 0 &&
+      agmarknetAttempts.every(
+        (attempt) =>
+          attempt.statusCode !== null &&
+          attempt.statusCode >= 200 &&
+          attempt.statusCode < 300 &&
+          attempt.error === "No current records returned",
+      );
+    if (!receivedEmptyResponses || (agmarknetAttempts.length > 0 && !agmarknetReturnedEmpty)) {
       const failures = attempts
         .filter((attempt) => attempt.error && attempt.error !== "No current records returned")
         .map(
