@@ -1,10 +1,16 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -65,45 +71,6 @@ export type Database = {
           page?: string | null
           props?: Json
           session_id?: string | null
-        }
-        Relationships: []
-      }
-      application_error_logs: {
-        Row: {
-          created_at: string
-          error_type: string
-          id: string
-          message: string
-          provider: string | null
-          request_id: string | null
-          resolved_at: string | null
-          severity: "warning" | "error" | "critical"
-          service: "mitra_ai" | "diagnosis" | "weather" | "authentication" | "database"
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error_type: string
-          id?: string
-          message: string
-          provider?: string | null
-          request_id?: string | null
-          resolved_at?: string | null
-          severity: "warning" | "error" | "critical"
-          service: "mitra_ai" | "diagnosis" | "weather" | "authentication" | "database"
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error_type?: string
-          id?: string
-          message?: string
-          provider?: string | null
-          request_id?: string | null
-          resolved_at?: string | null
-          severity?: "warning" | "error" | "critical"
-          service?: "mitra_ai" | "diagnosis" | "weather" | "authentication" | "database"
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -242,7 +209,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crop_diagnoses"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       crop_diagnoses: {
@@ -395,7 +362,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "link_requests"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       link_clusters: {
@@ -442,7 +409,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "link_listings"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       link_listings: {
@@ -577,7 +544,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "link_requests"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       link_requests: {
@@ -904,51 +871,6 @@ export type Database = {
         }
         Relationships: []
       }
-      system_notices: {
-        Row: {
-          archived_at: string | null
-          created_at: string
-          created_by: string | null
-          enabled: boolean
-          ends_at: string | null
-          id: string
-          message: string
-          severity: "info" | "warning" | "error" | "maintenance"
-          starts_at: string | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          archived_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          enabled?: boolean
-          ends_at?: string | null
-          id?: string
-          message: string
-          severity: "info" | "warning" | "error" | "maintenance"
-          starts_at?: string | null
-          title: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          archived_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          enabled?: boolean
-          ends_at?: string | null
-          id?: string
-          message?: string
-          severity?: "info" | "warning" | "error" | "maintenance"
-          starts_at?: string | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string
@@ -1009,46 +931,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      admin_list_users: {
-        Args: {
-          _ascending?: boolean
-          _page?: number
-          _page_size?: number
-          _role?: string
-          _search?: string
-          _sort?: string
-        }
-        Returns: {
-          conversation_count: number
-          created_at: string
-          diagnosis_count: number
-          district: string | null
-          email: string | null
-          full_name: string
-          last_sign_in_at: string | null
-          profile_complete: boolean
-          role: string
-          state: string | null
-          total_count: number
-          user_id: string
-        }[]
-      }
-      admin_user_metrics: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          active_today: number
-          active_week: number
-          conversations_today: number
-          conversations_total: number
-          diagnoses_today: number
-          diagnoses_total: number
-          messages_today: number
-          messages_total: number
-          new_today: number
-          new_week: number
-          registered: number
-        }[]
-      }
       link_cluster_opportunities: {
         Args: { _district?: string; _state?: string }
         Returns: {
@@ -1066,18 +948,6 @@ export type Database = {
           phone: string
           phone_verified: boolean
           phone_verified_at: string
-        }[]
-      }
-      link_is_verified_provider: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      link_verified_provider_profiles: {
-        Args: { _user_ids: string[] }
-        Returns: {
-          full_name: string
-          id: string
-          phone_verified: boolean
         }[]
       }
     }
@@ -1103,7 +973,7 @@ export type Tables<
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1113,8 +983,10 @@ export type Tables<
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1123,12 +995,13 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1147,12 +1020,13 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1171,12 +1045,13 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1187,12 +1062,13 @@ export type Enums<
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1204,7 +1080,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"]
-    }
-  }
+      app_role: ["admin", "user"],
+    },
+  },
 } as const
