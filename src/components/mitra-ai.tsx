@@ -35,11 +35,8 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { preloadMessageResponse } from "@/components/ai-elements/message-response-loader";
 import {
   PromptInput,
   PromptInputFooter,
@@ -56,12 +53,8 @@ import { resolveLang, useSettings } from "@/lib/settings";
 import { useSpeechRecognition } from "@/lib/voice";
 import { useMitraSpeech } from "@/lib/mitra-speech";
 import { useAuth } from "@/lib/auth";
-import {
-  createThread,
-  loadLatestThread,
-  saveMessage,
-  titleThread,
-} from "@/lib/chat-history";
+import { createThread, loadLatestThread, saveMessage, titleThread } from "@/lib/chat-history";
+import { useReducedMotion } from "@/lib/motion";
 
 const ORB_STORAGE_KEY = "market-mitra-mitra-orb-v2";
 const PANEL_STORAGE_KEY = "market-mitra-mitra-panel-v2";
@@ -299,10 +292,7 @@ function useKeyboardInset() {
     if (!vv) return;
 
     const update = () => {
-      const inset = Math.max(
-        0,
-        window.innerHeight - vv.height - vv.offsetTop,
-      );
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
 
       setState({
         inset: inset > 80 ? Math.round(inset) : 0,
@@ -355,10 +345,7 @@ function readPosition(key: string): Position | null {
 
     const parsed = JSON.parse(raw);
 
-    if (
-      typeof parsed?.x !== "number" ||
-      typeof parsed?.y !== "number"
-    ) {
+    if (typeof parsed?.x !== "number" || typeof parsed?.y !== "number") {
       return null;
     }
 
@@ -380,27 +367,18 @@ function savePosition(key: string, position: Position) {
 }
 
 function getDefaultOrbPosition(hasBottomNav: boolean): Position {
-  const width =
-    window.innerWidth >= 1024
-      ? ORB_SIZE_DESKTOP
-      : ORB_SIZE_MOBILE;
+  const width = window.innerWidth >= 1024 ? ORB_SIZE_DESKTOP : ORB_SIZE_MOBILE;
 
   const bottomSpace = hasBottomNav ? 104 : 24;
 
   return {
     x: Math.max(12, window.innerWidth - width - 24),
-    y: Math.max(
-      12,
-      window.innerHeight - width - bottomSpace,
-    ),
+    y: Math.max(12, window.innerHeight - width - bottomSpace),
   };
 }
 
 function getDefaultPanelPosition(): Position {
-  const height = Math.min(
-    PANEL_HEIGHT,
-    Math.max(420, window.innerHeight * 0.8),
-  );
+  const height = Math.min(PANEL_HEIGHT, Math.max(420, window.innerHeight * 0.8));
 
   return {
     x: Math.max(16, window.innerWidth - PANEL_WIDTH - 24),
@@ -409,42 +387,20 @@ function getDefaultPanelPosition(): Position {
 }
 
 function clampPanelPosition(position: Position): Position {
-  const actualHeight = Math.min(
-    PANEL_HEIGHT,
-    Math.max(420, window.innerHeight * 0.8),
-  );
+  const actualHeight = Math.min(PANEL_HEIGHT, Math.max(420, window.innerHeight * 0.8));
 
   return {
-    x: clamp(
-      position.x,
-      12,
-      Math.max(12, window.innerWidth - PANEL_WIDTH - 12),
-    ),
-    y: clamp(
-      position.y,
-      12,
-      Math.max(12, window.innerHeight - actualHeight - 12),
-    ),
+    x: clamp(position.x, 12, Math.max(12, window.innerWidth - PANEL_WIDTH - 12)),
+    y: clamp(position.y, 12, Math.max(12, window.innerHeight - actualHeight - 12)),
   };
 }
 
 function clampOrbPosition(position: Position): Position {
-  const size =
-    window.innerWidth >= 1024
-      ? ORB_SIZE_DESKTOP
-      : ORB_SIZE_MOBILE;
+  const size = window.innerWidth >= 1024 ? ORB_SIZE_DESKTOP : ORB_SIZE_MOBILE;
 
   return {
-    x: clamp(
-      position.x,
-      8,
-      Math.max(8, window.innerWidth - size - 8),
-    ),
-    y: clamp(
-      position.y,
-      8,
-      Math.max(8, window.innerHeight - size - 8),
-    ),
+    x: clamp(position.x, 8, Math.max(8, window.innerWidth - size - 8)),
+    y: clamp(position.y, 8, Math.max(8, window.innerHeight - size - 8)),
   };
 }
 
@@ -485,6 +441,10 @@ function MitraMark({
 export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
   const { lang } = useLang();
   const { location } = useLocationContext();
+  const reducedMotion = useReducedMotion();
+  const coarsePointer =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const simplifyMotion = reducedMotion || coarsePointer;
 
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -495,31 +455,35 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
   const [open, setOpen] = useState(initialOpen);
   const [text, setText] = useState("");
 
-  const [orbPosition, setOrbPosition] =
-    useState<Position | null>(null);
+  const [orbPosition, setOrbPosition] = useState<Position | null>(null);
 
-  const [panelPosition, setPanelPosition] =
-    useState<Position | null>(null);
+  const [panelPosition, setPanelPosition] = useState<Position | null>(null);
 
   const [panelReady, setPanelReady] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const responseRendererPreloadRef = useRef(false);
 
-  const { user } = useAuth();
+  const preloadResponseRenderer = useCallback(() => {
+    if (responseRendererPreloadRef.current) return;
+    responseRendererPreloadRef.current = true;
+    void preloadMessageResponse().catch((cause: unknown) => {
+      responseRendererPreloadRef.current = false;
+      console.error("Unable to preload the Mitra response renderer", cause);
+    });
+  }, []);
 
-  const conversationIdRef =
-    useRef<string | null>(null);
+  const { user, session } = useAuth();
 
-  const savedIdsRef =
-    useRef<Set<string>>(new Set());
+  const conversationIdRef = useRef<string | null>(null);
 
-  const { inset: keyboardInset, height: viewportHeight } =
-    useKeyboardInset();
+  const savedIdsRef = useRef<Set<string>>(new Set());
+
+  const { inset: keyboardInset, height: viewportHeight } = useKeyboardInset();
 
   const isDesktop = useIsDesktop();
 
-  const diagnosisFn =
-    useServerFn(latestDiagnosisContext);
+  const diagnosisFn = useServerFn(latestDiagnosisContext);
 
   const diagnosis = useQuery({
     queryKey: ["mitra-diagnosis-context"],
@@ -531,16 +495,11 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
   const diagnosisCtx = diagnosis.data ?? null;
 
-  const {
-    messages,
-    setMessages,
-    sendMessage,
-    regenerate,
-    status,
-    error,
-  } = useChat({
+  const { messages, setMessages, sendMessage, regenerate, status, error } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
+      headers: () =>
+        session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
 
       prepareSendMessagesRequest: ({ messages: msgs }) => ({
         body: {
@@ -557,16 +516,12 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 longitude: location.longitude,
               }
             : null,
-
-          diagnosis: diagnosisCtx,
         },
       }),
     }),
   });
 
-  const busy =
-    status === "submitted" ||
-    status === "streaming";
+  const busy = status === "submitted" || status === "streaming";
 
   /*
    * ---------------------------------------------------------
@@ -575,27 +530,15 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
    */
 
   useEffect(() => {
-    
+    const savedPanel = readPosition(PANEL_STORAGE_KEY);
 
-    const savedPanel =
-      readPosition(PANEL_STORAGE_KEY);
+    const savedOrb = readPosition(ORB_STORAGE_KEY);
 
-    const savedOrb =
-      readPosition(ORB_STORAGE_KEY);
-
-    setPanelPosition(
-      clampPanelPosition(
-        savedPanel ?? getDefaultPanelPosition(),
-      ),
-    );
+    setPanelPosition(clampPanelPosition(savedPanel ?? getDefaultPanelPosition()));
 
     setOrbPosition(
       clampOrbPosition(
-        savedOrb ??
-          getDefaultOrbPosition(
-            pathname !== "/" &&
-              !pathname.startsWith("/admin"),
-          ),
+        savedOrb ?? getDefaultOrbPosition(pathname !== "/" && !pathname.startsWith("/admin")),
       ),
     );
   }, [isDesktop, pathname]);
@@ -627,11 +570,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
     window.addEventListener("resize", handleResize);
 
-    return () =>
-      window.removeEventListener(
-        "resize",
-        handleResize,
-      );
+    return () => window.removeEventListener("resize", handleResize);
   }, [isDesktop]);
 
   /*
@@ -654,10 +593,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     (event: ReactPointerEvent<HTMLElement>) => {
       if (!isDesktop || !panelPosition) return;
 
-      if (
-        event.pointerType !== "mouse" &&
-        event.pointerType !== "touch"
-      ) {
+      if (event.pointerType !== "mouse" && event.pointerType !== "touch") {
         return;
       }
 
@@ -675,65 +611,49 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
         originY: panelPosition.y,
       };
 
-      event.currentTarget.setPointerCapture?.(
-        event.pointerId,
-      );
+      event.currentTarget.setPointerCapture?.(event.pointerId);
     },
     [isDesktop, panelPosition],
   );
 
-  const handlePanelPointerMove = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
-      const drag = panelDragRef.current;
+  const handlePanelPointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const drag = panelDragRef.current;
 
-      if (
-        !drag.active ||
-        drag.pointerId !== event.pointerId
-      ) {
-        return;
-      }
+    if (!drag.active || drag.pointerId !== event.pointerId) {
+      return;
+    }
 
-      const dx = event.clientX - drag.startX;
-      const dy = event.clientY - drag.startY;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
 
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-        drag.moved = true;
-      }
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      drag.moved = true;
+    }
 
-      const next = clampPanelPosition({
-        x: drag.originX + dx,
-        y: drag.originY + dy,
-      });
+    const next = clampPanelPosition({
+      x: drag.originX + dx,
+      y: drag.originY + dy,
+    });
 
-      setPanelPosition(next);
-    },
-    [],
-  );
+    setPanelPosition(next);
+  }, []);
 
   const handlePanelPointerUp = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
       const drag = panelDragRef.current;
 
-      if (
-        !drag.active ||
-        drag.pointerId !== event.pointerId
-      ) {
+      if (!drag.active || drag.pointerId !== event.pointerId) {
         return;
       }
 
       drag.active = false;
 
       if (panelPosition) {
-        savePosition(
-          PANEL_STORAGE_KEY,
-          panelPosition,
-        );
+        savePosition(PANEL_STORAGE_KEY, panelPosition);
       }
 
       try {
-        event.currentTarget.releasePointerCapture?.(
-          event.pointerId,
-        );
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
       } catch {
         // Pointer capture may already be released.
       }
@@ -771,74 +691,58 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
         originY: orbPosition.y,
       };
 
-      event.currentTarget.setPointerCapture?.(
-        event.pointerId,
-      );
+      event.currentTarget.setPointerCapture?.(event.pointerId);
     },
     [orbPosition],
   );
 
-  const handleOrbPointerMove = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      const drag = orbDragRef.current;
+  const handleOrbPointerMove = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = orbDragRef.current;
 
-      if (
-        !drag.active ||
-        drag.pointerId !== event.pointerId
-      ) {
-        return;
-      }
+    if (!drag.active || drag.pointerId !== event.pointerId) {
+      return;
+    }
 
-      const dx = event.clientX - drag.startX;
-      const dy = event.clientY - drag.startY;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
 
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-        drag.moved = true;
-      }
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      drag.moved = true;
+    }
 
-      setOrbPosition(
-        clampOrbPosition({
-          x: drag.originX + dx,
-          y: drag.originY + dy,
-        }),
-      );
-    },
-    [],
-  );
+    setOrbPosition(
+      clampOrbPosition({
+        x: drag.originX + dx,
+        y: drag.originY + dy,
+      }),
+    );
+  }, []);
 
-  const handleOrbPointerUp = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      const drag = orbDragRef.current;
+  const handleOrbPointerUp = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = orbDragRef.current;
 
-      if (
-        !drag.active ||
-        drag.pointerId !== event.pointerId
-      ) {
-        return;
-      }
+    if (!drag.active || drag.pointerId !== event.pointerId) {
+      return;
+    }
 
-      drag.active = false;
+    drag.active = false;
 
-      setOrbPosition((current) => {
-        if (!current) return current;
+    setOrbPosition((current) => {
+      if (!current) return current;
 
-        const next = clampOrbPosition(current);
+      const next = clampOrbPosition(current);
 
-        savePosition(ORB_STORAGE_KEY, next);
+      savePosition(ORB_STORAGE_KEY, next);
 
-        return next;
-      });
+      return next;
+    });
 
-      try {
-        event.currentTarget.releasePointerCapture?.(
-          event.pointerId,
-        );
-      } catch {
-        // Pointer capture may already be released.
-      }
-    },
-    [],
-  );
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture may already be released.
+    }
+  }, []);
 
   /*
    * ---------------------------------------------------------
@@ -858,8 +762,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
       setPanelReady(true);
     });
 
-    return () =>
-      window.cancelAnimationFrame(frame);
+    return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
   const openMitra = useCallback(() => {
@@ -870,9 +773,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     }
 
     if (!panelPosition) {
-      setPanelPosition(
-        getDefaultPanelPosition(),
-      );
+      setPanelPosition(getDefaultPanelPosition());
     }
 
     track("mitra_ai_opened");
@@ -883,10 +784,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     setOpen(false);
 
     if (panelPosition) {
-      savePosition(
-        PANEL_STORAGE_KEY,
-        panelPosition,
-      );
+      savePosition(PANEL_STORAGE_KEY, panelPosition);
     }
   }, [panelPosition]);
 
@@ -907,23 +805,17 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
     void (async () => {
       try {
-        const thread =
-          await loadLatestThread(user.id);
+        const thread = await loadLatestThread(user.id);
 
         if (cancelled || !thread) return;
 
         conversationIdRef.current = thread.id;
 
-        savedIdsRef.current = new Set(
-          thread.messages.map((message) => message.id),
-        );
+        savedIdsRef.current = new Set(thread.messages.map((message) => message.id));
 
         setMessages(thread.messages);
       } catch (cause) {
-        console.error(
-          "Unable to load your saved chat",
-          cause,
-        );
+        console.error("Unable to load your saved chat", cause);
       }
     })();
 
@@ -939,11 +831,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
    */
 
   useEffect(() => {
-    if (
-      !user ||
-      busy ||
-      messages.length === 0
-    ) {
+    if (!user || busy || messages.length === 0) {
       return;
     }
 
@@ -953,28 +841,21 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
       for (const message of messages) {
         if (cancelled) return;
 
-        if (
-          message.role !== "user" &&
-          message.role !== "assistant"
-        ) {
+        if (message.role !== "user" && message.role !== "assistant") {
           continue;
         }
 
-        if (
-          savedIdsRef.current.has(message.id)
-        ) {
+        if (savedIdsRef.current.has(message.id)) {
           continue;
         }
 
         try {
           if (!conversationIdRef.current) {
-            conversationIdRef.current =
-              await createThread(user.id, lang);
+            conversationIdRef.current = await createThread(user.id, lang);
           }
 
           await saveMessage({
-            conversationId:
-              conversationIdRef.current,
+            conversationId: conversationIdRef.current,
             userId: user.id,
             role: message.role,
             message,
@@ -983,16 +864,10 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
           savedIdsRef.current.add(message.id);
 
           if (message.role === "user") {
-            await titleThread(
-              conversationIdRef.current,
-              message,
-            );
+            await titleThread(conversationIdRef.current, message);
           }
         } catch (cause) {
-          console.error(
-            "Unable to save this message",
-            cause,
-          );
+          console.error("Unable to save this message", cause);
           return;
         }
       }
@@ -1026,10 +901,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
   }, [open]);
 
   useEffect(() => {
-    if (
-      open &&
-      status === "ready"
-    ) {
+    if (open && status === "ready") {
       inputRef.current?.focus();
     }
   }, [open, status]);
@@ -1052,12 +924,10 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     [settings.voice],
   );
 
-  const speech = useMitraSpeech(
-    voicePrefs,
-    resolveLang(settings.voice.lang, lang),
-  );
+  const speech = useMitraSpeech(voicePrefs, resolveLang(settings.voice.lang, lang));
 
   const mic = useSpeechRecognition(lang);
+  const { setTranscript: setMicTranscript } = mic;
 
   const send = useCallback(
     (value: string) => {
@@ -1069,6 +939,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
       speech.stop();
 
       track("mitra_ai_message");
+      preloadResponseRenderer();
 
       void sendMessage({
         text: trimmed,
@@ -1078,23 +949,16 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
         inputRef.current?.focus();
       });
     },
-    [busy, sendMessage, speech],
+    [busy, preloadResponseRenderer, sendMessage, speech],
   );
 
   useEffect(() => {
-    if (
-      mic.listening &&
-      mic.transcript
-    ) {
+    if (mic.listening && mic.transcript) {
       setText(mic.transcript);
     }
-  }, [
-    mic.listening,
-    mic.transcript,
-  ]);
+  }, [mic.listening, mic.transcript]);
 
-  const pendingVoice =
-    useRef(false);
+  const pendingVoice = useRef(false);
 
   useEffect(() => {
     if (mic.listening) {
@@ -1105,20 +969,14 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     if (pendingVoice.current) {
       pendingVoice.current = false;
 
-      const spoken =
-        mic.transcript.trim();
+      const spoken = mic.transcript.trim();
 
       if (spoken) {
-        mic.setTranscript("");
+        setMicTranscript("");
         send(spoken);
       }
     }
-  }, [
-    mic.listening,
-    mic.transcript,
-    mic.setTranscript,
-    send,
-  ]);
+  }, [mic.listening, mic.transcript, setMicTranscript, send]);
 
   /*
    * ---------------------------------------------------------
@@ -1127,24 +985,14 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
    */
 
   const lastAssistantText = useMemo(() => {
-    for (
-      let i = messages.length - 1;
-      i >= 0;
-      i -= 1
-    ) {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
       const message = messages[i];
 
       if (message?.role !== "assistant") {
         continue;
       }
 
-      const body = message.parts
-        .map((part) =>
-          part.type === "text"
-            ? part.text
-            : "",
-        )
-        .join("");
+      const body = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
 
       if (body.trim()) {
         return body;
@@ -1154,55 +1002,31 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
     return "";
   }, [messages]);
 
-  const spokenRef =
-    useRef("");
+  const spokenRef = useRef("");
 
   useEffect(() => {
-    if (
-      !settings.voice.autoPlay ||
-      busy ||
-      !lastAssistantText
-    ) {
+    if (!settings.voice.autoPlay || busy || !lastAssistantText) {
       return;
     }
 
-    if (
-      spokenRef.current ===
-      lastAssistantText
-    ) {
+    if (spokenRef.current === lastAssistantText) {
       return;
     }
 
-    spokenRef.current =
-      lastAssistantText;
+    spokenRef.current = lastAssistantText;
 
-    speech.speak(
-      lastAssistantText,
-    );
-  }, [
-    settings.voice.autoPlay,
-    busy,
-    lastAssistantText,
-    speech,
-  ]);
+    speech.speak(lastAssistantText);
+  }, [settings.voice.autoPlay, busy, lastAssistantText, speech]);
 
-  const lastAssistantId =
-    useMemo(() => {
-      for (
-        let i = messages.length - 1;
-        i >= 0;
-        i -= 1
-      ) {
-        if (
-          messages[i]?.role ===
-          "assistant"
-        ) {
-          return messages[i]!.id;
-        }
+  const lastAssistantId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i]?.role === "assistant") {
+        return messages[i]!.id;
       }
+    }
 
-      return null;
-    }, [messages]);
+    return null;
+  }, [messages]);
 
   const retry = useCallback(
     (messageId: string) => {
@@ -1238,28 +1062,19 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             ? copy.micIdle[lang]
             : copy.micUnsupported[lang];
 
-  const hasBottomNav =
-    pathname !== "/" &&
-    !pathname.startsWith("/admin");
+  const hasBottomNav = pathname !== "/" && !pathname.startsWith("/admin");
 
-  const keyboardOpen =
-    keyboardInset > 0;
+  const keyboardOpen = keyboardInset > 0;
 
-  const hideOrb =
-    keyboardOpen ||
-    (open && !isDesktop);
+  const hideOrb = keyboardOpen || (open && !isDesktop);
 
-  const mobilePanelStyle =
-    viewportHeight
-      ? {
-          height: `${viewportHeight}px`,
-        }
-      : undefined;
+  const mobilePanelStyle = viewportHeight
+    ? {
+        height: `${viewportHeight}px`,
+      }
+    : undefined;
 
-  if (
-    pathname.startsWith("/admin") ||
-    flag?.enabled === false
-  ) {
+  if (pathname.startsWith("/admin") || flag?.enabled === false) {
     return null;
   }
 
@@ -1283,23 +1098,13 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
             openMitra();
           }}
-          onPointerDown={
-            handleOrbPointerDown
-          }
-          onPointerMove={
-            handleOrbPointerMove
-          }
-          onPointerUp={
-            handleOrbPointerUp
-          }
-          aria-label={
-            copy.open[lang]
-          }
+          onPointerDown={simplifyMotion ? undefined : handleOrbPointerDown}
+          onPointerMove={simplifyMotion ? undefined : handleOrbPointerMove}
+          onPointerUp={simplifyMotion ? undefined : handleOrbPointerUp}
+          aria-label={copy.open[lang]}
           aria-expanded={false}
           aria-hidden={hideOrb}
-          tabIndex={
-            hideOrb ? -1 : 0
-          }
+          tabIndex={hideOrb ? -1 : 0}
           style={
             orbPosition
               ? {
@@ -1320,18 +1125,17 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             "shadow-[var(--shadow-float)]",
             "ring-1 ring-white/20",
             "transition-[transform,opacity] duration-300",
-            "hover:scale-105",
-            "active:scale-95",
-            hideOrb
-              ? "pointer-events-none scale-90 opacity-0"
-              : "opacity-100",
+            simplifyMotion ? "" : "hover:scale-105 active:scale-95",
+            hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100",
           ].join(" ")}
         >
           <span className="absolute -inset-2 rounded-full bg-primary/10 blur-xl" />
 
           <span className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
 
-          <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" />
+          <span
+            className={`absolute inset-0 rounded-full bg-primary/20 ${simplifyMotion ? "" : "animate-pulse"}`}
+          />
 
           <span className="absolute inset-0 overflow-hidden rounded-full">
             <span className="absolute -left-8 top-0 h-full w-1/2 rotate-12 bg-white/15 blur-xl" />
@@ -1375,15 +1179,9 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             <span className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
 
             <header
-              onPointerDown={
-                handlePanelPointerDown
-              }
-              onPointerMove={
-                handlePanelPointerMove
-              }
-              onPointerUp={
-                handlePanelPointerUp
-              }
+              onPointerDown={handlePanelPointerDown}
+              onPointerMove={handlePanelPointerMove}
+              onPointerUp={handlePanelPointerUp}
               className="relative flex shrink-0 cursor-grab touch-none select-none items-center gap-3 border-b border-white/10 px-4 py-3 active:cursor-grabbing"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.10] via-transparent to-transparent" />
@@ -1407,9 +1205,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 </div>
 
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                  {location?.place
-                    ? location.place
-                    : copy.subtitle[lang]}
+                  {location?.place ? location.place : copy.subtitle[lang]}
                 </p>
               </div>
 
@@ -1439,23 +1235,15 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 </div>
 
                 <p className="min-w-0 truncate text-[11px] leading-relaxed">
-                  <span className="font-semibold text-foreground">
-                    {copy.contextLabel[lang]}
-                  </span>
+                  <span className="font-semibold text-foreground">{copy.contextLabel[lang]}</span>
 
-                  <span className="mx-1.5 text-muted-foreground">
-                    ·
-                  </span>
+                  <span className="mx-1.5 text-muted-foreground">·</span>
 
-                  {diagnosisCtx.crop
-                    ? `${diagnosisCtx.crop} — `
-                    : ""}
+                  {diagnosisCtx.crop ? `${diagnosisCtx.crop} — ` : ""}
 
                   {diagnosisCtx.condition}
 
-                  {diagnosisCtx.confidence
-                    ? ` (${diagnosisCtx.confidence}%)`
-                    : ""}
+                  {diagnosisCtx.confidence ? ` (${diagnosisCtx.confidence}%)` : ""}
                 </p>
               </div>
             )}
@@ -1474,9 +1262,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                         <div>
                           <p className="text-xs font-semibold text-primary">
-                            {location?.place
-                              ? `For ${location.place}`
-                              : copy.subtitle[lang]}
+                            {location?.place ? `For ${location.place}` : copy.subtitle[lang]}
                           </p>
 
                           <p className="mt-1 text-[11px] text-muted-foreground">
@@ -1491,71 +1277,49 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
-                      {suggestions[lang].map(
-                        ({
-                          icon: Icon,
-                          title,
-                          text: suggestionText,
-                        }) => (
-                          <button
-                            key={`${title}-${suggestionText}`}
-                            type="button"
-                            onClick={() =>
-                              send(
-                                suggestionText,
-                              )
-                            }
-                            className="group relative overflow-hidden rounded-[18px] border border-border/70 bg-card/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.045] active:scale-[0.98]"
-                          >
-                            <span className="absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-xl transition-transform duration-500 group-hover:scale-150" />
+                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }) => (
+                        <button
+                          key={`${title}-${suggestionText}`}
+                          type="button"
+                          onClick={() => send(suggestionText)}
+                          className="group relative overflow-hidden rounded-[18px] border border-border/70 bg-card/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.045] active:scale-[0.98]"
+                        >
+                          <span className="absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-xl transition-transform duration-500 group-hover:scale-150" />
 
-                            <div className="relative mb-3 flex items-start justify-between">
-                              <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
-                                <Icon
-                                  className="size-4"
-                                  strokeWidth={2}
-                                />
-                              </span>
+                          <div className="relative mb-3 flex items-start justify-between">
+                            <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
+                              <Icon className="size-4" strokeWidth={2} />
+                            </span>
 
-                              <ArrowUpRight className="size-3.5 text-muted-foreground/40 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
-                            </div>
+                            <ArrowUpRight className="size-3.5 text-muted-foreground/40 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                          </div>
 
-                            <p className="relative text-[12px] font-semibold text-foreground">
-                              {title}
-                            </p>
+                          <p className="relative text-[12px] font-semibold text-foreground">
+                            {title}
+                          </p>
 
-                            <p className="relative mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
-                              {suggestionText}
-                            </p>
-                          </button>
-                        ),
-                      )}
+                          <p className="relative mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                            {suggestionText}
+                          </p>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
                 {messages.map((message) => {
                   const body = message.parts
-                    .map((part) =>
-                      part.type === "text"
-                        ? part.text
-                        : "",
-                    )
+                    .map((part) => (part.type === "text" ? part.text : ""))
                     .join("");
 
                   if (!body.trim()) {
                     return null;
                   }
 
-                  const isAssistant =
-                    message.role ===
-                    "assistant";
+                  const isAssistant = message.role === "assistant";
 
                   return (
-                    <Message
-                      from={message.role}
-                      key={message.id}
-                    >
+                    <Message from={message.role} key={message.id}>
                       {isAssistant && (
                         <div className="mb-1 flex items-center gap-1.5 px-1">
                           <span className="grid size-5 place-items-center rounded-md bg-primary/10">
@@ -1575,33 +1339,20 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                             : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground shadow-sm"
                         }
                       >
-                        <MessageResponse>
-                          {body}
-                        </MessageResponse>
+                        <MessageResponse>{body}</MessageResponse>
                       </MessageContent>
 
-                      {isAssistant &&
-                        message.id ===
-                          lastAssistantId &&
-                        !busy && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              retry(
-                                message.id,
-                              )
-                            }
-                            aria-label={
-                              copy.retry[
-                                lang
-                              ]
-                            }
-                            className="press ml-1 mt-1 flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                          >
-                            <RefreshCw className="size-3" />
-                            {copy.retry[lang]}
-                          </button>
-                        )}
+                      {isAssistant && message.id === lastAssistantId && !busy && (
+                        <button
+                          type="button"
+                          onClick={() => retry(message.id)}
+                          aria-label={copy.retry[lang]}
+                          className="press ml-1 mt-1 flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                        >
+                          <RefreshCw className="size-3" />
+                          {copy.retry[lang]}
+                        </button>
+                      )}
                     </Message>
                   );
                 })}
@@ -1616,9 +1367,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                     <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <Shimmer className="text-[12px]">
-                          {copy.thinking[lang]}
-                        </Shimmer>
+                        <Shimmer className="text-[12px]">{copy.thinking[lang]}</Shimmer>
 
                         <div className="flex gap-0.5">
                           <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
@@ -1632,18 +1381,12 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                 {error && !busy && (
                   <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.045] px-3.5 py-3">
-                    <p className="text-sm leading-relaxed text-destructive">
-                      {copy.error[lang]}
-                    </p>
+                    <p className="text-sm leading-relaxed text-destructive">{copy.error[lang]}</p>
 
                     {lastAssistantId && (
                       <button
                         type="button"
-                        onClick={() =>
-                          retry(
-                            lastAssistantId,
-                          )
-                        }
+                        onClick={() => retry(lastAssistantId)}
                         className="press mt-2 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10px] font-semibold"
                       >
                         <RefreshCw className="size-3" />
@@ -1662,15 +1405,25 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 {mic.listening || speech.speaking ? (
                   <div className="flex items-center gap-2">
                     <div className="flex h-4 items-end gap-0.5">
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "45%" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "85%", animationDelay: "100ms" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "60%", animationDelay: "180ms" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "95%", animationDelay: "260ms" }} />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "45%" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "85%", animationDelay: "100ms" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "60%", animationDelay: "180ms" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "95%", animationDelay: "260ms" }}
+                      />
                     </div>
 
-                    <p className="text-[10px] font-medium text-primary">
-                      {voiceStatus}
-                    </p>
+                    <p className="text-[10px] font-medium text-primary">{voiceStatus}</p>
                   </div>
                 ) : (
                   <p className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">
@@ -1682,56 +1435,35 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                   <button
                     type="button"
                     onClick={mic.cancel}
-                    aria-label={
-                      copy.cancelMic[
-                        lang
-                      ]
-                    }
+                    aria-label={copy.cancelMic[lang]}
                     className="press grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-muted-foreground"
                   >
                     <X className="size-3.5" />
                   </button>
                 )}
 
-                {lastAssistantText &&
-                  !mic.listening && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        speech.speaking
-                          ? speech.stop()
-                          : speech.speak(
-                              lastAssistantText,
-                            )
-                      }
-                      aria-label={
-                        speech.speaking
-                          ? copy.stopSpeak[
-                              lang
-                            ]
-                          : copy.replay[
-                              lang
-                            ]
-                      }
-                      className="press grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-foreground"
-                    >
-                      {speech.speaking ? (
-                        <VolumeX className="size-3.5" />
-                      ) : spokenRef.current ===
-                        lastAssistantText ? (
-                        <RotateCcw className="size-3.5" />
-                      ) : (
-                        <Volume2 className="size-3.5" />
-                      )}
-                    </button>
-                  )}
+                {lastAssistantText && !mic.listening && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      speech.speaking ? speech.stop() : speech.speak(lastAssistantText)
+                    }
+                    aria-label={speech.speaking ? copy.stopSpeak[lang] : copy.replay[lang]}
+                    className="press grid size-7 place-items-center rounded-full border border-border/60 bg-background/60 text-foreground"
+                  >
+                    {speech.speaking ? (
+                      <VolumeX className="size-3.5" />
+                    ) : spokenRef.current === lastAssistantText ? (
+                      <RotateCcw className="size-3.5" />
+                    ) : (
+                      <Volume2 className="size-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
 
               <PromptInput
-                onSubmit={(
-                  _message,
-                  event,
-                ) => {
+                onSubmit={(_message, event) => {
                   event.preventDefault();
                   send(text);
                 }}
@@ -1739,37 +1471,20 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 <PromptInputTextarea
                   ref={inputRef}
                   value={text}
-                  onChange={(event) =>
-                    setText(
-                      event.currentTarget
-                        .value,
-                    )
-                  }
-                  placeholder={
-                    copy.placeholder[
-                      lang
-                    ]
-                  }
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    if (value.trim()) preloadResponseRenderer();
+                    setText(value);
+                  }}
+                  placeholder={copy.placeholder[lang]}
                 />
 
                 <PromptInputFooter className="justify-end gap-1.5">
                   <button
                     type="button"
-                    disabled={
-                      !mic.supported
-                    }
-                    onClick={() =>
-                      mic.listening
-                        ? mic.stop()
-                        : mic.start()
-                    }
-                    aria-label={
-                      mic.listening
-                        ? copy.stopMic[
-                            lang
-                          ]
-                        : copy.mic[lang]
-                    }
+                    disabled={!mic.supported}
+                    onClick={() => (mic.listening ? mic.stop() : mic.start())}
+                    aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
                     className={[
                       "press relative grid size-9 shrink-0 place-items-center rounded-full border transition-all",
                       "disabled:opacity-40",
@@ -1783,25 +1498,13 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     )}
 
                     {mic.listening ? (
-                      <Square
-                        className="relative size-4"
-                        strokeWidth={2.4}
-                      />
+                      <Square className="relative size-4" strokeWidth={2.4} />
                     ) : (
-                      <Mic
-                        className="relative size-4"
-                        strokeWidth={2.2}
-                      />
+                      <Mic className="relative size-4" strokeWidth={2.2} />
                     )}
                   </button>
 
-                  <PromptInputSubmit
-                    status={status}
-                    disabled={
-                      !text.trim() &&
-                      !busy
-                    }
-                  />
+                  <PromptInputSubmit status={status} disabled={!text.trim() && !busy} />
                 </PromptInputFooter>
               </PromptInput>
             </div>
@@ -1826,9 +1529,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             "h-[100dvh]",
             "bg-background",
             "transition-[opacity,transform] duration-300 ease-out",
-            panelReady
-              ? "translate-y-0 opacity-100"
-              : "translate-y-3 opacity-0",
+            panelReady ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
           ].join(" ")}
         >
           <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
@@ -1838,9 +1539,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
               <button
                 type="button"
                 onClick={closeMitra}
-                aria-label={
-                  copy.close[lang]
-                }
+                aria-label={copy.close[lang]}
                 className="press relative grid size-11 shrink-0 place-items-center rounded-full bg-muted/60"
               >
                 <ChevronLeft className="size-5" />
@@ -1852,9 +1551,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
               <div className="relative min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-display text-sm font-bold">
-                    {copy.title[lang]}
-                  </p>
+                  <p className="font-display text-sm font-bold">{copy.title[lang]}</p>
 
                   <span className="flex items-center gap-1 text-[9px] font-semibold text-primary">
                     <span className="size-1.5 rounded-full bg-primary shadow-[0_0_7px_hsl(var(--primary))]" />
@@ -1863,8 +1560,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 </div>
 
                 <p className="truncate text-[10px] text-muted-foreground">
-                  {location?.place ||
-                    copy.subtitle[lang]}
+                  {location?.place || copy.subtitle[lang]}
                 </p>
               </div>
             </header>
@@ -1876,17 +1572,11 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 </div>
 
                 <p className="min-w-0 truncate text-[11px]">
-                  <span className="font-semibold">
-                    {copy.contextLabel[lang]}
-                  </span>
+                  <span className="font-semibold">{copy.contextLabel[lang]}</span>
 
-                  <span className="mx-1.5 text-muted-foreground">
-                    ·
-                  </span>
+                  <span className="mx-1.5 text-muted-foreground">·</span>
 
-                  {diagnosisCtx.crop
-                    ? `${diagnosisCtx.crop} — `
-                    : ""}
+                  {diagnosisCtx.crop ? `${diagnosisCtx.crop} — ` : ""}
 
                   {diagnosisCtx.condition}
                 </p>
@@ -1907,14 +1597,11 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                         <div>
                           <p className="text-xs font-semibold text-primary">
-                            {location?.place ||
-                              copy.subtitle[lang]}
+                            {location?.place || copy.subtitle[lang]}
                           </p>
 
                           <p className="mt-1 text-[10px] text-muted-foreground">
-                            {copy.greetingSmall[
-                              lang
-                            ]}
+                            {copy.greetingSmall[lang]}
                           </p>
                         </div>
                       </div>
@@ -1925,73 +1612,49 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
-                      {suggestions[lang].map(
-                        ({
-                          icon: Icon,
-                          title,
-                          text: suggestionText,
-                        }) => (
-                          <button
-                            key={`${title}-${suggestionText}`}
-                            type="button"
-                            onClick={() =>
-                              send(
-                                suggestionText,
-                              )
-                            }
-                            className="group relative overflow-hidden rounded-[19px] border border-border/70 bg-card/50 p-3.5 text-left transition-all active:scale-[0.98]"
-                          >
-                            <div className="mb-3 flex items-start justify-between">
-                              <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
-                                <Icon className="size-4" />
-                              </span>
+                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }) => (
+                        <button
+                          key={`${title}-${suggestionText}`}
+                          type="button"
+                          onClick={() => send(suggestionText)}
+                          className="group relative overflow-hidden rounded-[19px] border border-border/70 bg-card/50 p-3.5 text-left transition-all active:scale-[0.98]"
+                        >
+                          <div className="mb-3 flex items-start justify-between">
+                            <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
+                              <Icon className="size-4" />
+                            </span>
 
-                              <ArrowUpRight className="size-3.5 text-muted-foreground/40" />
-                            </div>
+                            <ArrowUpRight className="size-3.5 text-muted-foreground/40" />
+                          </div>
 
-                            <p className="text-[12px] font-semibold">
-                              {title}
-                            </p>
+                          <p className="text-[12px] font-semibold">{title}</p>
 
-                            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                              {suggestionText}
-                            </p>
-                          </button>
-                        ),
-                      )}
+                          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                            {suggestionText}
+                          </p>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
 
                 {messages.map((message) => {
                   const body = message.parts
-                    .map((part) =>
-                      part.type === "text"
-                        ? part.text
-                        : "",
-                    )
+                    .map((part) => (part.type === "text" ? part.text : ""))
                     .join("");
 
                   if (!body.trim()) {
                     return null;
                   }
 
-                  const isAssistant =
-                    message.role ===
-                    "assistant";
+                  const isAssistant = message.role === "assistant";
 
                   return (
-                    <Message
-                      from={message.role}
-                      key={message.id}
-                    >
+                    <Message from={message.role} key={message.id}>
                       {isAssistant && (
                         <div className="mb-1 flex items-center gap-1.5 px-1">
                           <span className="grid size-5 place-items-center rounded-md bg-primary/10">
-                            <Leaf
-                              className="size-3 text-primary"
-                              strokeWidth={2}
-                            />
+                            <Leaf className="size-3 text-primary" strokeWidth={2} />
                           </span>
 
                           <span className="text-[10px] font-semibold text-muted-foreground">
@@ -2007,28 +1670,19 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                             : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground"
                         }
                       >
-                        <MessageResponse>
-                          {body}
-                        </MessageResponse>
+                        <MessageResponse>{body}</MessageResponse>
                       </MessageContent>
 
-                      {isAssistant &&
-                        message.id ===
-                          lastAssistantId &&
-                        !busy && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              retry(
-                                message.id,
-                              )
-                            }
-                            className="press ml-1 mt-1 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground"
-                          >
-                            <RefreshCw className="size-3" />
-                            {copy.retry[lang]}
-                          </button>
-                        )}
+                      {isAssistant && message.id === lastAssistantId && !busy && (
+                        <button
+                          type="button"
+                          onClick={() => retry(message.id)}
+                          className="press ml-1 mt-1 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground"
+                        >
+                          <RefreshCw className="size-3" />
+                          {copy.retry[lang]}
+                        </button>
+                      )}
                     </Message>
                   );
                 })}
@@ -2043,9 +1697,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                     <div className="rounded-2xl border border-border/50 bg-card/40 px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <Shimmer className="text-[12px]">
-                          {copy.thinking[lang]}
-                        </Shimmer>
+                        <Shimmer className="text-[12px]">{copy.thinking[lang]}</Shimmer>
 
                         <div className="flex gap-0.5">
                           <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
@@ -2059,18 +1711,12 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
                 {error && !busy && (
                   <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.045] px-3.5 py-3">
-                    <p className="text-sm text-destructive">
-                      {copy.error[lang]}
-                    </p>
+                    <p className="text-sm text-destructive">{copy.error[lang]}</p>
 
                     {lastAssistantId && (
                       <button
                         type="button"
-                        onClick={() =>
-                          retry(
-                            lastAssistantId,
-                          )
-                        }
+                        onClick={() => retry(lastAssistantId)}
                         className="press mt-2 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10px] font-semibold"
                       >
                         <RefreshCw className="size-3" />
@@ -2086,80 +1732,66 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
 
             <div className="shrink-0 border-t border-border/60 bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
               <div className="mb-2 flex min-h-5 items-center gap-2 px-1">
-                {mic.listening ||
-                speech.speaking ? (
+                {mic.listening || speech.speaking ? (
                   <div className="flex items-center gap-2">
                     <div className="flex h-4 items-end gap-0.5">
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "45%" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "85%", animationDelay: "100ms" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "60%", animationDelay: "180ms" }} />
-                      <span className="w-0.5 rounded-full bg-primary animate-pulse" style={{ height: "95%", animationDelay: "260ms" }} />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "45%" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "85%", animationDelay: "100ms" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "60%", animationDelay: "180ms" }}
+                      />
+                      <span
+                        className="w-0.5 rounded-full bg-primary animate-pulse"
+                        style={{ height: "95%", animationDelay: "260ms" }}
+                      />
                     </div>
 
-                    <p className="text-[10px] font-medium text-primary">
-                      {voiceStatus}
-                    </p>
+                    <p className="text-[10px] font-medium text-primary">{voiceStatus}</p>
                   </div>
                 ) : (
-                  <p className="flex-1 truncate text-[10px] text-muted-foreground">
-                    {voiceStatus}
-                  </p>
+                  <p className="flex-1 truncate text-[10px] text-muted-foreground">{voiceStatus}</p>
                 )}
 
                 {mic.listening && (
                   <button
                     type="button"
                     onClick={mic.cancel}
-                    aria-label={
-                      copy.cancelMic[
-                        lang
-                      ]
-                    }
+                    aria-label={copy.cancelMic[lang]}
                     className="press grid size-7 place-items-center rounded-full border border-border/60"
                   >
                     <X className="size-3.5" />
                   </button>
                 )}
 
-                {lastAssistantText &&
-                  !mic.listening && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        speech.speaking
-                          ? speech.stop()
-                          : speech.speak(
-                              lastAssistantText,
-                            )
-                      }
-                      aria-label={
-                        speech.speaking
-                          ? copy.stopSpeak[
-                              lang
-                            ]
-                          : copy.replay[
-                              lang
-                            ]
-                      }
-                      className="press grid size-7 place-items-center rounded-full border border-border/60"
-                    >
-                      {speech.speaking ? (
-                        <VolumeX className="size-3.5" />
-                      ) : spokenRef.current ===
-                        lastAssistantText ? (
-                        <RotateCcw className="size-3.5" />
-                      ) : (
-                        <Volume2 className="size-3.5" />
-                      )}
-                    </button>
-                  )}
+                {lastAssistantText && !mic.listening && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      speech.speaking ? speech.stop() : speech.speak(lastAssistantText)
+                    }
+                    aria-label={speech.speaking ? copy.stopSpeak[lang] : copy.replay[lang]}
+                    className="press grid size-7 place-items-center rounded-full border border-border/60"
+                  >
+                    {speech.speaking ? (
+                      <VolumeX className="size-3.5" />
+                    ) : spokenRef.current === lastAssistantText ? (
+                      <RotateCcw className="size-3.5" />
+                    ) : (
+                      <Volume2 className="size-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
 
               <PromptInput
-                onSubmit={(
-                  _message,
-                  event,
-                ) => {
+                onSubmit={(_message, event) => {
                   event.preventDefault();
                   send(text);
                 }}
@@ -2167,37 +1799,20 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 <PromptInputTextarea
                   ref={inputRef}
                   value={text}
-                  onChange={(event) =>
-                    setText(
-                      event.currentTarget
-                        .value,
-                    )
-                  }
-                  placeholder={
-                    copy.placeholder[
-                      lang
-                    ]
-                  }
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    if (value.trim()) preloadResponseRenderer();
+                    setText(value);
+                  }}
+                  placeholder={copy.placeholder[lang]}
                 />
 
                 <PromptInputFooter className="justify-end gap-1.5">
                   <button
                     type="button"
-                    disabled={
-                      !mic.supported
-                    }
-                    onClick={() =>
-                      mic.listening
-                        ? mic.stop()
-                        : mic.start()
-                    }
-                    aria-label={
-                      mic.listening
-                        ? copy.stopMic[
-                            lang
-                          ]
-                        : copy.mic[lang]
-                    }
+                    disabled={!mic.supported}
+                    onClick={() => (mic.listening ? mic.stop() : mic.start())}
+                    aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
                     className={[
                       "press relative grid size-9 shrink-0 place-items-center rounded-full border",
                       mic.listening
@@ -2216,13 +1831,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     )}
                   </button>
 
-                  <PromptInputSubmit
-                    status={status}
-                    disabled={
-                      !text.trim() &&
-                      !busy
-                    }
-                  />
+                  <PromptInputSubmit status={status} disabled={!text.trim() && !busy} />
                 </PromptInputFooter>
               </PromptInput>
             </div>

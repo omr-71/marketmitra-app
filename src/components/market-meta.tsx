@@ -1,65 +1,15 @@
-import { formatIstDate } from "@/lib/format";
-import { freshnessTone, type Freshness } from "@/lib/market-freshness";
-import type { AggregateResult } from "@/lib/market-types";
-
-/** Trust badge — always derived from the real reporting date, never guessed. */
-export function FreshnessBadge({
-  freshness,
-  className = "",
-}: {
-  freshness: Freshness;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${
-        freshnessTone[freshness.level]
-      } ${className}`}
-    >
-      {freshness.label}
-    </span>
-  );
-}
-
-/**
- * Farmer-facing update line for an aggregated result. Shows the official
- * reporting date only — provider/source names stay internal.
- */
-export function DataProvenance({
-  result,
-  priceDate,
-  className = "",
-}: {
-  result: AggregateResult;
-  priceDate?: string;
-  className?: string;
-}) {
-  const date = priceDate || result.latestDate;
-  return (
-    <div className={`space-y-1 text-[11px] leading-relaxed text-muted-foreground ${className}`}>
-      <p>
-        {date ? <>Market data date: {formatIstDate(date)}</> : <>No market data date available</>}
-      </p>
-      {result.archive && (
-        <p className="font-semibold text-amber-600 dark:text-amber-400">
-          Last stored official record — this is not today&apos;s price.
-        </p>
-      )}
-    </div>
-  );
-}
-
-
 export function UnavailableState({
   onRetry,
+  title = "No verified market price available",
   message = "No official market record is available for this crop and location right now.",
 }: {
   onRetry?: () => void;
+  title?: string;
   message?: string;
 }) {
   return (
     <div className="card-surface p-5">
-      <p className="text-sm font-bold">Market data unavailable</p>
+      <p className="text-sm font-bold">{title}</p>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         {message} MarketMitra never shows an estimated or generated price.
       </p>

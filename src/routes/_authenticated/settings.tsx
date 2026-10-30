@@ -278,7 +278,7 @@ function SettingsPage() {
   const [showAdvancedAlerts, setShowAdvancedAlerts] =
     useState(false);
 
-  const saved = profile.saved_crops ?? [];
+  const saved = useMemo(() => profile.saved_crops ?? [], [profile.saved_crops]);
 
   useEffect(() => {
     setName(profile.full_name ?? "");

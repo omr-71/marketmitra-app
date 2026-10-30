@@ -12,23 +12,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
+import type {
+  ComponentProps,
+  HTMLAttributes,
+  ReactElement,
+} from "react";
 import {
   createContext,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import type { Streamdown } from "streamdown";
+import type { MessageResponseRendererProps } from "./message-response";
+import { preloadMessageResponse } from "./message-response-loader";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -319,24 +323,31 @@ export const MessageBranchPage = ({
   );
 };
 
-export type MessageResponseProps = ComponentProps<typeof Streamdown>;
+export type MessageResponseProps = MessageResponseRendererProps;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
+const LazyMessageResponse = lazy(() =>
+  preloadMessageResponse().then(({ MessageResponseRenderer }) => ({
+    default: MessageResponseRenderer,
+  })),
+);
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
-      plugins={streamdownPlugins}
-      {...props}
-    />
+  (props: MessageResponseProps) => (
+    <Suspense
+      fallback={
+        <span
+          aria-label="Loading formatted response"
+          className="inline-block h-4 w-24 animate-pulse rounded bg-muted/50"
+          role="status"
+        />
+      }
+    >
+      <LazyMessageResponse {...props} />
+    </Suspense>
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
-    nextProps.isAnimating === prevProps.isAnimating
+    nextProps.isAnimating === prevProps.isAnimating,
 );
 
 MessageResponse.displayName = "MessageResponse";

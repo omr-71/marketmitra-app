@@ -41,18 +41,10 @@ import { SPRINGS, useReducedMotion } from "@/lib/motion";
 export function BottomNav() {
   const { t } = useLang();
   const isActive = useActive();
-  const reducedMotion = useReducedMotion();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] lg:hidden">
-      <div className="relative mx-auto flex h-[72px] items-center overflow-hidden rounded-[30px] border border-white/30 bg-white/[0.68] px-1.5 shadow-[0_18px_50px_rgba(15,23,42,0.20),0_4px_12px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.18)] backdrop-blur-[28px] backdrop-saturate-[180%] dark:border-white/[0.12] dark:bg-slate-950/[0.70] dark:shadow-[0_20px_55px_rgba(0,0,0,0.45),0_4px_14px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.10)]">
-        {/* Glass reflection */}
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80 dark:via-white/30" />
-
-        <div className="pointer-events-none absolute -left-10 -top-12 h-28 w-40 rounded-full bg-white/30 blur-3xl dark:bg-white/[0.04]" />
-
-        <div className="pointer-events-none absolute -right-10 bottom-[-45px] h-28 w-40 rounded-full bg-primary/10 blur-3xl" />
-
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+      <div className="bottom-nav-shell relative mx-auto flex h-[68px] items-center overflow-hidden rounded-[26px] border border-border/80 bg-card/95 px-1.5 shadow-lg backdrop-blur-md">
         {nav.map(({ to, icon: Icon, key }) => {
           const active = isActive(to);
 
@@ -64,56 +56,25 @@ export function BottomNav() {
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {/* Dynamic liquid bubble with layout animation */}
-              {active &&
-                (reducedMotion ? (
-                  <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]" />
-                ) : (
-                  <motion.span
-                    layoutId="bottomNavBubble"
-                    transition={SPRINGS.navPill}
-                    className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[57px] w-[52px] -translate-x-1/2 -translate-y-1/2 rounded-[22px] bg-white/[0.58] shadow-[0_7px_22px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-1px_0_rgba(255,255,255,0.20)] backdrop-blur-xl dark:bg-white/[0.09] dark:shadow-[0_8px_25px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.10)]"
-                  />
-                ))}
-
-              {/* Bubble highlight */}
               {active && (
-                <>
-                  <span className="pointer-events-none absolute left-1/2 top-[8px] h-2.5 w-7 -translate-x-1/2 rounded-full bg-white/70 blur-[2px] dark:bg-white/20" />
-                  <span className="pointer-events-none absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.07] blur-md" />
-                </>
+                <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[52px] w-[48px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] bg-primary/10 shadow-xs" />
               )}
 
               <span
-                className={`relative grid size-8 place-items-center rounded-full transition-all duration-300 ${
-                  active
-                    ? "scale-110 -translate-y-1"
-                    : "group-hover:-translate-y-0.5 group-hover:scale-105"
+                className={`relative grid size-8 place-items-center rounded-full transition-transform duration-200 ${
+                  active ? "scale-105" : "group-hover:scale-105"
                 }`}
               >
-                <Icon
-                  className={`size-[19px] transition-all duration-300 ${
-                    active ? "drop-shadow-[0_2px_5px_rgba(37,99,235,0.18)]" : ""
-                  }`}
-                  strokeWidth={active ? 2.5 : 1.8}
-                />
+                <Icon className="size-[19px]" strokeWidth={active ? 2.4 : 1.8} />
 
-                {/* Active floating dot */}
-                {active &&
-                  (reducedMotion ? (
-                    <span className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]" />
-                  ) : (
-                    <motion.span
-                      layoutId="bottomNavDot"
-                      transition={SPRINGS.tactile}
-                      className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_10px_currentColor]"
-                    />
-                  ))}
+                {active && (
+                  <span className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary" />
+                )}
               </span>
 
               <span
-                className={`relative mt-0.5 w-full truncate px-0.5 text-center text-[9px] font-bold leading-none transition-all duration-300 ${
-                  active ? "translate-y-[-1px]" : ""
+                className={`relative mt-0.5 w-full truncate px-0.5 text-center text-[9px] font-bold leading-none ${
+                  active ? "text-primary" : ""
                 }`}
               >
                 {t(key)}
@@ -131,9 +92,12 @@ export function SideNav() {
   const { t } = useLang();
   const isActive = useActive();
   const reducedMotion = useReducedMotion();
+  const coarsePointer =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const simplifyMotion = reducedMotion || coarsePointer;
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border/70 bg-card px-4 py-6 lg:flex">
+    <aside className="app-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-card px-4 py-6 lg:flex">
       <Link to="/home" className="flex items-center gap-3 px-2">
         <LogoMark className="size-9" />
         <Wordmark className="text-lg" />
@@ -158,7 +122,7 @@ export function SideNav() {
               }`}
             >
               {active &&
-                (reducedMotion ? (
+                (simplifyMotion ? (
                   <span className="absolute inset-0 -z-10 rounded-xl bg-primary/12" />
                 ) : (
                   <motion.span
@@ -212,7 +176,7 @@ export function Screen({
       <div className="min-w-0 flex-1">
         <div
           data-route={pathname}
-          className={`app-page mx-auto w-full max-w-[430px] lg:max-w-6xl lg:px-8 ${
+          className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-8 ${
             withNav ? "pb-28 lg:pb-0" : ""
           } ${className}`}
         >
@@ -225,6 +189,7 @@ export function Screen({
         </div>
       </div>
 
+      {withNav && <div aria-hidden="true" className="bottom-nav-scroll-glass" />}
       {withNav && <BottomNav />}
     </div>
   );
@@ -236,6 +201,7 @@ export function TopBar({
   back,
   action,
   settings = true,
+  className = "",
 }: {
   title: string;
   subtitle?: string;
@@ -243,9 +209,12 @@ export function TopBar({
   action?: ReactNode;
   /** Show the top-right settings shortcut (hidden on the settings screen). */
   settings?: boolean;
+  className?: string;
 }) {
   return (
-    <header className="app-topbar sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bg-background/90 lg:px-0 lg:py-6 lg:backdrop-blur-xl">
+    <header
+      className={`app-topbar mobile-glass sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 px-4 py-3 backdrop-blur-[20px] backdrop-saturate-[180%] lg:px-0 lg:py-6 ${className}`}
+    >
       {back ? (
         <Link
           to={back}

@@ -50,7 +50,7 @@ const EMPTY: FarmerProfile = {
 const CACHE_KEY = "mm-profile";
 
 const COLUMNS =
-  "full_name,phone,phone_verified,phone_verified_at,village,language,state,district,latitude,longitude,saved_crops,voice_id,voice_lang,voice_provider";
+  "full_name,phone,phone_verified,phone_verified_at,village,language,state,district,latitude,longitude,saved_crops";
 
 type SessionCtx = {
   profile: FarmerProfile;

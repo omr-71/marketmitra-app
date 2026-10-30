@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
 import { LocationCard } from "@/components/location-card";
-import { DataProvenance } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops } from "@/lib/crops";
@@ -125,7 +124,9 @@ function CropsPage() {
 
           <div className="mt-5 border-t border-border pt-4">
             {!location?.district ? (
-              <p className="text-xs text-muted-foreground">Select your district to see matching prices.</p>
+              <p className="text-xs text-muted-foreground">
+                Select your district to see matching prices.
+              </p>
             ) : priceQuery.isPending ? (
               <p className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" /> {t("loading")}
@@ -146,12 +147,7 @@ function CropsPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                {priceQuery.isError ? "The latest official prices could not be loaded." : t("noPrices")}
-              </p>
-            )}
-            {priceQuery.data && best && (
-              <DataProvenance result={priceQuery.data} priceDate={best.date} className="mt-2" />
+              <p className="text-xs text-muted-foreground">{t("noPrices")}</p>
             )}
           </div>
         </div>

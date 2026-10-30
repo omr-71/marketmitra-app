@@ -1,136 +1,119 @@
 import { useState } from "react";
-import { MapPin, Crosshair, Loader2, Check } from "lucide-react";
-import { INDIAN_STATES } from "@/lib/crops";
+import { MapPin, Crosshair, Loader2 } from "lucide-react";
 import { useLocationContext } from "@/lib/location";
 import { useLang } from "@/lib/i18n";
+import { LocationDialog } from "./location-dialog";
+import { Button } from "@/components/ui/button";
 
-export function LocationCard() {
+export function LocationCard({ className = "" }: { className?: string }) {
   const { t } = useLang();
   const { location, status, error, detect, setManual } = useLocationContext();
-  const [open, setOpen] = useState(false);
-  const [state, setState] = useState(location?.state ?? "Maharashtra");
-  const [district, setDistrict] = useState(location?.district ?? "");
-  const [city, setCity] = useState(location?.city ?? "");
-  const [saving, setSaving] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const submit = async () => {
-    setSaving(true);
-    await setManual({ state, district: district.trim(), city: city.trim() });
-    setSaving(false);
-    setOpen(false);
-  };
-
-  const label = location?.state || location?.city
-    ? [location.city || location.place || location.district, location.district, location.state]
-        .filter((part, index, all) => Boolean(part) && all.indexOf(part) === index)
-        .slice(0, 3)
-        .join(", ")
-    : t("locationNeeded");
+  // Format primary place (city / village / place) and secondary line (district, state)
+  const primaryPlace =
+    location?.city || location?.place || location?.district || t("locationNeeded");
+  const subPlace =
+    location?.district && location?.state
+      ? `${location.district}, ${location.state}`
+      : location?.state || location?.district || "";
 
   return (
-    <div className="card-surface hover-lift p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-primary/10">
-            <MapPin className="size-4.5 text-primary" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div
+      className={`flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-colors ${className}`}
+    >
+      <div>
+        {/* Top Header Row: Label & Source Badge + Dedicated GPS Refresh Icon */}
+        <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
               {t("yourLocation")}
-              {location ? (
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold normal-case tracking-normal">
-                  {location.source === "gps" ? t("autoLocation") : t("manualLocation")}
-                </span>
-              ) : null}
+            </span>
+            {location && (
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground">
+                {location.source === "gps" ? t("autoLocation") : t("manualLocation")}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void detect()}
+            disabled={status === "locating"}
+            className="press grid size-8 shrink-0 place-items-center rounded-xl border border-border/80 bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+            aria-label={t("useMyLocation")}
+            title="Auto-detect current GPS location"
+          >
+            {status === "locating" ? (
+              <Loader2 className="size-4 animate-spin text-primary" />
+            ) : (
+              <Crosshair className="size-4" />
+            )}
+          </button>
+        </div>
+
+        {/* Middle Row: Prominent, comfortable location text */}
+        <div className="mt-4 flex items-start gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary mt-0.5">
+            <MapPin className="size-4.5" />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-base font-black tracking-tight text-foreground line-clamp-1 sm:text-lg"
+              title={primaryPlace}
+            >
+              {primaryPlace}
             </p>
-            <p className="truncate text-sm font-bold">{label}</p>
+            {subPlace ? (
+              <p
+                className="mt-0.5 text-xs font-semibold text-muted-foreground line-clamp-1"
+                title={subPlace}
+              >
+                {subPlace}
+              </p>
+            ) : !location ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Tap below to choose your state, district and taluka.
+              </p>
+            ) : null}
           </div>
         </div>
-        <button
-          onClick={() => void detect()}
-          disabled={status === "locating"}
-          className="press grid size-9 shrink-0 place-items-center rounded-full bg-muted disabled:opacity-60"
-          aria-label={t("useMyLocation")}
-        >
-          {status === "locating" ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Crosshair className="size-4" />
-          )}
-        </button>
+
+        {error && (
+          <p className="mt-3 text-[11px] font-medium text-destructive leading-tight">{error}</p>
+        )}
       </div>
 
-      {error && <p className="mt-2 text-[11px] font-semibold text-destructive">{error}</p>}
-
-      {!open ? (
-        <button
-          onClick={() => setOpen(true)}
-          className="press mt-3 w-full rounded-2xl border border-dashed border-primary/40 py-2.5 text-xs font-bold text-primary"
+      {/* Bottom Row: Clear, properly sized action button */}
+      <div className="mt-5 pt-3 border-t border-border/60">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setDialogOpen(true)}
+          className="w-full h-9 rounded-xl text-xs font-bold gap-1.5 border-border hover:bg-muted text-foreground"
         >
-          {t("enterLocation")}
-        </button>
-      ) : (
-        <div className="mt-3 space-y-2.5">
-          <p className="text-[11px] font-semibold text-muted-foreground">{t("manualHint")}</p>
-          <label className="block">
-            <span className="text-[11px] font-semibold text-muted-foreground">{t("city")}</span>
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              maxLength={60}
-              placeholder="Lasalgaon"
-              autoComplete="address-level2"
-              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
-            />
-          </label>
-          <label className="block">
-            <span className="text-[11px] font-semibold text-muted-foreground">{t("district")}</span>
-            <input
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              maxLength={60}
-              placeholder="Nashik"
-              autoComplete="address-level3"
-              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
-            />
-          </label>
-          <label className="block">
-            <span className="text-[11px] font-semibold text-muted-foreground">{t("state")}</span>
-            <select
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-3 text-sm font-semibold"
-            >
-              {INDIAN_STATES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setOpen(false)}
-              className="press h-11 flex-1 rounded-2xl border border-border text-sm font-bold"
-            >
-              {t("cancel")}
-            </button>
-            <button
-              onClick={() => void submit()}
-              disabled={saving || !state}
-              className="press grad-primary inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-60"
-            >
-              {saving ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="size-4" /> {t("save")}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+          <MapPin className="size-3.5 text-primary" />
+          <span>{location ? "Change location" : "Enter location"}</span>
+        </Button>
+      </div>
+
+      {/* Cascading Hierarchical Selection Modal */}
+      <LocationDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        currentLocation={location}
+        onSave={async (sel) => {
+          await setManual({
+            state: sel.state,
+            district: sel.district,
+            city: sel.village || sel.taluka,
+            taluka: sel.taluka,
+            village: sel.village,
+          });
+        }}
+      />
     </div>
   );
 }

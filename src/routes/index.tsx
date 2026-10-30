@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import field from "@/assets/field.jpg";
+import fieldWebp from "@/assets/field.webp";
 import { LogoMark } from "@/components/brand";
 import { useLang } from "@/lib/i18n";
 import { ArrowRight, BarChart3, CloudSun, Landmark } from "lucide-react";
@@ -48,13 +49,19 @@ function Splash() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[oklch(0.16_0.022_160)]">
-      <img
-        src={field}
-        alt="Crop field at sunrise"
-        width={1024}
-        height={1280}
-        className="absolute inset-0 size-full object-cover opacity-40"
-      />
+      <picture>
+        <source srcSet={fieldWebp} type="image/webp" />
+        <img
+          src={field}
+          alt="Crop field at sunrise"
+          width={1024}
+          height={1280}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 size-full object-cover opacity-40"
+        />
+      </picture>
       <div className="absolute inset-0 bg-[linear-gradient(180deg,oklch(0.16_0.022_160/0.65)_0%,oklch(0.14_0.02_160/0.92)_60%,oklch(0.13_0.02_160)_100%)]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[430px] flex-col items-center justify-center px-7 text-center lg:max-w-5xl lg:items-start lg:px-10 lg:text-left">

@@ -1,15 +1,19 @@
+import { lazy, Suspense } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
-import { DataProvenance, UnavailableState } from "@/components/market-meta";
+import { UnavailableState } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
+import { noRecentMarketPricesMessage } from "@/lib/market-district";
 import { fetchPriceHistory } from "@/lib/market.functions";
 import { marketPricesQuery } from "@/lib/market-queries";
 import { formatIstDate, inr } from "@/lib/format";
 
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+const MarketHistoryBarChart = lazy(
+  () => import("@/components/charts/market-history-bar-chart"),
+);
 import { BarChart3, Loader2, TrendingUp } from "lucide-react";
 
 const searchSchema = z.object({
@@ -44,7 +48,10 @@ export const Route = createFileRoute("/_authenticated/market/$marketId")({
           url: `https://marketmitra.app/market/${params.marketId}`,
           license: "https://data.gov.in/government-open-data-license-india",
           isAccessibleForFree: true,
-          creator: { "@type": "GovernmentOrganization", name: "Directorate of Marketing & Inspection (Agmarknet)" },
+          creator: {
+            "@type": "GovernmentOrganization",
+            name: "Directorate of Marketing & Inspection (Agmarknet)",
+          },
           publisher: { "@id": "https://marketmitra.app/#organization" },
           spatialCoverage: { "@type": "Place", name: `${params.marketId}, India` },
         }),
@@ -65,9 +72,10 @@ function MarketDetailPage() {
   );
 
   const historyQuery = useQuery({
-    queryKey: ["history", crop.commodity, state, marketId],
+    queryKey: ["history", crop.commodity, state, district, marketId],
+    enabled: Boolean(district),
     queryFn: () =>
-      fetchPriceHistory({ data: { commodity: crop.commodity, state, market: marketId } }),
+      fetchPriceHistory({ data: { commodity: crop.commodity, state, district, market: marketId } }),
     staleTime: 10 * 60 * 1000,
   });
 
@@ -82,12 +90,14 @@ function MarketDetailPage() {
       <TopBar title={marketId} subtitle={`${crop.name[lang]} · ${state}`} back="/crops" />
 
       <div className="px-5 pt-5">
-        {todayQuery.isPending ? (
+        {!district ? (
+          <UnavailableState message="Select a district to view verified prices for this market." />
+        ) : todayQuery.isPending ? (
           <div className="card-surface hover-lift flex items-center gap-2 p-5 text-xs text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> {t("loading")}
           </div>
         ) : todayQuery.isError ? (
-          <UnavailableState onRetry={() => void todayQuery.refetch()} message="The latest official price could not be loaded." />
+          <UnavailableState onRetry={() => void todayQuery.refetch()} />
         ) : latest ? (
           <div className="card-surface hover-lift p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-primary">
@@ -107,18 +117,9 @@ function MarketDetailPage() {
                 <p className="text-[10px] text-muted-foreground">{t("maxPrice")}</p>
               </div>
             </div>
-            {todayQuery.data && (
-              <DataProvenance
-                result={todayQuery.data}
-                priceDate={latest.date}
-                className="mt-3"
-              />
-            )}
           </div>
         ) : (
-          <p className="card-surface hover-lift p-5 text-sm text-muted-foreground">
-            {t("noPrices")}
-          </p>
+          <UnavailableState onRetry={() => void todayQuery.refetch()} />
         )}
 
         <section className="card-surface hover-lift mt-4 p-5">
@@ -127,44 +128,40 @@ function MarketDetailPage() {
             <p className="text-sm font-bold">{t("priceHistory")}</p>
           </div>
 
-          {historyQuery.isPending ? (
+          {!district ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Select a district to view verified market history.
+            </p>
+          ) : historyQuery.isPending ? (
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> {t("loading")}
             </p>
           ) : chartData.length < 2 ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              History builds up as this mandi reports prices. {points.length} day
-              {points.length === 1 ? "" : "s"} recorded so far.
+              {points.length === 0
+                ? noRecentMarketPricesMessage(district)
+                : `History builds up as this mandi reports prices in ${district}. ${points.length} day${points.length === 1 ? "" : "s"} recorded so far.`}
             </p>
           ) : (
-            <div className="-mx-2 mt-4 h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis
-                    dataKey="label"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 14,
-                      border: "1px solid var(--color-border)",
-                      background: "var(--color-card)",
-                      fontSize: 12,
-                    }}
-                    formatter={(v: number) => [inr(v), t("modalPrice")]}
-                  />
-                  <Bar dataKey="price" radius={[8, 8, 0, 0]} fill="var(--color-primary)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <Suspense
+              fallback={
+                <div className="flex h-44 items-center justify-center text-xs text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                </div>
+              }
+            >
+              <MarketHistoryBarChart
+                data={chartData}
+                tooltipLabel={t("modalPrice")}
+                formatPrice={inr}
+              />
+            </Suspense>
           )}
         </section>
 
         <Link
           to="/predict"
-          search={{ crop: crop.id, market: marketId, state }}
+          search={{ crop: crop.id, market: marketId, state, district }}
           className="press grad-primary mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-bold text-primary-foreground"
         >
           <TrendingUp className="size-5" /> {t("pricePrediction")}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Lang } from "./crops";
+export type { Lang };
 
 const dict = {
   tagline: {

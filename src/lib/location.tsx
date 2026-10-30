@@ -29,7 +29,13 @@ type Ctx = {
   status: "idle" | "locating" | "ready" | "denied" | "error";
   error: string | null;
   detect: () => Promise<void>;
-  setManual: (next: { state: string; district: string; city?: string }) => Promise<void>;
+  setManual: (next: {
+    state: string;
+    district: string;
+    city?: string;
+    village?: string;
+    taluka?: string;
+  }) => Promise<void>;
 };
 
 const STORAGE_KEY = "mm-location";
@@ -117,7 +123,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         latitude: next.latitude,
         longitude: next.longitude,
       }).catch((cause: unknown) => console.error("Unable to save the farm location", cause));
-
     },
     [updateProfile],
   );
@@ -193,18 +198,35 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     }
   }, [persist]);
 
-
   const setManual = useCallback(
-    async (next: { state: string; district: string; city?: string }) => {
+    async (next: {
+      state: string;
+      district: string;
+      city?: string;
+      village?: string;
+      taluka?: string;
+    }) => {
+      const village = next.village?.trim() ?? "";
+      const taluka = next.taluka?.trim() ?? "";
       const city = next.city?.trim() ?? "";
+      const primaryPlace = village || taluka || city;
+      const displayPlace = [village, taluka || city, next.district]
+        .filter((part, index, all) => Boolean(part) && all.indexOf(part) === index)
+        .join(", ");
+
       setStatus("locating");
       setError(null);
-      const hit = await geocodePlace({ city, district: next.district, state: next.state });
+      const hit = await geocodePlace({
+        city: primaryPlace,
+        district: next.district,
+        state: next.state,
+      });
+
       persist({
         state: next.state || hit?.state || "",
         district: next.district || hit?.district || "",
-        city,
-        place: city || next.district || next.state,
+        city: primaryPlace,
+        place: displayPlace || primaryPlace || next.district || next.state,
         latitude: hit?.latitude ?? null,
         longitude: hit?.longitude ?? null,
         source: "manual",
@@ -212,7 +234,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       });
       if (!hit) {
         setError(
-          "Saved, but we could not pinpoint that place for weather. Try a nearby larger city name.",
+          "Saved, but we could not pinpoint that exact place for weather coordinates. District-level weather will be used.",
         );
       }
     },

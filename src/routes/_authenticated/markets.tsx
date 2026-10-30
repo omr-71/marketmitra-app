@@ -1,14 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { motion } from "motion/react";
 import { Screen, TopBar } from "@/components/app-shell";
-import {
-  DataProvenance,
-  FreshnessBadge,
-  UnavailableState,
-} from "@/components/market-meta";
+import { UnavailableState } from "@/components/market-meta";
 import { Reveal } from "@/components/reveal";
 import {
   StaggerContainer,
@@ -22,7 +18,6 @@ import {
   latestPerMarket as pickLatestPerMarket,
   marketPricesQuery,
 } from "@/lib/market-queries";
-import { computeFreshness } from "@/lib/market-freshness";
 import type { PriceRecord } from "@/lib/market-types";
 import { locateMarket } from "@/lib/market-geo";
 import {
@@ -30,7 +25,7 @@ import {
   estimateTransport,
   roadDistanceKm,
 } from "@/lib/transport";
-import { formatIstDate, inr } from "@/lib/format";
+import { inr } from "@/lib/format";
 import {
   Award,
   Loader2,
@@ -140,6 +135,10 @@ function MarketsPage() {
       : null;
 
   const [distances, setDistances] = useState<Record<string, number>>({});
+  const distanceCacheRef = useRef<Record<string, number>>({});
+
+  const distanceKey = (record: PriceRecord) =>
+    `${record.market}|${record.district}|${record.state}`;
 
   const geoTargets = visible.slice(0, GEO_LIMIT);
 
@@ -150,31 +149,51 @@ function MarketsPage() {
   useEffect(() => {
     if (!origin || geoTargets.length === 0) return;
 
+    const pendingTargets = geoTargets.filter(
+      (record) =>
+        distanceCacheRef.current[distanceKey(record)] == null &&
+        distances[record.market] == null,
+    );
+
+    if (pendingTargets.length === 0) return;
+
     let cancelled = false;
 
     void (async () => {
-      for (const record of geoTargets) {
-        if (cancelled) return;
+      const resolved: Record<string, number> = {};
 
-        const coords = await locateMarket(
-          record.market,
-          record.district,
-          record.state,
-        );
+      await Promise.all(
+        pendingTargets.map(async (record) => {
+          const coords = await locateMarket(
+            record.market,
+            record.district,
+            record.state,
+          );
 
-        if (cancelled || !coords) continue;
+          if (cancelled || !coords) return;
 
-        const km = roadDistanceKm(origin, coords);
+          const km = roadDistanceKm(origin, coords);
 
-        setDistances((prev) =>
-          prev[record.market] === km
-            ? prev
-            : {
-                ...prev,
-                [record.market]: km,
-              },
-        );
-      }
+          distanceCacheRef.current[distanceKey(record)] = km;
+          resolved[record.market] = km;
+        }),
+      );
+
+      if (cancelled) return;
+
+      setDistances((prev) => {
+        let changed = false;
+        const next = { ...prev };
+
+        for (const [market, km] of Object.entries(resolved)) {
+          if (next[market] !== km) {
+            next[market] = km;
+            changed = true;
+          }
+        }
+
+        return changed ? next : prev;
+      });
     })();
 
     return () => {
@@ -184,12 +203,23 @@ function MarketsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoKey, origin?.latitude, origin?.longitude]);
 
+  const resolvedDistances = useMemo(() => {
+    const merged = { ...distances };
+
+    for (const [key, km] of Object.entries(distanceCacheRef.current)) {
+      const market = key.split("|")[0];
+      if (market && km != null) merged[market] = km;
+    }
+
+    return merged;
+  }, [distances]);
+
   const rows = useMemo(
     () =>
       visible.map((record) => {
         const gross = record.modalPrice * qty;
 
-        const km = distances[record.market];
+        const km = resolvedDistances[record.market];
 
         const transport =
           km != null
@@ -211,7 +241,7 @@ function MarketsPage() {
             commissionCost,
         };
       }),
-    [visible, qty, distances, ratePerKm, commission],
+    [visible, qty, resolvedDistances, ratePerKm, commission],
   );
 
   /**
@@ -293,10 +323,6 @@ function MarketsPage() {
               {location?.district || "Choose your district"}
             </h1>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              Latest official {crop.name[lang]} prices, with each market's
-              reporting date shown below.
-            </p>
           </Reveal>
 
           <motion.div
@@ -426,7 +452,6 @@ function MarketsPage() {
             <Reveal className="mt-5" y={18}>
               <UnavailableState
                 onRetry={() => void priceQuery.refetch()}
-                message="The official market price service could not be reached."
               />
             </Reveal>
           ) : rows.length === 0 ? (
@@ -493,10 +518,7 @@ function MarketsPage() {
                         : ""}
                     </p>
 
-                    <p className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                      <FreshnessBadge freshness={result.freshness} />
-                      Market data date:{" "}
-                      {formatIstDate(bestPrice.record.date)} ·{" "}
+                    <p className="mt-2 text-[11px] font-semibold text-muted-foreground">
                       {bestPrice.record.district}
                     </p>
 
@@ -523,10 +545,6 @@ function MarketsPage() {
                 {rows.map((row) => {
                   const isBest =
                     row.record.market === bestPrice?.record.market;
-
-                  const rowFreshness = computeFreshness({
-                    dataDate: row.record.date,
-                  });
 
                   return (
                     <StaggerItem key={row.record.market}>
@@ -564,12 +582,8 @@ function MarketsPage() {
                                 ) : null}
                               </p>
 
-                              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                                <FreshnessBadge
-                                  freshness={rowFreshness}
-                                />
-                                {row.record.district} ·{" "}
-                                {formatIstDate(row.record.date)}
+                              <p className="mt-1 text-[11px] text-muted-foreground">
+                                {row.record.district}
                               </p>
                             </div>
 
@@ -673,8 +687,6 @@ function MarketsPage() {
               y={16}
               duration={600}
             >
-              <DataProvenance result={result} />
-
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Transport is an estimate from road distance × your ₹/km
                 rate, not an official freight rate. Commission is the % you

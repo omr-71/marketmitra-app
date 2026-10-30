@@ -19,7 +19,6 @@ import { AuthProvider } from "../lib/auth";
 import { SettingsProvider } from "../lib/settings";
 
 import { Toaster } from "@/components/ui/sonner";
-import { SplashOverlay } from "@/components/splash-overlay";
 import { MitraAILauncher } from "@/components/mitra-ai-launcher";
 
 function NotFoundComponent() {
@@ -128,7 +127,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "dns-prefetch", href: "https://api.data.gov.in" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&family=Epilogue:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=Epilogue:wght@600;700;800&display=swap",
       },
     ],
 
@@ -198,7 +197,6 @@ function RootComponent() {
         <LangProvider>
         <SettingsProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <SplashOverlay />
           <Outlet />
           <MitraAILauncher />
           <Toaster position="top-center" richColors />
