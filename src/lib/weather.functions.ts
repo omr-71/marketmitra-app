@@ -17,6 +17,14 @@ export type WeatherDay = {
   windMax: number;
 };
 
+export type HourlyForecast = {
+  time: string;
+  temperature: number;
+  code: number;
+  rainChance: number;
+  isDay: boolean;
+};
+
 export type WeatherResult =
   | {
       ok: true;
@@ -33,11 +41,13 @@ export type WeatherResult =
         uvIndex: number;
         precipitation: number;
         windGust: number;
+        visibility: number;
       };
       observedAt: string;
       sunrise: string;
       sunset: string;
       days: WeatherDay[];
+      hourly: HourlyForecast[];
       source: string;
     }
   | { ok: false; error: string };
@@ -52,13 +62,15 @@ export const fetchWeather = createServerFn({ method: "POST" })
 
     url.searchParams.set(
       "current",
-      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,is_day,surface_pressure",
+      "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,is_day,surface_pressure,visibility",
     );
 
     url.searchParams.set(
       "daily",
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max",
     );
+
+    url.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability,is_day");
 
     url.searchParams.set("timezone", "Asia/Kolkata");
     url.searchParams.set("forecast_days", "7");
@@ -92,6 +104,13 @@ export const fetchWeather = createServerFn({ method: "POST" })
 
       const json = (await response.json()) as {
         current: Record<string, number | string>;
+        hourly: {
+          time: string[];
+          temperature_2m: number[];
+          weather_code: number[];
+          precipitation_probability: (number | null)[];
+          is_day: number[];
+        };
         daily: {
           time: string[];
           weather_code: number[];
@@ -119,6 +138,25 @@ export const fetchWeather = createServerFn({ method: "POST" })
         windMax: Math.round(json.daily.wind_speed_10m_max[i] ?? 0),
       }));
 
+      // Parse hourly forecast – next 24 hours from current hour
+      const nowIso =
+        typeof json.current["time"] === "string" ? json.current["time"] : new Date().toISOString();
+      const nowHour = nowIso.slice(0, 13); // "YYYY-MM-DDTHH"
+      const startIdx = json.hourly.time.findIndex((t) => t.replace(" ", "T").startsWith(nowHour));
+      const hourlySlice = startIdx >= 0 ? startIdx : 0;
+      const hourly: HourlyForecast[] = json.hourly.time
+        .slice(hourlySlice, hourlySlice + 24)
+        .map((t, i) => {
+          const idx = hourlySlice + i;
+          return {
+            time: t,
+            temperature: Math.round(json.hourly.temperature_2m[idx] ?? 0),
+            code: json.hourly.weather_code[idx] ?? 0,
+            rainChance: Math.round(json.hourly.precipitation_probability[idx] ?? 0),
+            isDay: json.hourly.is_day[idx] === 1,
+          };
+        });
+
       return {
         ok: true,
         updatedAt: new Date().toISOString(),
@@ -135,6 +173,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
           uvIndex: days[0]?.uvIndex ?? 0,
           precipitation: Number(num("precipitation").toFixed(1)),
           windGust: Math.round(num("wind_gusts_10m")),
+          visibility: Math.round(num("visibility") / 1000),
         },
 
         observedAt: typeof json.current["time"] === "string" ? json.current["time"] : "",
@@ -142,6 +181,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
         sunrise: json.daily.sunrise[0] ?? "",
         sunset: json.daily.sunset[0] ?? "",
         days,
+        hourly,
 
         source: "Open-Meteo",
       };

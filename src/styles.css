@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./styles/weather-premium.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -315,6 +316,9 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
 
     background:
       radial-gradient(
@@ -334,6 +338,9 @@
     width: 55%;
     height: 220%;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
 
     background:
       linear-gradient(
@@ -457,6 +464,9 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
     border-radius: inherit;
 
     background:
@@ -490,6 +500,213 @@
   box-shadow:
     0 20px 60px -35px
     oklch(0 0 0 / 0.55);
+}
+
+@media (max-width: 767px) {
+  .glass,
+  .glass-dark {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:
+      0 12px 30px -20px
+      color-mix(in oklab, var(--color-primary) 28%, transparent),
+      0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .card-surface {
+    box-shadow:
+      0 10px 26px -20px
+      color-mix(in oklab, var(--color-primary) 32%, transparent),
+      0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .bottom-nav-shell {
+    background:
+      color-mix(in oklab, var(--color-card) 88%, transparent);
+    border-color: color-mix(in oklab, var(--color-border) 82%, transparent);
+    box-shadow:
+      0 12px 28px -24px
+      color-mix(in oklab, var(--color-primary) 34%, transparent),
+      0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .bottom-nav-scroll-glass {
+    display: block;
+    position: fixed;
+    z-index: 35;
+    inset-inline: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 430px;
+    height: calc(72px + max(0.85rem, env(safe-area-inset-bottom)) + 3rem);
+    margin-inline: auto;
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      color-mix(in srgb, var(--color-background) 12%, transparent) 100%
+    );
+  }
+
+  @supports (backdrop-filter: blur(4px)) and (mask-image: linear-gradient(transparent, black)) {
+    .bottom-nav-scroll-glass {
+      backdrop-filter: blur(4px) saturate(110%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 48%, black 100%);
+    }
+  }
+
+  @supports (-webkit-backdrop-filter: blur(4px)) and (-webkit-mask-image: linear-gradient(transparent, black)) {
+    .bottom-nav-scroll-glass {
+      -webkit-backdrop-filter: blur(4px) saturate(110%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 48%, black 100%);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .bottom-nav-shell {
+      background:
+        color-mix(in oklab, var(--color-card) 96%, transparent);
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .bottom-nav-scroll-glass {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bottom-nav-scroll-glass {
+      display: none;
+    }
+  }
+}
+
+.app-topbar.mobile-glass,
+.diagnose-workspace-title {
+  position: sticky;
+  z-index: 30;
+  background: color-mix(in srgb, var(--color-background) 96%, transparent);
+  border-color: color-mix(in srgb, white 34%, var(--color-border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 42%, transparent),
+    0 12px 32px -24px color-mix(in srgb, black 30%, transparent);
+}
+
+.app-topbar.mobile-glass {
+  top: 0.5rem;
+  border: 1px solid color-mix(in srgb, white 34%, var(--color-border));
+  border-radius: 1.25rem;
+}
+
+.app-topbar.mobile-glass::after {
+  display: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: -3rem;
+  z-index: 0;
+  height: 3rem;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-background) 24%, transparent),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.app-topbar.mobile-glass::before,
+.diagnose-workspace-title::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 18%, transparent),
+    color-mix(in srgb, white 4%, transparent) 38%,
+    transparent 72%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.app-topbar.mobile-glass > *,
+.diagnose-workspace-title > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-topbar.mobile-glass,
+.diagnose-workspace-title {
+  background: color-mix(in srgb, var(--color-background) 64%, transparent);
+}
+
+@media (max-width: 767px) {
+  .app-topbar.mobile-glass::after {
+    display: block;
+  }
+
+  .bottom-nav-scroll-glass {
+    display: block;
+  }
+
+  .app-topbar.mobile-glass {
+    top: max(0.5rem, env(safe-area-inset-top));
+    width: auto;
+    margin: max(0.5rem, env(safe-area-inset-top)) 0.625rem 0;
+  }
+
+  @supports (backdrop-filter: blur(4px)) and (mask-image: linear-gradient(black, transparent)) {
+    .app-topbar.mobile-glass::after {
+      backdrop-filter: blur(4px) saturate(110%);
+      mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    }
+  }
+
+  @supports (-webkit-backdrop-filter: blur(4px)) and (-webkit-mask-image: linear-gradient(black, transparent)) {
+    .app-topbar.mobile-glass::after {
+      -webkit-backdrop-filter: blur(4px) saturate(110%);
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {
+    .app-topbar.mobile-glass::after {
+      display: none;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .diagnose-workspace-title {
+    top: 0;
+    border-radius: 0 0 1rem 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .bottom-nav-scroll-glass {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-reduced-motion: reduce) {
+  .bottom-nav-scroll-glass {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-topbar.mobile-glass,
+  .diagnose-workspace-title {
+    background: color-mix(in srgb, var(--color-card) 96%, transparent);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /* =========================================================
@@ -781,6 +998,9 @@
     width: 32%;
 
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
 
     background:
       linear-gradient(
@@ -1499,6 +1719,7 @@
 .app-canvas::before,
 .app-canvas::after {
   content: "";
+  display: block;
   position: fixed;
 
   width: 460px;
@@ -1659,6 +1880,9 @@
 
     border-radius: 999px;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
     z-index: -1;
 
     background:
@@ -1693,6 +1917,9 @@
 
     border-radius: 999px;
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
     z-index: -1;
 
     background:
@@ -7962,4 +8189,155 @@ html[data-motion="reduced"] .mm-float-c {
   .mm-market-page .mm-empty-market {
     min-height: 300px;
   }
+}
+
+/* Diagnosis workspace */
+[data-route="/diagnose"] main::after {
+  display: none;
+}
+
+[data-route="/diagnose"] .diagnose-page {
+  overflow-x: clip;
+}
+
+[data-route="/diagnose"] .diagnose-uploader {
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in oklab, var(--card) 92%, transparent);
+  box-shadow: 0 8px 24px rgb(25 45 34 / 0.045);
+}
+
+[data-route="/diagnose"] .diagnose-photo {
+  background: color-mix(in oklab, var(--muted) 55%, transparent);
+}
+
+[data-route="/diagnose"] .diagnose-dropzone {
+  min-height: 8rem;
+}
+
+[data-route="/diagnose"] .diagnose-summary {
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in oklab, var(--card) 96%, transparent);
+  box-shadow: 0 8px 24px rgb(25 45 34 / 0.045);
+}
+
+[data-route="/diagnose"] .diagnose-summary .font-display {
+  overflow-wrap: anywhere;
+}
+
+[data-route="/diagnose"] .diagnose-block {
+  border-radius: 1.125rem;
+  background: color-mix(in oklab, var(--card) 78%, transparent);
+  box-shadow: 0 3px 12px rgb(25 45 34 / 0.025);
+}
+
+[data-route="/diagnose"] .diagnose-organic {
+  border-color: color-mix(in oklab, var(--primary) 22%, transparent);
+  background: color-mix(in oklab, var(--primary) 3.5%, var(--card));
+}
+
+[data-route="/diagnose"] .diagnose-chemical {
+  border-color: hsl(38 70% 55% / 0.28);
+  background: hsl(38 70% 55% / 0.045);
+}
+
+[data-route="/diagnose"] .diagnose-treatment-alert {
+  color: var(--foreground);
+}
+
+[data-route="/diagnose"] .diagnose-tabs {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+}
+
+[data-route="/diagnose"] .diagnose-tabs > [role="tab"] {
+  scroll-snap-align: start;
+}
+
+[data-route="/diagnose"] .diagnose-tab-panel {
+  overflow-wrap: anywhere;
+}
+
+[data-route="/diagnose"] .diagnose-history {
+  scroll-margin-bottom: 7rem;
+}
+
+@media (min-width: 1024px) {
+  [data-route="/diagnose"] .diagnose-workspace {
+    align-items: start;
+  }
+
+  [data-route="/diagnose"] .diagnose-uploader {
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-route="/diagnose"] .diagnose-page {
+    padding-bottom: 1.5rem;
+  }
+
+  [data-route="/diagnose"] .diagnose-uploader {
+    padding: 1rem;
+  }
+
+  [data-route="/diagnose"] .diagnose-tabs {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
+  [data-route="/diagnose"] .diagnose-summary .grid {
+    gap: 0.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-route="/diagnose"] *,
+  [data-route="/diagnose"] *::before,
+  [data-route="/diagnose"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    z-index: 1;
+  }
+
+  .app-sidebar::after {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: -24px;
+    width: 24px;
+    background: linear-gradient(
+      to right,
+      var(--card) 0%,
+      color-mix(in oklab, var(--card) 55%, transparent) 36%,
+      transparent 100%
+    );
+    content: "";
+    pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    contain: layout paint;
+  }
+}
+/* Performance & Rendering Optimizations */
+.app-canvas::after {
+  animation: none !important;
+}
+
+.app-page::before,
+.app-page::after {
+  display: none !important;
+  animation: none !important;
+}
+
+.app-page section {
+  transform-style: flat !important;
 }

@@ -1,4 +1,9 @@
-import { fetchWeather, type WeatherDay, type WeatherResult } from "./weather.functions";
+import {
+  fetchWeather,
+  type HourlyForecast,
+  type WeatherDay,
+  type WeatherResult,
+} from "./weather.functions";
 
 /**
  * Open-Meteo is CORS-enabled and needs no key, so the request is made from the
@@ -14,13 +19,15 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
 
   url.searchParams.set(
     "current",
-    "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,is_day,surface_pressure",
+    "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,is_day,surface_pressure,visibility",
   );
 
   url.searchParams.set(
     "daily",
     "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max",
   );
+
+  url.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability,is_day");
 
   url.searchParams.set("timezone", "Asia/Kolkata");
   url.searchParams.set("forecast_days", "7");
@@ -36,6 +43,13 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
 
     const json = (await response.json()) as {
       current: Record<string, number | string>;
+      hourly: {
+        time: string[];
+        temperature_2m: number[];
+        weather_code: number[];
+        precipitation_probability: (number | null)[];
+        is_day: number[];
+      };
       daily: {
         time: string[];
         weather_code: number[];
@@ -56,20 +70,31 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
       date,
       max: Math.round(json.daily.temperature_2m_max[i] ?? 0),
       min: Math.round(json.daily.temperature_2m_min[i] ?? 0),
-      rainChance: Math.round(
-        json.daily.precipitation_probability_max[i] ?? 0,
-      ),
-      rainMm: Number(
-        (json.daily.precipitation_sum[i] ?? 0).toFixed(1),
-      ),
+      rainChance: Math.round(json.daily.precipitation_probability_max[i] ?? 0),
+      rainMm: Number((json.daily.precipitation_sum[i] ?? 0).toFixed(1)),
       code: json.daily.weather_code[i] ?? 0,
-      uvIndex: Number(
-        (json.daily.uv_index_max[i] ?? 0).toFixed(1),
-      ),
-      windMax: Math.round(
-        json.daily.wind_speed_10m_max[i] ?? 0,
-      ),
+      uvIndex: Number((json.daily.uv_index_max[i] ?? 0).toFixed(1)),
+      windMax: Math.round(json.daily.wind_speed_10m_max[i] ?? 0),
     }));
+
+    // Parse hourly forecast – next 24 hours from current hour
+    const nowIso =
+      typeof json.current["time"] === "string" ? json.current["time"] : new Date().toISOString();
+    const nowHour = nowIso.slice(0, 13); // "YYYY-MM-DDTHH"
+    const startIdx = json.hourly.time.findIndex((t) => t.replace(" ", "T").startsWith(nowHour));
+    const hourlySlice = startIdx >= 0 ? startIdx : 0;
+    const hourly: HourlyForecast[] = json.hourly.time
+      .slice(hourlySlice, hourlySlice + 24)
+      .map((t, i) => {
+        const idx = hourlySlice + i;
+        return {
+          time: t,
+          temperature: Math.round(json.hourly.temperature_2m[idx] ?? 0),
+          code: json.hourly.weather_code[idx] ?? 0,
+          rainChance: Math.round(json.hourly.precipitation_probability[idx] ?? 0),
+          isDay: json.hourly.is_day[idx] === 1,
+        };
+      });
 
     return {
       ok: true,
@@ -87,23 +112,19 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
         uvIndex: days[0]?.uvIndex ?? 0,
         precipitation: Number(num("precipitation").toFixed(1)),
         windGust: Math.round(num("wind_gusts_10m")),
+        visibility: Math.round(num("visibility") / 1000),
       },
 
-      observedAt:
-        typeof json.current["time"] === "string"
-          ? json.current["time"]
-          : "",
+      observedAt: typeof json.current["time"] === "string" ? json.current["time"] : "",
 
       sunrise: json.daily.sunrise[0] ?? "",
       sunset: json.daily.sunset[0] ?? "",
       days,
+      hourly,
       source: "Open-Meteo",
     };
   } catch (error) {
-    console.warn(
-      "browser weather fetch failed, retrying on the server",
-      error,
-    );
+    console.warn("browser weather fetch failed, retrying on the server", error);
 
     try {
       return await fetchWeather({

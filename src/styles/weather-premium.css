@@ -1,0 +1,450 @@
+/* =========================================================
+   WEATHER PREMIUM — Atmospheric backgrounds & weather UI
+   ========================================================= */
+
+/* --- Weather condition-adaptive backgrounds --- */
+
+.weather-atmosphere {
+  position: relative;
+  overflow: hidden;
+}
+
+.weather-atmosphere::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.weather-atmo-sunny::before {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 75% 20%,
+      oklch(0.85 0.16 85 / 0.42),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 50% 45% at 20% 80%,
+      oklch(0.82 0.1 75 / 0.22),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      oklch(0.9 0.08 80 / 0.3) 0%,
+      oklch(0.95 0.04 90 / 0.15) 50%,
+      transparent 80%
+    );
+}
+
+.weather-atmo-cloudy::before {
+  background:
+    radial-gradient(
+      ellipse 90% 50% at 65% 15%,
+      oklch(0.78 0.04 230 / 0.3),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 25% 75%,
+      oklch(0.82 0.03 220 / 0.2),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      oklch(0.88 0.02 230 / 0.25) 0%,
+      transparent 70%
+    );
+}
+
+.weather-atmo-rain::before {
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 70% 25%,
+      oklch(0.6 0.12 240 / 0.35),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 20% 80%,
+      oklch(0.65 0.08 235 / 0.22),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      oklch(0.7 0.08 235 / 0.28) 0%,
+      oklch(0.8 0.04 240 / 0.12) 50%,
+      transparent 75%
+    );
+}
+
+.weather-atmo-storm::before {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 60% 20%,
+      oklch(0.4 0.09 265 / 0.38),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 20% 80%,
+      oklch(0.45 0.06 255 / 0.25),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      oklch(0.48 0.08 260 / 0.32) 0%,
+      transparent 75%
+    );
+}
+
+.weather-atmo-night::before {
+  background:
+    radial-gradient(
+      ellipse 75% 60% at 75% 25%,
+      oklch(0.45 0.12 265 / 0.42),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 20% 75%,
+      oklch(0.38 0.08 250 / 0.28),
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      oklch(0.32 0.08 260 / 0.35) 0%,
+      oklch(0.4 0.05 265 / 0.18) 50%,
+      transparent 75%
+    );
+}
+
+.weather-atmo-fog::before {
+  background:
+    radial-gradient(
+      ellipse 90% 60% at 50% 30%,
+      oklch(0.88 0.01 220 / 0.2),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      oklch(0.92 0.008 225 / 0.15) 0%,
+      transparent 50%
+    );
+}
+
+.weather-atmo-snow::before {
+  background:
+    radial-gradient(
+      ellipse 75% 55% at 65% 20%,
+      oklch(0.92 0.02 240 / 0.2),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 25% 75%,
+      oklch(0.9 0.015 235 / 0.15),
+      transparent 50%
+    ),
+    linear-gradient(
+      175deg,
+      oklch(0.95 0.01 240 / 0.18) 0%,
+      transparent 50%
+    );
+}
+
+/* Dark mode overrides */
+.dark .weather-atmo-sunny::before {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 70% 20%,
+      oklch(0.5 0.1 75 / 0.15),
+      transparent 65%
+    ),
+    linear-gradient(
+      175deg,
+      oklch(0.35 0.06 80 / 0.12) 0%,
+      transparent 55%
+    );
+}
+
+.dark .weather-atmo-cloudy::before {
+  background:
+    radial-gradient(
+      ellipse 90% 50% at 60% 15%,
+      oklch(0.35 0.02 230 / 0.12),
+      transparent 60%
+    ),
+    linear-gradient(
+      170deg,
+      oklch(0.3 0.015 230 / 0.1) 0%,
+      transparent 50%
+    );
+}
+
+.dark .weather-atmo-rain::before {
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 65% 25%,
+      oklch(0.35 0.06 240 / 0.18),
+      transparent 60%
+    ),
+    linear-gradient(
+      175deg,
+      oklch(0.3 0.04 235 / 0.15) 0%,
+      transparent 55%
+    );
+}
+
+.dark .weather-atmo-storm::before {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 55% 20%,
+      oklch(0.25 0.05 260 / 0.2),
+      transparent 55%
+    ),
+    linear-gradient(
+      175deg,
+      oklch(0.22 0.04 258 / 0.18) 0%,
+      transparent 55%
+    );
+}
+
+/* --- Hero temperature display --- */
+
+.weather-hero-temp {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+  background: linear-gradient(
+    175deg,
+    var(--color-foreground) 30%,
+    color-mix(in oklab, var(--color-foreground) 65%, transparent) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* --- Hourly forecast scroll --- */
+
+.weather-hourly-scroll {
+  display: flex;
+  gap: 0.125rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+}
+
+.weather-hourly-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.weather-hourly-item {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  min-width: 4.25rem;
+}
+
+/* --- Weather metric card floating animation --- */
+
+@keyframes weather-float-1 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes weather-float-2 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes weather-float-3 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(0.5deg); }
+}
+
+.weather-float-1 {
+  animation: weather-float-1 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.weather-float-2 {
+  animation: weather-float-2 7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: -2s;
+}
+
+.weather-float-3 {
+  animation: weather-float-3 8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation-delay: -4s;
+}
+
+/* --- Weather condition icon animations --- */
+
+@keyframes sun-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rain-drop {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(2px); }
+}
+
+@keyframes cloud-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+@keyframes storm-flash {
+  0%, 92%, 100% { opacity: 1; }
+  94%, 96% { opacity: 0.6; }
+}
+
+.weather-icon-sun {
+  animation: sun-rotate 30s linear infinite;
+}
+
+.weather-icon-rain {
+  animation: rain-drop 2.5s ease-in-out infinite;
+}
+
+.weather-icon-cloud {
+  animation: cloud-drift 6s ease-in-out infinite;
+}
+
+.weather-icon-storm {
+  animation: storm-flash 8s ease-in-out infinite;
+}
+
+/* --- Temperature range bar for 7-day forecast --- */
+
+.weather-temp-range {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--color-muted) 80%, transparent);
+  overflow: hidden;
+}
+
+.weather-temp-range-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    oklch(0.65 0.12 240),
+    oklch(0.72 0.14 148),
+    oklch(0.78 0.15 75),
+    oklch(0.7 0.16 30)
+  );
+  transition: left 0.4s ease, width 0.4s ease;
+}
+
+/* --- Alert severity styles --- */
+
+.weather-alert-high {
+  border-color: oklch(0.65 0.19 25 / 0.35);
+  background: oklch(0.65 0.19 25 / 0.06);
+}
+
+.weather-alert-moderate {
+  border-color: oklch(0.78 0.15 75 / 0.35);
+  background: oklch(0.78 0.15 75 / 0.06);
+}
+
+.weather-alert-low {
+  border-color: oklch(0.58 0.12 238 / 0.3);
+  background: oklch(0.58 0.12 238 / 0.06);
+}
+
+/* --- Reduced motion --- */
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-float-1,
+  .weather-float-2,
+  .weather-float-3,
+  .weather-icon-sun,
+  .weather-icon-rain,
+  .weather-icon-cloud,
+  .weather-icon-storm {
+    animation: none !important;
+  }
+}
+
+/* --- Responsive weather grid --- */
+
+.weather-desktop-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .weather-desktop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .weather-desktop-grid {
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .weather-desktop-grid {
+    gap: 1.5rem;
+  }
+}
+
+/* --- Weather metrics grid --- */
+
+.weather-metrics-grid {
+  display: grid;
+  gap: 0.625rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .weather-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .weather-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* --- Sunrise/Sunset arc --- */
+
+.weather-sun-arc {
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  aspect-ratio: 2.2;
+  overflow: hidden;
+}
+
+.weather-sun-arc-path {
+  fill: none;
+  stroke: color-mix(in oklab, var(--color-warning) 30%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 4, 4;
+}
+
+.weather-sun-arc-active {
+  fill: none;
+  stroke: var(--color-warning);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.weather-sun-dot {
+  fill: var(--color-warning);
+  filter: drop-shadow(0 0 6px oklch(0.78 0.15 75 / 0.6));
+}
