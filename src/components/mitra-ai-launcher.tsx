@@ -4,6 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
+import mitraFarmerAssistant from "@/assets/mitra-farmer-assistant.webp";
 
 const DeferredMitraAI = lazy(() =>
   import("@/components/mitra-ai").then((module) => ({
@@ -73,18 +74,6 @@ function saveOrbPosition(position: Position) {
   }
 }
 
-function MitraMark() {
-  return (
-    <span className="relative grid size-7 shrink-0 place-items-center" aria-hidden="true">
-      <span className="absolute left-1/2 top-[10%] size-[28%] -translate-x-1/2 rounded-full bg-current" />
-      <span className="absolute left-1/2 top-[34%] h-[28%] w-[52%] -translate-x-1/2 rounded-[55%_55%_30%_30%] bg-current" />
-      <span className="absolute bottom-[13%] left-[12%] h-[10%] w-[76%] rotate-[-5deg] rounded-full border-t-[1.5px] border-current/80" />
-      <span className="absolute bottom-[5%] left-[20%] h-[8%] w-[60%] rotate-[4deg] rounded-full border-t-[1.5px] border-current/45" />
-      <span className="absolute inset-0 rounded-full bg-current/10 animate-pulse" />
-    </span>
-  );
-}
-
 function LauncherOrb({
   position,
   hideOrb,
@@ -129,26 +118,22 @@ function LauncherOrb({
         "touch-none select-none",
         "cursor-grab active:cursor-grabbing",
         "rounded-full",
-        "text-primary-foreground",
-        "shadow-[var(--shadow-float)]",
-        "ring-1 ring-white/20",
+        "overflow-hidden",
+        "border-2 border-primary/80",
+        "bg-card",
+        "shadow-[0_8px_24px_rgba(22,101,52,0.22)]",
         "transition-[transform,opacity] duration-300",
         "hover:scale-105",
         "active:scale-95",
         hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100",
       ].join(" ")}
     >
-      <span className="absolute -inset-2 rounded-full bg-primary/10 blur-xl" />
-      <span className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
-      <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" />
-      <span className="absolute inset-0 overflow-hidden rounded-full">
-        <span className="absolute -left-8 top-0 h-full w-1/2 rotate-12 bg-white/15 blur-xl" />
-      </span>
-      <span className="relative grid size-full place-items-center overflow-hidden rounded-full grad-primary ring-1 ring-white/20">
-        <span className="absolute left-3 top-2 size-3 rounded-full bg-white/50 blur-[2px]" />
-        <MitraMark />
-        <span className="absolute bottom-2 right-2 size-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
-      </span>
+      <img
+        src={mitraFarmerAssistant}
+        alt="Mitra AI Farmer Assistant"
+        draggable={false}
+        className="size-full select-none object-cover object-center"
+      />
     </button>
   );
 }
