@@ -3,23 +3,32 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { analyseCropPhoto } from "./diagnose.server";
-import type { DiagnosisResult } from "./diagnose.server";
+import {
+  analyseCropPhoto,
+  cropImageDataUrlSchema,
+  decodeCropImageDataUrl,
+  validStoredSprayRecommendations,
+} from "./diagnose.server";
+import type { DiagnosisResult, SprayRecommendation } from "./diagnose.server";
+export { getDiagnosisTreatmentGuidance } from "./treatments.functions";
+export type {
+  TreatmentGuidance,
+  TreatmentRecommendation,
+  TreatmentSource,
+} from "./treatments.schema";
 
 export type {
   DiagnosisOk,
   DiagnosisUnusable,
   DiagnosisFailure,
   DiagnosisResult,
+  SprayRecommendation,
 } from "./diagnose.server";
 
 const inputSchema = z.object({
   /** JPEG/PNG/WebP data URL of the farmer's photo, already downscaled in the browser. */
-  image: z
-    .string()
-    .min(100)
-    .max(6_000_000)
-    .refine((v) => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(v), "unsupported image"),
+  requestId: z.string().uuid(),
+  image: cropImageDataUrlSchema,
   lang: z.enum(["en", "mr", "hi"]),
   cropHint: z.string().trim().max(60).optional(),
 });
@@ -41,21 +50,39 @@ export type SavedDiagnosis = {
   whatToDoNow: string[];
   prevention: string[];
   monitoring: string[];
+  sprayRecommendations: SprayRecommendation[];
   uncertaintyNote: string | null;
   imagePath: string | null;
   imageUrl: string | null;
 };
 
-function dataUrlToBytes(image: string) {
-  const [head, body] = image.split(",");
-  const mime = /data:([^;]+);/.exec(head ?? "")?.[1] ?? "image/jpeg";
-  const binary = atob(body ?? "");
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+type DiagnosisRow = Database["public"]["Tables"]["crop_diagnoses"]["Row"];
+
+function toSavedResult(row: DiagnosisRow): DiagnosisResult & { savedId: string } {
+  if (!row.usable || !row.crop || !row.condition) {
+    throw new Error("Stored diagnosis is incomplete.");
+  }
+  const sprayRecommendations = validStoredSprayRecommendations(row.spray_recommendations);
   return {
-    bytes,
-    mime,
-    ext: mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg",
+    ok: true,
+    usable: true,
+    crop: row.crop,
+    condition: row.condition,
+    confidence: row.confidence,
+    severity: row.severity,
+    symptoms: row.symptoms ?? [],
+    causes: row.causes ?? [],
+    conditionsFavouring: row.conditions_favouring ?? [],
+    whatItIs: row.what_it_is ?? "",
+    whyItHappens: row.why_it_happens ?? "",
+    whatToDoNow: row.what_to_do_now ?? [],
+    prevention: row.prevention ?? [],
+    monitoring: row.monitoring ?? [],
+    sprayRecommendations,
+    uncertaintyNote: row.uncertainty_note,
+    analysedAt: row.created_at,
+    model: row.provider ?? "saved",
+    savedId: row.id,
   };
 }
 
@@ -67,6 +94,23 @@ export const diagnoseCropImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => inputSchema.parse(data))
   .handler(async ({ data, context }): Promise<DiagnosisResult & { savedId?: string }> => {
+    let image: ReturnType<typeof decodeCropImageDataUrl>;
+    try {
+      image = decodeCropImageDataUrl(data.image);
+    } catch {
+      throw new Error("INVALID_CROP_IMAGE");
+    }
+
+    const { data: prior, error: priorError } = await context.supabase
+      .from("crop_diagnoses")
+      .select("*")
+      .eq("user_id", context.userId)
+      .eq("request_id", data.requestId)
+      .eq("usable", true)
+      .maybeSingle();
+    if (priorError) throw new Error("DIAGNOSIS_SAVE_FAILED");
+    if (prior) return toSavedResult(prior);
+
     let result: DiagnosisResult;
     try {
       result = await analyseCropPhoto(data);
@@ -95,56 +139,89 @@ export const diagnoseCropImage = createServerFn({ method: "POST" })
       return result;
     }
 
-    // Persist quietly: a storage/database hiccup must never lose the diagnosis.
-    try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { bytes, mime, ext } = dataUrlToBytes(data.image);
-      const path = `${context.userId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+    if (!result.usable) return result;
 
-      const upload = await supabaseAdmin.storage
-        .from("crop-photos")
-        .upload(path, bytes, { contentType: mime, upsert: false });
-
-      type Row = Database["public"]["Tables"]["crop_diagnoses"]["Insert"];
-      const row: Row = result.usable
-        ? {
-            user_id: context.userId,
-            image_path: upload.error ? null : path,
-            lang: data.lang,
-            crop_hint: data.cropHint ?? null,
-            usable: true,
-            crop: result.crop,
-            condition: result.condition,
-            confidence: result.confidence,
-            severity: result.severity,
-            symptoms: result.symptoms,
-            causes: result.causes,
-            what_it_is: result.whatItIs,
-            why_it_happens: result.whyItHappens,
-            what_to_do_now: result.whatToDoNow,
-            prevention: result.prevention,
-            monitoring: result.monitoring,
-            uncertainty_note: result.uncertaintyNote,
-            provider: result.model,
-          }
-        : {
-            user_id: context.userId,
-            image_path: upload.error ? null : path,
-            lang: data.lang,
-            crop_hint: data.cropHint ?? null,
-            usable: false,
-            image_issues: result.imageIssues,
-            advice: result.advice,
-          };
-
-      const saved = await supabaseAdmin.from("crop_diagnoses").insert(row).select("id").single();
-
-      if (saved.data?.id) return { ...result, savedId: saved.data.id };
-    } catch (error) {
-      console.error("diagnosis persistence failed", error);
+    const path = `${context.userId}/${Date.now()}-${crypto.randomUUID()}.${image.ext}`;
+    const upload = await context.supabase.storage
+      .from("crop-photos")
+      .upload(path, image.bytes, { contentType: image.mime, upsert: false });
+    if (upload.error) {
+      const { logApplicationError } = await import("./error-logging.server");
+      await logApplicationError({
+        service: "diagnosis",
+        userId: context.userId,
+        requestId: data.requestId,
+        provider: "Supabase Storage",
+        errorType: "photo_upload_failed",
+        message: "Completed crop diagnosis photo could not be saved.",
+      });
+      throw new Error("DIAGNOSIS_SAVE_FAILED");
     }
 
-    return result;
+    type Row = Database["public"]["Tables"]["crop_diagnoses"]["Insert"];
+    const row: Row = {
+      user_id: context.userId,
+      request_id: data.requestId,
+      image_path: path,
+      lang: data.lang,
+      crop_hint: data.cropHint ?? null,
+      usable: true,
+      crop: result.crop,
+      condition: result.condition,
+      confidence: result.confidence,
+      severity: result.severity,
+      symptoms: result.symptoms,
+      causes: result.causes,
+      conditions_favouring: result.conditionsFavouring,
+      what_it_is: result.whatItIs,
+      why_it_happens: result.whyItHappens,
+      what_to_do_now: result.whatToDoNow,
+      prevention: result.prevention,
+      monitoring: result.monitoring,
+      spray_recommendations: result.sprayRecommendations,
+      uncertainty_note: result.uncertaintyNote,
+      provider: result.model,
+    };
+
+    const saved = await context.supabase.from("crop_diagnoses").insert(row).select("*").single();
+    if (saved.error || !saved.data) {
+      const cleanup = await context.supabase.storage.from("crop-photos").remove([path]);
+      if (cleanup.error) {
+        const { logApplicationError } = await import("./error-logging.server");
+        await logApplicationError({
+          service: "diagnosis",
+          userId: context.userId,
+          requestId: data.requestId,
+          provider: "Supabase Storage",
+          errorType: "orphan_photo_cleanup_failed",
+          message: "Temporary crop photo cleanup failed after a diagnosis save error.",
+        });
+      }
+
+      if (saved.error?.code === "23505") {
+        const { data: duplicate, error: duplicateError } = await context.supabase
+          .from("crop_diagnoses")
+          .select("*")
+          .eq("user_id", context.userId)
+          .eq("request_id", data.requestId)
+          .eq("usable", true)
+          .maybeSingle();
+        if (!duplicateError && duplicate) return toSavedResult(duplicate);
+      }
+
+      const { logApplicationError } = await import("./error-logging.server");
+      await logApplicationError({
+        service: "diagnosis",
+        userId: context.userId,
+        requestId: data.requestId,
+        provider: "Supabase",
+        errorType: "persistence_failed",
+        message: "Completed crop diagnosis could not be saved.",
+      });
+      throw new Error("DIAGNOSIS_SAVE_FAILED");
+    }
+
+    return toSavedResult(saved.data);
   });
 
 /** The farmer's own diagnosis history, newest first, with short-lived photo links. */
@@ -159,18 +236,30 @@ export const listCropDiagnoses = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(12);
 
-    if (error || !data) return [];
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (error) throw new Error("Your saved crop checks could not be loaded.");
+    if (!data) return [];
 
     return Promise.all(
       data.map(async (r) => {
         let imageUrl: string | null = null;
         if (r.image_path) {
-          const signed = await supabaseAdmin.storage
+          const signed = await context.supabase.storage
             .from("crop-photos")
             .createSignedUrl(r.image_path, 60 * 60);
-          imageUrl = signed.data?.signedUrl ?? null;
+          if (signed.error || !signed.data?.signedUrl) {
+            const { logApplicationError } = await import("./error-logging.server");
+            await logApplicationError({
+              service: "diagnosis",
+              userId: context.userId,
+              requestId: r.request_id,
+              provider: "Supabase Storage",
+              errorType: signed.error?.name ?? "photo_url_missing",
+              message:
+                "A saved crop photo could not be opened; diagnosis history remains available.",
+            });
+          } else {
+            imageUrl = signed.data.signedUrl;
+          }
         }
         return {
           id: r.id,
@@ -189,6 +278,7 @@ export const listCropDiagnoses = createServerFn({ method: "GET" })
           whatToDoNow: r.what_to_do_now ?? [],
           prevention: r.prevention ?? [],
           monitoring: r.monitoring ?? [],
+          sprayRecommendations: validStoredSprayRecommendations(r.spray_recommendations),
           uncertaintyNote: r.uncertainty_note,
           imagePath: r.image_path,
           imageUrl,
@@ -201,11 +291,28 @@ export const deleteCropDiagnosis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await context.supabase
+    const { data: diagnosis, error: lookupError } = await context.supabase
+      .from("crop_diagnoses")
+      .select("image_path")
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (lookupError) throw new Error("The saved crop check could not be deleted.");
+    if (!diagnosis) return { ok: true };
+
+    if (diagnosis.image_path) {
+      const { error: storageError } = await context.supabase.storage
+        .from("crop-photos")
+        .remove([diagnosis.image_path]);
+      if (storageError) throw new Error("The saved photo could not be deleted. Please try again.");
+    }
+
+    const { error } = await context.supabase
       .from("crop_diagnoses")
       .delete()
       .eq("id", data.id)
       .eq("user_id", context.userId);
+    if (error) throw new Error("The saved crop check could not be deleted.");
     return { ok: true };
   });
 
