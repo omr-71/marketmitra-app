@@ -9,6 +9,7 @@ import { Reveal } from "@/components/reveal";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { CardSkeleton, RowSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
+import { AndroidAppDownload } from "@/components/android-app-download";
 
 import { useLang, type DictKey } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
@@ -147,6 +148,10 @@ function HomePage() {
             </div>
           </header>
         </Reveal>
+
+        <div className="mb-5 md:hidden">
+          <AndroidAppDownload />
+        </div>
 
         <div className="space-y-6 sm:space-y-7">
           {/* ===================================================
