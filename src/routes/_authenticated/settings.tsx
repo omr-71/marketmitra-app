@@ -16,6 +16,7 @@ import {
   Palette,
   RotateCcw,
   Shield,
+  Smartphone,
   Sprout,
   TrendingUp,
   User,
@@ -80,6 +81,12 @@ type AlertPreferences = {
   temperatureHigh: number;
   temperatureLow: number;
   briefTime: string;
+};
+
+type AndroidRelease = {
+  available: boolean;
+  versionName?: string;
+  fileSize?: string;
 };
 
 const DEFAULT_ALERTS: AlertPreferences = {
@@ -277,6 +284,10 @@ function SettingsPage() {
 
   const [showAdvancedAlerts, setShowAdvancedAlerts] =
     useState(false);
+  const [showAndroidInstall, setShowAndroidInstall] =
+    useState(false);
+  const [androidRelease, setAndroidRelease] =
+    useState<AndroidRelease | null>(null);
 
   const saved = useMemo(() => profile.saved_crops ?? [], [profile.saved_crops]);
 
@@ -313,6 +324,23 @@ function SettingsPage() {
         ALERT_STORAGE_KEY,
       );
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const updateMobileVisibility = () => setShowAndroidInstall(mobileQuery.matches);
+
+    updateMobileVisibility();
+    mobileQuery.addEventListener("change", updateMobileVisibility);
+
+    void fetch("/android-release.json", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<AndroidRelease> : null)
+      .then((release) => setAndroidRelease(release))
+      .catch(() => setAndroidRelease(null));
+
+    return () => mobileQuery.removeEventListener("change", updateMobileVisibility);
   }, []);
 
   useEffect(() => {
@@ -1877,6 +1905,50 @@ function SettingsPage() {
             </Link>
           </div>
         </Section>
+
+        {showAndroidInstall && androidRelease?.available && (
+          <Section icon={Smartphone} title="Official Android app">
+            <div className="card-surface p-4">
+              <div className="flex items-start gap-4">
+                <img
+                  src="/icon-192.png"
+                  alt=""
+                  width="64"
+                  height="64"
+                  className="size-16 shrink-0 rounded-[1.25rem] border border-border shadow-sm"
+                />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    Official MarketMitra app
+                  </p>
+                  <h3 className="mt-1 font-display text-lg font-extrabold">
+                    MarketMitra for Android
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Get the full MarketMitra experience with our official Android application.
+                  </p>
+                  {(androidRelease.versionName || androidRelease.fileSize) && (
+                    <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                      {[androidRelease.versionName && `Version ${androidRelease.versionName}`, androidRelease.fileSize]
+                        .filter(Boolean)
+                        .join("  |  ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <a
+                href="/downloads/marketmitra-android.apk"
+                download="marketmitra-android.apk"
+                className="press mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-primary px-4 text-sm font-bold text-primary-foreground"
+              >
+                Download Android App
+              </a>
+              <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground">
+                Official signed release. Install only from MarketMitra.
+              </p>
+            </div>
+          </Section>
+        )}
 
       </div>
     </Screen>

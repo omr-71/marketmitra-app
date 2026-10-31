@@ -35,3 +35,10 @@ dist-ssr
 .vercel
 .env*
 !.env.example
+
+# Android signing material
+android/*.jks
+android/*.keystore
+android/**/keystore.properties
+android/**/gradle.properties
+android/**/local.properties

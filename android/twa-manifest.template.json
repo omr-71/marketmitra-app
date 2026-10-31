@@ -1,0 +1,24 @@
+{
+  "packageId": "app.marketmitra.android",
+  "host": "www.marketmitra.app",
+  "name": "MarketMitra",
+  "launcherName": "MarketMitra",
+  "themeColor": "#0B2E20",
+  "navigationColor": "#07130D",
+  "backgroundColor": "#07130D",
+  "enableNotifications": false,
+  "startUrl": "/home",
+  "iconUrl": "https://www.marketmitra.app/icon-512.png",
+  "maskableIconUrl": "https://www.marketmitra.app/icon-maskable-512.png",
+  "monochromeIconUrl": null,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "signingKey": {
+    "path": null,
+    "alias": null
+  },
+  "fingerprint": {
+    "certificateHash": null
+  }
+}
