@@ -1878,21 +1878,6 @@ function SettingsPage() {
           </div>
         </Section>
 
-        {/* FOOTER */}
-
-        <footer className="border-t border-border pt-6 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            MarketMitra v1.0.0
-          </p>
-
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Developed by Om Labhade
-          </p>
-
-          <p className="mt-1 text-[10px] text-muted-foreground/70">
-            © 2026 MarketMitra. All rights reserved.
-          </p>
-        </footer>
       </div>
     </Screen>
   );

@@ -376,27 +376,6 @@ function ProfilePage() {
             </Link>
           </section>
 
-          {/* FOOTER */}
-          <footer className="border-t border-border/70 pt-6">
-            <div className="flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold">
-                  © 2026 Market Mitra. All rights reserved.
-                </p>
-
-                <p className="mt-1">
-                  Developed by Om Labhade
-                </p>
-              </div>
-
-              <Link
-                to="/terms"
-                className="font-semibold text-foreground underline-offset-4 hover:underline"
-              >
-                Terms &amp; Conditions
-              </Link>
-            </div>
-          </footer>
         </div>
 
         {/* EDIT PROFILE SHEET */}

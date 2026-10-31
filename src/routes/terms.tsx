@@ -52,7 +52,7 @@ const sections = [
     icon: Sparkles,
     accent: "blue",
     body: [
-      "Market Mitra is an agriculture information and coordination platform for Indian farmers, built and operated by Om Labhade. By creating an account or using the platform, you agree to use the service responsibly and according to these terms.",
+      "Market Mitra is an agriculture information and coordination platform for Indian farmers. By creating an account or using the platform, you agree to use the service responsibly and according to these terms.",
       "Market Mitra is designed to bring market information, agricultural guidance and farmer-to-farmer resource coordination into one place. It is an information product and coordination layer, not a guarantee of a particular agricultural or financial outcome.",
     ],
   },
@@ -681,19 +681,6 @@ function TermsPage() {
             </div>
           </motion.section>
 
-          <footer className="mm-terms-footer-new">
-            <div>
-              <strong>MARKET MITRA</strong>
-              <span>AGRICULTURE INTELLIGENCE</span>
-            </div>
-
-            <div>
-              <span>Questions, corrections or grievances?</span>
-              <a href="mailto:hello.marketmitra@gmail.com">
-                hello.marketmitra@gmail.com
-              </a>
-            </div>
-          </footer>
         </main>
       </div>
     </Screen>

@@ -326,11 +326,11 @@ function AuthPage() {
 
                       <div>
                         <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-600">
-                          Created by
+                          MarketMitra
                         </div>
 
                         <div className="mt-0.5 text-sm font-semibold text-white">
-                          Om Labhade
+                          Agricultural intelligence
                         </div>
                       </div>
                     </div>
@@ -588,7 +588,7 @@ function AuthPage() {
                     </div>
 
                     <div className="mt-1 text-sm font-semibold text-white">
-                      Created by Om Labhade
+                      Agricultural intelligence
                     </div>
                   </div>
 
@@ -617,6 +617,9 @@ function AuthPage() {
                   Secure authentication
                 </span>
               </div>
+              <p className="mt-8 hidden text-center text-[11px] font-medium tracking-[0.01em] text-slate-600 lg:block">
+                © 2026 MarketMitra. All rights reserved.
+              </p>
             </div>
           </div>
         </div>

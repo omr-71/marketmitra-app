@@ -147,7 +147,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               telephone: "+91-9209517171",
               description:
                 "Agriculture-focused digital technology platform for Indian farmers: official APMC mandi prices, farm weather, crop guidance and government scheme information.",
-              founder: { "@type": "Person", name: "Om Labhade" },
             },
             {
               "@type": "WebSite",

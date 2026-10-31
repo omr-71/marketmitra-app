@@ -415,7 +415,7 @@ function AboutPage() {
             <div className="flex flex-col lg:flex-row">
               <div className="flex-1 p-7 lg:p-10">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                  Built by
+                  About
                 </p>
 
                 <div className="mt-5 flex items-center gap-4">
@@ -423,10 +423,10 @@ function AboutPage() {
 
                   <div>
                     <h2 className="font-display text-2xl font-extrabold">
-                      Om Labhade
+                      MarketMitra
                     </h2>
                     <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                      Founder &amp; Developer
+                      Agricultural technology
                     </p>
                   </div>
                 </div>

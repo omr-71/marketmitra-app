@@ -7,7 +7,6 @@ import {
   User,
   ChevronLeft,
   Info,
-  Mail,
   Stethoscope,
   Handshake,
   Settings,
@@ -255,23 +254,10 @@ export function TopBar({
 /** Minimal, elegant site footer. */
 export function SiteFooter() {
   return (
-    <footer className="mt-10 border-t border-border/70 px-5 pb-6 pt-6 text-center lg:mt-16 lg:px-0 lg:pb-10 lg:pt-8">
-      <div className="flex flex-col items-center gap-2 text-[11px] font-semibold text-muted-foreground sm:flex-row sm:justify-center sm:gap-5">
-        <p>© 2026 Market Mitra.All rights reserved</p>
-        <p>Developed by Om Labhade</p>
-
-        <Link to="/terms" className="transition-colors hover:text-primary">
-          Terms &amp; Conditions
-        </Link>
-
-        <a
-          href="mailto:hello.marketmitra@gmail.com"
-          className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
-        >
-          <Mail className="size-3.5 text-primary" />
-          hello.marketmitra@gmail.com
-        </a>
-      </div>
+    <footer className="mt-16 hidden border-t border-border/60 pb-8 pt-7 text-center lg:block">
+      <p className="text-[11px] font-medium tracking-[0.01em] text-muted-foreground/80">
+        © 2026 MarketMitra. All rights reserved.
+      </p>
     </footer>
   );
 }
