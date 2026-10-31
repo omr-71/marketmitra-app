@@ -28,13 +28,71 @@ const dict = {
   markets: { en: "Markets", mr: "बाजार", hi: "मंडी" },
   weather: { en: "Weather", mr: "हवामान", hi: "मौसम" },
   schemes: { en: "Schemes", mr: "योजना", hi: "योजनाएँ" },
+  farmerBenefits: { en: "Farmer benefits", mr: "शेतकरी लाभ", hi: "किसान लाभ" },
+  schemesTitle: {
+    en: "Government schemes & subsidies",
+    mr: "सरकारी योजना आणि अनुदाने",
+    hi: "सरकारी योजनाएँ और सब्सिडी",
+  },
+  schemesSearch: {
+    en: "Search schemes or benefits",
+    mr: "योजना किंवा लाभ शोधा",
+    hi: "योजना या लाभ खोजें",
+  },
+  allSchemes: { en: "All schemes", mr: "सर्व योजना", hi: "सभी योजनाएँ" },
+  filters: { en: "Filters", mr: "फिल्टर", hi: "फ़िल्टर" },
+  governmentLevel: { en: "Government", mr: "सरकार", hi: "सरकार" },
+  sort: { en: "Sort", mr: "क्रमवारी", hi: "क्रमबद्ध करें" },
+  relevance: { en: "Relevance", mr: "महत्त्व", hi: "प्रासंगिकता" },
+  schemeName: { en: "Scheme name", mr: "योजनेचे नाव", hi: "योजना का नाम" },
+  viewDetails: { en: "View details", mr: "तपशील पहा", hi: "विवरण देखें" },
+  noSchemes: {
+    en: "No schemes match these filters.",
+    mr: "या फिल्टरशी जुळणारी योजना नाही.",
+    hi: "इन फ़िल्टर से कोई योजना नहीं मिलती.",
+  },
+  clearFilters: { en: "Clear filters", mr: "फिल्टर साफ करा", hi: "फ़िल्टर हटाएँ" },
+  verifiedScheme: { en: "Official information", mr: "अधिकृत माहिती", hi: "आधिकारिक जानकारी" },
+  allStates: { en: "All states", mr: "सर्व राज्ये", hi: "सभी राज्य" },
+  stateSchemes: { en: "State schemes", mr: "राज्य योजना", hi: "राज्य योजनाएँ" },
+  centralSchemes: { en: "Central schemes", mr: "केंद्र योजना", hi: "केंद्र योजनाएँ" },
+  aboutScheme: { en: "About this scheme", mr: "या योजनेची माहिती", hi: "इस योजना के बारे में" },
+  benefits: { en: "Benefits", mr: "फायदे", hi: "लाभ" },
+  eligibility: { en: "Eligibility", mr: "पात्रता", hi: "पात्रता" },
+  documentsReady: {
+    en: "Documents to keep ready",
+    mr: "तयार ठेवायची कागदपत्रे",
+    hi: "तैयार रखने वाले दस्तावेज़",
+  },
+  howToApply: { en: "How to apply", mr: "अर्ज कसा करावा", hi: "आवेदन कैसे करें" },
+  whereToApply: { en: "Where to apply", mr: "अर्ज कुठे करावा", hi: "कहाँ आवेदन करें" },
+  officialResources: { en: "Official resources", mr: "अधिकृत संसाधने", hi: "आधिकारिक संसाधन" },
+  mainBenefit: { en: "Main benefit", mr: "मुख्य फायदा", hi: "मुख्य लाभ" },
+  visitOfficialPortal: {
+    en: "Visit official portal",
+    mr: "अधिकृत पोर्टलला भेट द्या",
+    hi: "आधिकारिक पोर्टल पर जाएँ",
+  },
+  officialWebsite: { en: "Official website", mr: "अधिकृत वेबसाइट", hi: "आधिकारिक वेबसाइट" },
+  verificationStatus: { en: "Verification status", mr: "पडताळणी स्थिती", hi: "सत्यापन स्थिति" },
+  source: { en: "Source", mr: "स्रोत", hi: "स्रोत" },
+  lastVerified: { en: "Last verified", mr: "शेवटची पडताळणी", hi: "अंतिम सत्यापन" },
+  schemeNotFound: {
+    en: "This scheme could not be found.",
+    mr: "ही योजना सापडली नाही.",
+    hi: "यह योजना नहीं मिली.",
+  },
   profile: { en: "Profile", mr: "प्रोफाइल", hi: "प्रोफ़ाइल" },
   diagnose: { en: "Diagnose", mr: "रोग ओळख", hi: "रोग पहचान" },
   mitraLink: { en: "Mitra Link", mr: "मित्र लिंक", hi: "मित्र लिंक" },
 
   todayPrices: { en: "Today's crop prices", mr: "आजचे पीक दर", hi: "आज के फसल भाव" },
   quickActions: { en: "Quick actions", mr: "झटपट क्रिया", hi: "क्विक एक्शन" },
-  aiRecommendation: { en: "Top market today", mr: "आजचा सर्वोत्तम बाजार", hi: "आज का सर्वोत्तम मंडी" },
+  aiRecommendation: {
+    en: "Top market today",
+    mr: "आजचा सर्वोत्तम बाजार",
+    hi: "आज का सर्वोत्तम मंडी",
+  },
   selectCrop: { en: "Select crop", mr: "पीक निवडा", hi: "फसल चुनें" },
   quantity: { en: "Quantity", mr: "प्रमाण", hi: "मात्रा" },
   compareMarkets: { en: "Compare markets", mr: "बाजार तुलना", hi: "मंडी तुलना" },
@@ -57,13 +115,21 @@ const dict = {
   perQuintal: { en: "per quintal", mr: "प्रति क्विंटल", hi: "प्रति क्विंटल" },
   village: { en: "Village", mr: "गाव", hi: "गाँव" },
   verifyNumber: { en: "Verify your email", mr: "ईमेल पडताळा", hi: "ईमेल सत्यापित करें" },
-  otpSentTo: { en: "We sent a 6-digit code to", mr: "६ अंकी कोड पाठवला", hi: "6 अंकों का कोड भेजा" },
+  otpSentTo: {
+    en: "We sent a 6-digit code to",
+    mr: "६ अंकी कोड पाठवला",
+    hi: "6 अंकों का कोड भेजा",
+  },
   enterOtp: { en: "Enter the 6-digit code", mr: "६ अंकी कोड टाका", hi: "6 अंकों का कोड डालें" },
   verifyOtp: { en: "Verify & Continue", mr: "पडताळा आणि पुढे", hi: "सत्यापित करें" },
   resendOtp: { en: "Resend code", mr: "कोड पुन्हा पाठवा", hi: "कोड फिर भेजें" },
   changeNumber: { en: "Change email", mr: "ईमेल बदला", hi: "ईमेल बदलें" },
   codeExpires: { en: "Code expires in", mr: "कोड संपेल", hi: "कोड समाप्त होगा" },
-  codeExpired: { en: "Code expired. Request a new one.", mr: "कोड संपला. नवीन मागवा.", hi: "कोड समाप्त. नया लें." },
+  codeExpired: {
+    en: "Code expired. Request a new one.",
+    mr: "कोड संपला. नवीन मागवा.",
+    hi: "कोड समाप्त. नया लें.",
+  },
   checkInbox: {
     en: "Check your inbox, and the spam folder if you don't see it.",
     mr: "तुमचा इनबॉक्स तपासा; न दिसल्यास स्पॅम फोल्डर पहा.",
@@ -80,7 +146,11 @@ const dict = {
   retry: { en: "Try again", mr: "पुन्हा प्रयत्न", hi: "फिर कोशिश करें" },
   yourLocation: { en: "Your location", mr: "तुमचे स्थान", hi: "आपका स्थान" },
   useMyLocation: { en: "Use my location", mr: "माझे स्थान वापरा", hi: "मेरा स्थान उपयोग करें" },
-  chooseDistrict: { en: "Choose state & district", mr: "राज्य व जिल्हा निवडा", hi: "राज्य व ज़िला चुनें" },
+  chooseDistrict: {
+    en: "Choose state & district",
+    mr: "राज्य व जिल्हा निवडा",
+    hi: "राज्य व ज़िला चुनें",
+  },
   state: { en: "State", mr: "राज्य", hi: "राज्य" },
   district: { en: "District", mr: "जिल्हा", hi: "ज़िला" },
   city: { en: "City / village", mr: "शहर / गाव", hi: "शहर / गाँव" },
@@ -104,13 +174,25 @@ const dict = {
     mr: "या पिकासाठी व जिल्ह्यासाठी बाजारभाव उपलब्ध नाहीत.",
     hi: "इस फसल और ज़िले के लिए मंडी भाव उपलब्ध नहीं हैं.",
   },
-  searchMarket: { en: "Search market or district", mr: "बाजार किंवा जिल्हा शोधा", hi: "मंडी या ज़िला खोजें" },
+  searchMarket: {
+    en: "Search market or district",
+    mr: "बाजार किंवा जिल्हा शोधा",
+    hi: "मंडी या ज़िला खोजें",
+  },
   minPrice: { en: "Min", mr: "किमान", hi: "न्यूनतम" },
   maxPrice: { en: "Max", mr: "कमाल", hi: "अधिकतम" },
   modalPrice: { en: "Modal", mr: "सरासरी", hi: "मॉडल" },
-  transportRate: { en: "Transport cost per quintal", mr: "प्रति क्विंटल वाहतूक खर्च", hi: "प्रति क्विंटल परिवहन लागत" },
+  transportRate: {
+    en: "Transport cost per quintal",
+    mr: "प्रति क्विंटल वाहतूक खर्च",
+    hi: "प्रति क्विंटल परिवहन लागत",
+  },
   commissionRate: { en: "Mandi commission", mr: "बाजार कमिशन", hi: "मंडी कमीशन" },
-  forecastUnavailable: { en: "Forecast not available yet", mr: "अंदाज अजून उपलब्ध नाही", hi: "अनुमान अभी उपलब्ध नहीं" },
+  forecastUnavailable: {
+    en: "Forecast not available yet",
+    mr: "अंदाज अजून उपलब्ध नाही",
+    hi: "अनुमान अभी उपलब्ध नहीं",
+  },
   confidence: { en: "Confidence", mr: "विश्वास", hi: "विश्वास" },
   explanation: { en: "Why", mr: "कारण", hi: "कारण" },
   sellNow: { en: "Sell now", mr: "आता विका", hi: "अभी बेचें" },
@@ -127,7 +209,6 @@ const dict = {
     hi: "लाइव जानकारी के लिए स्थान दें या ज़िला चुनें.",
   },
 } as const;
-
 
 export type DictKey = keyof typeof dict;
 
@@ -153,7 +234,6 @@ export function LangProvider({ children }: { children: ReactNode }) {
     setLangState(l);
     window.localStorage.setItem("mm-lang", l);
   };
-
 
   return (
     <LangContext.Provider value={{ lang, setLang, t: (k) => dict[k][lang] }}>

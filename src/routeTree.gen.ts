@@ -28,6 +28,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedWeatherRouteImport } from './routes/_authenticated/weather'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedMarketMarketIdRouteImport } from './routes/_authenticated/market.$marketId'
+import { Route as AuthenticatedSchemesSchemeIdRouteImport } from './routes/_authenticated/schemes.$schemeId'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -125,6 +126,12 @@ const AuthenticatedMarketMarketIdRoute =
     path: '/market/$marketId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSchemesSchemeIdRoute =
+  AuthenticatedSchemesSchemeIdRouteImport.update({
+    id: '/$schemeId',
+    path: '/$schemeId',
+    getParentRoute: () => AuthenticatedSchemesRoute,
+  } as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -146,11 +153,12 @@ export interface FileRoutesByFullPath {
   '/markets': typeof AuthenticatedMarketsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/schemes': typeof AuthenticatedSchemesRoute
+  '/schemes': typeof AuthenticatedSchemesRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
+  '/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -167,11 +175,12 @@ export interface FileRoutesByTo {
   '/markets': typeof AuthenticatedMarketsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/schemes': typeof AuthenticatedSchemesRoute
+  '/schemes': typeof AuthenticatedSchemesRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
+  '/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
@@ -190,11 +199,12 @@ export interface FileRoutesById {
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
   '/_authenticated/predict': typeof AuthenticatedPredictRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/schemes': typeof AuthenticatedSchemesRoute
+  '/_authenticated/schemes': typeof AuthenticatedSchemesRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/weather': typeof AuthenticatedWeatherRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
+  '/_authenticated/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/weather'
     | '/api/chat'
     | '/market/$marketId'
+    | '/schemes/$schemeId'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/weather'
     | '/api/chat'
     | '/market/$marketId'
+    | '/schemes/$schemeId'
     | '/lovable/email/transactional/preview'
   id:
     | '__root__'
@@ -261,6 +273,7 @@ export interface FileRouteTypes {
     | '/_authenticated/weather'
     | '/api/chat'
     | '/_authenticated/market/$marketId'
+    | '/_authenticated/schemes/$schemeId'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
@@ -411,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMarketMarketIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/schemes/$schemeId': {
+      id: '/_authenticated/schemes/$schemeId'
+      path: '/$schemeId'
+      fullPath: '/schemes/$schemeId'
+      preLoaderRoute: typeof AuthenticatedSchemesSchemeIdRouteImport
+      parentRoute: typeof AuthenticatedSchemesRoute
+    }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
       path: '/lovable/email/transactional/preview'
@@ -421,6 +441,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedSchemesRouteChildren {
+  AuthenticatedSchemesSchemeIdRoute: typeof AuthenticatedSchemesSchemeIdRoute
+}
+
+const AuthenticatedSchemesRouteChildren: AuthenticatedSchemesRouteChildren = {
+  AuthenticatedSchemesSchemeIdRoute: AuthenticatedSchemesSchemeIdRoute,
+}
+
+const AuthenticatedSchemesRouteWithChildren =
+  AuthenticatedSchemesRoute._addFileChildren(AuthenticatedSchemesRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCropsRoute: typeof AuthenticatedCropsRoute
   AuthenticatedDiagnoseRoute: typeof AuthenticatedDiagnoseRoute
@@ -429,7 +460,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedPredictRoute: typeof AuthenticatedPredictRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedSchemesRoute: typeof AuthenticatedSchemesRoute
+  AuthenticatedSchemesRoute: typeof AuthenticatedSchemesRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWeatherRoute: typeof AuthenticatedWeatherRoute
   AuthenticatedMarketMarketIdRoute: typeof AuthenticatedMarketMarketIdRoute
@@ -443,7 +474,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedPredictRoute: AuthenticatedPredictRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedSchemesRoute: AuthenticatedSchemesRoute,
+  AuthenticatedSchemesRoute: AuthenticatedSchemesRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWeatherRoute: AuthenticatedWeatherRoute,
   AuthenticatedMarketMarketIdRoute: AuthenticatedMarketMarketIdRoute,
