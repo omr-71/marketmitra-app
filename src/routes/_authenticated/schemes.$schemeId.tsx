@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Screen, TopBar } from "@/components/app-shell";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { schemes } from "@/lib/schemes";
 import { track } from "@/lib/analytics";
 import { useLang } from "@/lib/i18n";
@@ -12,6 +18,8 @@ import {
   Landmark,
   ListChecks,
   MapPin,
+  Clock3,
+  CircleHelp,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/schemes/$schemeId")({
@@ -171,6 +179,43 @@ function SchemeDetailsPage() {
                   </li>
                 ))}
               </ol>
+            </section>
+
+            <section className="card-surface p-5 lg:p-6">
+              <div className="flex items-center gap-2">
+                <Clock3 className="size-5 text-primary" />
+                <h2 className="text-lg font-extrabold">{t("importantDates")}</h2>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {t("datesConfirmationNote")}
+              </p>
+            </section>
+
+            <section className="card-surface p-5 lg:p-6">
+              <div className="flex items-center gap-2">
+                <CircleHelp className="size-5 text-primary" />
+                <h2 className="text-lg font-extrabold">{t("frequentlyAskedQuestions")}</h2>
+              </div>
+              <Accordion type="single" collapsible className="mt-2">
+                <AccordionItem value="eligibility">
+                  <AccordionTrigger>{t("faqEligibilityQuestion")}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {t("faqEligibilityAnswer")}
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="documents">
+                  <AccordionTrigger>{t("faqDocumentsQuestion")}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {t("faqDocumentsAnswer")}
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="deadline">
+                  <AccordionTrigger>{t("faqDeadlineQuestion")}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {t("faqDeadlineAnswer")}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </section>
           </div>
 

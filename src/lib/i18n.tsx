@@ -67,6 +67,51 @@ const dict = {
   howToApply: { en: "How to apply", mr: "अर्ज कसा करावा", hi: "आवेदन कैसे करें" },
   whereToApply: { en: "Where to apply", mr: "अर्ज कुठे करावा", hi: "कहाँ आवेदन करें" },
   officialResources: { en: "Official resources", mr: "अधिकृत संसाधने", hi: "आधिकारिक संसाधन" },
+  importantDates: {
+    en: "Important dates",
+    mr: "महत्त्वाच्या तारखा",
+    hi: "महत्वपूर्ण तारीखें",
+  },
+  datesConfirmationNote: {
+    en: "Application dates and deadlines can change by year and state. Confirm the current official notice before applying.",
+    mr: "अर्जाची तारीख आणि अंतिम मुदत वर्ष व राज्यानुसार बदलू शकतात. अर्ज करण्यापूर्वी सध्याची अधिकृत सूचना तपासा.",
+    hi: "आवेदन तिथियां और अंतिम तिथि वर्ष तथा राज्य के अनुसार बदल सकती हैं। आवेदन से पहले वर्तमान आधिकारिक सूचना जांचें।",
+  },
+  frequentlyAskedQuestions: {
+    en: "Frequently asked questions",
+    mr: "वारंवार विचारले जाणारे प्रश्न",
+    hi: "अक्सर पूछे जाने वाले प्रश्न",
+  },
+  faqEligibilityQuestion: {
+    en: "Who can apply?",
+    mr: "कोण अर्ज करू शकते?",
+    hi: "कौन आवेदन कर सकता है?",
+  },
+  faqEligibilityAnswer: {
+    en: "Eligibility depends on the latest official notice. Use the eligibility criteria listed on this page as a starting point, then verify the live scheme terms.",
+    mr: "पात्रता सध्याच्या अधिकृत सूचनेवर अवलंबून असते. या पृष्ठावरील पात्रता निकष प्राथमिक मार्गदर्शक म्हणून वापरा आणि सध्याच्या योजनेच्या अटी तपासा.",
+    hi: "पात्रता नवीनतम आधिकारिक सूचना पर निर्भर करती है। इस पृष्ठ पर दी गई पात्रता को प्रारंभिक मार्गदर्शन मानकर वर्तमान योजना की शर्तें जांचें।",
+  },
+  faqDocumentsQuestion: {
+    en: "Which documents should I keep ready?",
+    mr: "मी कोणती कागदपत्रे तयार ठेवावी?",
+    hi: "मुझे कौन से दस्तावेज तैयार रखने चाहिए?",
+  },
+  faqDocumentsAnswer: {
+    en: "Keep the documents listed above ready where applicable. The receiving office or official portal may request additional documents.",
+    mr: "वर सूचीबद्ध असलेली कागदपत्रे लागू असल्यास तयार ठेवा. संबंधित कार्यालय किंवा अधिकृत पोर्टल अतिरिक्त कागदपत्रांची मागणी करू शकते.",
+    hi: "उपर्युक्त दस्तावेज जहां लागू हों वहां तैयार रखें। संबंधित कार्यालय या आधिकारिक पोर्टल अतिरिक्त दस्तावेज मांग सकता है।",
+  },
+  faqDeadlineQuestion: {
+    en: "How do I confirm the application deadline?",
+    mr: "अर्जाची अंतिम मुदत मी कशी तपासू?",
+    hi: "मैं आवेदन की अंतिम तिथि कैसे पुष्टि करूं?",
+  },
+  faqDeadlineAnswer: {
+    en: "Check the official website or notice linked under Official resources. Confirm the current application window directly with the implementing authority.",
+    mr: "अधिकृत संसाधनांत दिलेल्या वेबसाइटवर किंवा सूचनेत अंतिम मुदत तपासा. अंमलबजावणी करणाऱ्या प्राधिकरणाशी सध्याची अर्ज विंडो निश्चित करा.",
+    hi: "आधिकारिक संसाधनों में दी गई वेबसाइट या सूचना पर अंतिम तिथि जांचें। कार्यान्वयन प्राधिकरण से वर्तमान आवेदन अवधि की पुष्टि करें।",
+  },
   mainBenefit: { en: "Main benefit", mr: "मुख्य फायदा", hi: "मुख्य लाभ" },
   visitOfficialPortal: {
     en: "Visit official portal",
