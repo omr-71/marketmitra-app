@@ -147,9 +147,9 @@ export const schemes: Scheme[] = [
       "Application route and technical eligibility are determined by the implementing electricity or agriculture agency",
       "Current availability must be confirmed on the official portal",
     ],
-    url: "https://mahadiscom.in/solar/mskvvnl/",
-    sourceUrl: "https://mahadiscom.in/solar/mskvvnl/",
-    sourceName: "MSEDCL / MSKVY",
+    url: "https://mahadbt.maharashtra.gov.in/",
+    sourceUrl: "https://mahadbt.maharashtra.gov.in/",
+    sourceName: "MahaDBT Maharashtra",
     lastVerified: "2026-10-31",
     verificationNote:
       "The exact benefit, eligibility and application window are subject to the current official notification.",
