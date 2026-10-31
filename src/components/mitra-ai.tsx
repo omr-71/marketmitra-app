@@ -60,8 +60,8 @@ import mitraFarmerMascot from "@/assets/mitra-farmer-mascot.webp";
 const ORB_STORAGE_KEY = "market-mitra-mitra-orb-v2";
 const PANEL_STORAGE_KEY = "market-mitra-mitra-panel-v2";
 
-const PANEL_WIDTH = 440;
-const PANEL_HEIGHT = 650;
+const PANEL_WIDTH = 520;
+const PANEL_HEIGHT = 720;
 const ORB_SIZE_DESKTOP = 64;
 const ORB_SIZE_MOBILE = 56;
 
@@ -87,6 +87,24 @@ const copy = {
     en: "Your farming companion",
     mr: "तुमचा शेती सहकारी",
     hi: "आपका खेती साथी",
+  },
+
+  greetings: {
+    morning: {
+      en: "Good morning",
+      mr: "सुप्रभात",
+      hi: "सुप्रभात",
+    },
+    afternoon: {
+      en: "Good afternoon",
+      mr: "दुपारची नमस्कार",
+      hi: "नमस्कार",
+    },
+    evening: {
+      en: "Good evening",
+      mr: "शुभ संध्याकाळ",
+      hi: "शुभ संध्या",
+    },
   },
 
   greeting: {
@@ -209,6 +227,21 @@ const copy = {
     hi: "हिलाने के लिए ड्रैग करें",
   },
 } as const;
+
+function getTimeGreetingPeriod(): keyof typeof copy.greetings {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  return "evening";
+}
+
+function getGreetingName(user: { user_metadata?: Record<string, unknown> } | null) {
+  if (!user?.user_metadata) return "";
+
+  const candidates = [user.user_metadata.full_name, user.user_metadata.name, user.user_metadata.first_name];
+  const name = candidates.find((value): value is string => typeof value === "string" && value.trim().length > 0);
+  return name?.trim().split(/\s+/)[0] ?? "";
+}
 
 const suggestions = {
   en: [
@@ -475,6 +508,12 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
   }, []);
 
   const { user, session } = useAuth();
+  const greetingPeriod = getTimeGreetingPeriod();
+  const greetingName = getGreetingName(user);
+  const localizedGreeting = copy.greetings[greetingPeriod][lang];
+  const welcomeGreeting = greetingName
+    ? `${localizedGreeting}, ${greetingName}.`
+    : `${localizedGreeting}.`;
 
   const conversationIdRef = useRef<string | null>(null);
 
@@ -1130,18 +1169,6 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100",
           ].join(" ")}
         >
-          <span className="absolute -inset-2 rounded-full bg-primary/10 blur-xl" />
-
-          <span className="absolute -inset-1 rounded-full bg-primary/20 blur-md" />
-
-          <span
-            className={`absolute inset-0 rounded-full bg-primary/20 ${simplifyMotion ? "" : "animate-pulse"}`}
-          />
-
-          <span className="absolute inset-0 overflow-hidden rounded-full">
-            <span className="absolute -left-8 top-0 h-full w-1/2 rotate-12 bg-white/15 blur-xl" />
-          </span>
-
           <span className="relative grid size-full place-items-center overflow-hidden rounded-full border-2 border-primary/80 bg-card ring-1 ring-white/20">
             <img
               src={mitraFarmerMascot}
@@ -1170,28 +1197,23 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
           }}
           className={[
             "fixed z-50",
-            "h-[min(650px,80vh)] w-[440px]",
+            "h-[min(720px,82vh)] w-[520px]",
             "transition-[opacity,transform] duration-300 ease-out",
             panelReady
               ? "translate-y-0 scale-100 opacity-100"
               : "translate-y-3 scale-[0.985] opacity-0",
           ].join(" ")}
         >
-          <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/10 bg-background/95 shadow-[0_30px_100px_-35px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
-            <span className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border border-black/10 bg-[#fcfcfa] shadow-[0_28px_90px_-38px_rgba(22,36,28,0.7)] dark:border-white/10 dark:bg-[#111512]">
 
             <header
               onPointerDown={handlePanelPointerDown}
               onPointerMove={handlePanelPointerMove}
               onPointerUp={handlePanelPointerUp}
-              className="relative flex shrink-0 cursor-grab touch-none select-none items-center gap-3 border-b border-white/10 px-4 py-3 active:cursor-grabbing"
+              className="relative flex shrink-0 cursor-grab touch-none select-none items-center gap-3 border-b border-border/60 px-5 py-3.5 active:cursor-grabbing"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.10] via-transparent to-transparent" />
-
-              <div className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-primary/10">
-                <span className="absolute inset-0 bg-primary/10 animate-pulse" />
-
-                <MitraMark size="md" className="text-primary" />
+              <div className="relative size-12 shrink-0 overflow-hidden rounded-[14px] border border-black/8 bg-[#eef3ec]">
+                <img src={mitraFarmerMascot} alt="" className="size-full object-cover" />
               </div>
 
               <div className="relative min-w-0 flex-1">
@@ -1251,58 +1273,49 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             )}
 
             <Conversation className="min-h-0 flex-1">
-              <ConversationContent className="gap-5 px-4 py-5">
+              <ConversationContent className="gap-6 px-5 py-6">
                 {messages.length === 0 && (
-                  <div className="flex min-h-full flex-col justify-center pb-5">
-                    <div className="mb-7">
-                      <div className="mb-5 flex items-center gap-3">
-                        <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
-                          <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
-
-                          <MitraMark size="lg" className="text-primary" />
-                        </div>
-
+                  <div className="flex min-h-full flex-col justify-center pb-1">
+                    <div className="mb-6 overflow-hidden border-b border-border/70 pb-6">
+                      <div className="grid grid-cols-[1fr_112px] items-end gap-4">
                         <div>
-                          <p className="text-xs font-semibold text-primary">
-                            {location?.place ? `For ${location.place}` : copy.subtitle[lang]}
+                          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                            {location?.place ?? copy.subtitle[lang]}
                           </p>
-
-                          <p className="mt-1 text-[11px] text-muted-foreground">
+                          <h2 className="max-w-[330px] font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.045em] text-foreground">
+                            {welcomeGreeting}
+                          </h2>
+                          <p className="mt-3 max-w-[320px] text-[13px] leading-[1.65] text-muted-foreground">
                             {copy.greetingSmall[lang]}
                           </p>
                         </div>
+                        <div className="relative h-[112px] overflow-hidden rounded-[18px] border border-primary/15 bg-[#edf2e9]">
+                          <img src={mitraFarmerMascot} alt="" className="size-full object-cover object-center" />
+                        </div>
                       </div>
-
-                      <h2 className="max-w-[360px] text-[25px] font-semibold leading-[1.18] tracking-[-0.035em] text-foreground">
-                        {copy.greeting[lang]}
-                      </h2>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
-                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }) => (
+                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }, index) => (
                         <button
                           key={`${title}-${suggestionText}`}
                           type="button"
                           onClick={() => send(suggestionText)}
-                          className="group relative overflow-hidden rounded-[18px] border border-border/70 bg-card/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.045] active:scale-[0.98]"
+                          className={[
+                            "group relative min-h-[82px] text-left transition-[background-color,border-color,transform] duration-200 active:scale-[0.99]",
+                            index === 0
+                              ? "col-span-2 grid grid-cols-[44px_1fr_auto] items-center gap-3 border-y border-primary/20 bg-primary/[0.055] px-4 py-3"
+                              : "rounded-[10px] border border-border/70 bg-card px-3 py-3 hover:border-primary/25 hover:bg-primary/[0.025]",
+                          ].join(" ")}
                         >
-                          <span className="absolute -right-6 -top-6 size-16 rounded-full bg-primary/5 blur-xl transition-transform duration-500 group-hover:scale-150" />
-
-                          <div className="relative mb-3 flex items-start justify-between">
-                            <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
-                              <Icon className="size-4" strokeWidth={2} />
-                            </span>
-
-                            <ArrowUpRight className="size-3.5 text-muted-foreground/40 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
-                          </div>
-
-                          <p className="relative text-[12px] font-semibold text-foreground">
-                            {title}
-                          </p>
-
-                          <p className="relative mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
-                            {suggestionText}
-                          </p>
+                          <span className={`${index === 0 ? "grid size-11 place-items-center bg-primary text-primary-foreground" : "mb-2.5 grid size-8 place-items-center bg-primary/[0.09] text-primary"} rounded-[9px]`}>
+                            <Icon className="size-4" strokeWidth={1.8} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[13px] font-semibold text-foreground">{title}</span>
+                            <span className="mt-1 block line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">{suggestionText}</span>
+                          </span>
+                          <ArrowUpRight className={`${index === 0 ? "" : "absolute right-3 top-3"} size-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5`} />
                         </button>
                       ))}
                     </div>
@@ -1337,8 +1350,8 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                       <MessageContent
                         className={
                           isAssistant
-                            ? "rounded-2xl bg-transparent px-1 text-foreground"
-                            : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground shadow-sm"
+                            ? "w-full px-0 text-[15px] leading-[1.72] text-foreground [&_table]:text-xs [&_table]:leading-relaxed"
+                            : "rounded-[14px] bg-[#edf2eb] px-4 py-3 text-[14px] leading-[1.55] text-[#1b2b20] shadow-none dark:bg-white/[0.07] dark:text-foreground"
                         }
                       >
                         <MessageResponse>{body}</MessageResponse>
@@ -1372,9 +1385,9 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                         <Shimmer className="text-[12px]">{copy.thinking[lang]}</Shimmer>
 
                         <div className="flex gap-0.5">
-                          <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
-                          <span className="[animation-delay:120ms] size-1 rounded-full bg-primary/50 animate-bounce" />
-                          <span className="[animation-delay:240ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="size-1 animate-pulse rounded-full bg-primary/50" />
+                          <span className="[animation-delay:120ms] size-1 animate-pulse rounded-full bg-primary/50" />
+                          <span className="[animation-delay:240ms] size-1 animate-pulse rounded-full bg-primary/50" />
                         </div>
                       </div>
                     </div>
@@ -1402,7 +1415,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
               <ConversationScrollButton />
             </Conversation>
 
-            <div className="shrink-0 border-t border-border/60 bg-card/50 p-3 pb-3 backdrop-blur-xl">
+            <div className="shrink-0 border-t border-border/60 bg-[#f8f8f5]/95 px-4 py-3 dark:bg-[#111512]/95">
               <div className="mb-2 flex min-h-5 items-center gap-2 px-1">
                 {mic.listening || speech.speaking ? (
                   <div className="flex items-center gap-2">
@@ -1465,6 +1478,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
               </div>
 
               <PromptInput
+                className="rounded-[16px] border border-border bg-background px-1.5 py-1.5 shadow-[0_8px_28px_-18px_rgba(0,0,0,0.55)] transition-[border-color,box-shadow] focus-within:border-primary/40 focus-within:shadow-[0_10px_30px_-18px_rgba(22,101,52,0.45)]"
                 onSubmit={(_message, event) => {
                   event.preventDefault();
                   send(text);
@@ -1479,6 +1493,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     setText(value);
                   }}
                   placeholder={copy.placeholder[lang]}
+                  className="min-h-11 resize-none px-3 py-2 text-[14px]"
                 />
 
                 <PromptInputFooter className="justify-end gap-1.5">
@@ -1488,7 +1503,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     onClick={() => (mic.listening ? mic.stop() : mic.start())}
                     aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
                     className={[
-                      "press relative grid size-9 shrink-0 place-items-center rounded-full border transition-all",
+                      "press relative grid size-9 shrink-0 place-items-center rounded-[11px] border transition-all",
                       "disabled:opacity-40",
                       mic.listening
                         ? "border-primary/40 bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.25)]"
@@ -1506,7 +1521,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     )}
                   </button>
 
-                  <PromptInputSubmit status={status} disabled={!text.trim() && !busy} />
+                  <PromptInputSubmit className="size-9 rounded-[11px]" status={status} disabled={!text.trim() && !busy} />
                 </PromptInputFooter>
               </PromptInput>
             </div>
@@ -1536,8 +1551,6 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
         >
           <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
             <header className="relative flex shrink-0 items-center gap-3 border-b border-border/60 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-              <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-primary/[0.07] to-transparent" />
-
               <button
                 type="button"
                 onClick={closeMitra}
@@ -1547,8 +1560,8 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                 <ChevronLeft className="size-5" />
               </button>
 
-              <div className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-                <MitraMark size="md" className="text-primary" />
+              <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-border/70 bg-card">
+                <img src={mitraFarmerMascot} alt="" className="size-full object-cover" />
               </div>
 
               <div className="relative min-w-0 flex-1">
@@ -1586,54 +1599,50 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             )}
 
             <Conversation className="min-h-0 flex-1">
-              <ConversationContent className="gap-5 px-4 py-5">
+              <ConversationContent className="gap-6 px-4 py-5">
                 {messages.length === 0 && (
-                  <div className="flex min-h-full flex-col justify-center pb-8">
-                    <div className="mb-8">
-                      <div className="mb-5 flex items-center gap-3">
-                        <div className="relative grid size-12 place-items-center rounded-2xl bg-primary/10">
-                          <span className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse" />
-
-                          <MitraMark size="lg" className="text-primary" />
-                        </div>
-
+                  <div className="flex min-h-full flex-col justify-center pb-3">
+                    <div className="mb-5 border-b border-border/70 pb-5">
+                      <div className="grid grid-cols-[1fr_88px] items-end gap-3">
                         <div>
-                          <p className="text-xs font-semibold text-primary">
-                            {location?.place || copy.subtitle[lang]}
+                          <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.16em] text-primary">
+                            {location?.place ?? copy.subtitle[lang]}
                           </p>
-
-                          <p className="mt-1 text-[10px] text-muted-foreground">
+                          <h2 className="font-display text-[27px] font-semibold leading-[1.08] tracking-[-0.04em]">
+                            {welcomeGreeting}
+                          </h2>
+                          <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
                             {copy.greetingSmall[lang]}
                           </p>
                         </div>
+                        <div className="h-[88px] overflow-hidden rounded-[14px] border border-primary/15 bg-[#edf2e9]">
+                          <img src={mitraFarmerMascot} alt="" className="size-full object-cover" />
+                        </div>
                       </div>
-
-                      <h2 className="text-[27px] font-semibold leading-[1.16] tracking-[-0.04em]">
-                        {copy.greeting[lang]}
-                      </h2>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
-                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }) => (
+                      {suggestions[lang].map(({ icon: Icon, title, text: suggestionText }, index) => (
                         <button
                           key={`${title}-${suggestionText}`}
                           type="button"
                           onClick={() => send(suggestionText)}
-                          className="group relative overflow-hidden rounded-[19px] border border-border/70 bg-card/50 p-3.5 text-left transition-all active:scale-[0.98]"
+                          className={[
+                            "group relative min-h-[78px] text-left active:scale-[0.99]",
+                            index === 0
+                              ? "col-span-2 flex items-center gap-3 border-y border-primary/20 bg-primary/[0.055] px-3 py-2.5"
+                              : "rounded-[10px] border border-border/70 bg-card px-3 py-2.5",
+                          ].join(" ")}
                         >
-                          <div className="mb-3 flex items-start justify-between">
-                            <span className="grid size-8 place-items-center rounded-xl bg-primary/8 text-primary">
-                              <Icon className="size-4" />
-                            </span>
-
-                            <ArrowUpRight className="size-3.5 text-muted-foreground/40" />
-                          </div>
-
-                          <p className="text-[12px] font-semibold">{title}</p>
-
-                          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                          <span className={`${index === 0 ? "grid size-10 place-items-center bg-primary text-primary-foreground" : "mb-2 grid size-8 place-items-center bg-primary/[0.09] text-primary"} shrink-0 rounded-[9px]`}>
+                            <Icon className="size-4" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-[12px] font-semibold">{title}</span>
+                            <span className="mt-1 block line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
                             {suggestionText}
-                          </p>
+                            </span>
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -1668,8 +1677,8 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                       <MessageContent
                         className={
                           isAssistant
-                            ? "rounded-2xl bg-transparent px-1 text-foreground"
-                            : "rounded-[20px] bg-primary px-4 py-3 text-primary-foreground"
+                            ? "w-full px-0 text-[15px] leading-[1.72] text-foreground [&_table]:text-xs [&_table]:leading-relaxed"
+                            : "rounded-[14px] bg-[#edf2eb] px-4 py-3 text-[14px] leading-[1.55] text-[#1b2b20] dark:bg-white/[0.07] dark:text-foreground"
                         }
                       >
                         <MessageResponse>{body}</MessageResponse>
@@ -1702,9 +1711,9 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                         <Shimmer className="text-[12px]">{copy.thinking[lang]}</Shimmer>
 
                         <div className="flex gap-0.5">
-                          <span className="size-1 rounded-full bg-primary/50 animate-bounce" />
-                          <span className="[animation-delay:120ms] size-1 rounded-full bg-primary/50 animate-bounce" />
-                          <span className="[animation-delay:240ms] size-1 rounded-full bg-primary/50 animate-bounce" />
+                          <span className="size-1 animate-pulse rounded-full bg-primary/50" />
+                          <span className="[animation-delay:120ms] size-1 animate-pulse rounded-full bg-primary/50" />
+                          <span className="[animation-delay:240ms] size-1 animate-pulse rounded-full bg-primary/50" />
                         </div>
                       </div>
                     </div>
@@ -1732,7 +1741,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
               <ConversationScrollButton />
             </Conversation>
 
-            <div className="shrink-0 border-t border-border/60 bg-card/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+            <div className="shrink-0 border-t border-border/60 bg-[#f8f8f5]/95 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] dark:bg-[#111512]/95">
               <div className="mb-2 flex min-h-5 items-center gap-2 px-1">
                 {mic.listening || speech.speaking ? (
                   <div className="flex items-center gap-2">
@@ -1793,6 +1802,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
               </div>
 
               <PromptInput
+                className="rounded-[15px] border border-border bg-background px-1.5 py-1.5 shadow-[0_8px_28px_-18px_rgba(0,0,0,0.55)] focus-within:border-primary/40"
                 onSubmit={(_message, event) => {
                   event.preventDefault();
                   send(text);
@@ -1807,6 +1817,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     setText(value);
                   }}
                   placeholder={copy.placeholder[lang]}
+                  className="min-h-11 resize-none px-3 py-2 text-[14px]"
                 />
 
                 <PromptInputFooter className="justify-end gap-1.5">
@@ -1816,7 +1827,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     onClick={() => (mic.listening ? mic.stop() : mic.start())}
                     aria-label={mic.listening ? copy.stopMic[lang] : copy.mic[lang]}
                     className={[
-                      "press relative grid size-9 shrink-0 place-items-center rounded-full border",
+                      "press relative grid size-9 shrink-0 place-items-center rounded-[11px] border",
                       mic.listening
                         ? "border-primary/40 bg-primary text-primary-foreground"
                         : "border-border/70 bg-background/70",
@@ -1833,7 +1844,7 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
                     )}
                   </button>
 
-                  <PromptInputSubmit status={status} disabled={!text.trim() && !busy} />
+                  <PromptInputSubmit className="size-9 rounded-[11px]" status={status} disabled={!text.trim() && !busy} />
                 </PromptInputFooter>
               </PromptInput>
             </div>
