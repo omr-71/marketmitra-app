@@ -55,6 +55,7 @@ import { useMitraSpeech } from "@/lib/mitra-speech";
 import { useAuth } from "@/lib/auth";
 import { createThread, loadLatestThread, saveMessage, titleThread } from "@/lib/chat-history";
 import { useReducedMotion } from "@/lib/motion";
+import mitraFarmerMascot from "@/assets/mitra-farmer-mascot.webp";
 
 const ORB_STORAGE_KEY = "market-mitra-mitra-orb-v2";
 const PANEL_STORAGE_KEY = "market-mitra-mitra-panel-v2";
@@ -1141,12 +1142,13 @@ export function MitraAI({ initialOpen = false }: { initialOpen?: boolean }) {
             <span className="absolute -left-8 top-0 h-full w-1/2 rotate-12 bg-white/15 blur-xl" />
           </span>
 
-          <span className="relative grid size-full place-items-center overflow-hidden rounded-full grad-primary ring-1 ring-white/20">
-            <span className="absolute left-3 top-2 size-3 rounded-full bg-white/50 blur-[2px]" />
-
-            <MitraMark size="lg" />
-
-            <span className="absolute bottom-2 right-2 size-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+          <span className="relative grid size-full place-items-center overflow-hidden rounded-full border-2 border-primary/80 bg-card ring-1 ring-white/20">
+            <img
+              src={mitraFarmerMascot}
+              alt="Mitra AI Farmer Assistant"
+              draggable={false}
+              className="size-full select-none object-cover object-center"
+            />
           </span>
         </button>
       )}

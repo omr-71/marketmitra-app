@@ -4,7 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
-import mitraFarmerAssistant from "@/assets/mitra-farmer-assistant.webp";
+import mitraFarmerMascot from "@/assets/mitra-farmer-mascot.webp";
 
 const DeferredMitraAI = lazy(() =>
   import("@/components/mitra-ai").then((module) => ({
@@ -129,7 +129,7 @@ function LauncherOrb({
       ].join(" ")}
     >
       <img
-        src={mitraFarmerAssistant}
+        src={mitraFarmerMascot}
         alt="Mitra AI Farmer Assistant"
         draggable={false}
         className="size-full select-none object-cover object-center"
