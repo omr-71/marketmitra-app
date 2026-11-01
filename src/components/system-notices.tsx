@@ -37,7 +37,8 @@ export function SystemNotices() {
   const notices = useQuery({
     queryKey: ["system-notices"],
     queryFn: async (): Promise<Notice[]> => {
-      const { data, error } = await supabase
+      const db = supabase as unknown as { from: (table: string) => any };
+      const { data, error } = await db
         .from("system_notices")
         .select("id,title,message,severity,starts_at,ends_at")
         .eq("enabled", true)
@@ -51,7 +52,7 @@ export function SystemNotices() {
 
       const now = Date.now();
       return (data ?? []).filter(
-        (notice) =>
+        (notice: { starts_at?: string | null; ends_at?: string | null }) =>
           (!notice.starts_at || new Date(notice.starts_at).getTime() <= now) &&
           (!notice.ends_at || new Date(notice.ends_at).getTime() > now),
       );

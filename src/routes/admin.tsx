@@ -5,14 +5,22 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Bell,
+  CloudSun,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Database,
   Eye,
   EyeOff,
   Loader2,
   LockKeyhole,
   LogOut,
+  Menu,
   RefreshCw,
+  Search,
+  Settings,
+  SlidersHorizontal,
   ShieldCheck,
   Sparkles,
   ToggleLeft,
@@ -32,7 +40,12 @@ import {
   getAdminAuditLog,
   getAdminFeatureFlags,
   getAdminHealth,
+  getAdminOperations,
   getAdminOverview,
+  getAdminRegistrationTrend,
+  getAdminSchemes,
+  getAdminFeedback,
+  updateAdminFeedbackStatus,
   setFeatureFlag,
   type AdminCount,
 } from "@/lib/admin.functions";
@@ -323,11 +336,40 @@ function Unauthorized({ email }: { email: string }) {
 /* --------------------------------------------------------------- console */
 
 function AdminConsole({ email }: { email: string }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebar, setMobileSidebar] = useState(false);
+  const [activeSection, setActiveSection] = useState("admin-overview");
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("marketmitra-admin-sidebar-collapsed");
+    if (saved === "true") setSidebarCollapsed(true);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((value) => {
+      const next = !value;
+      window.localStorage.setItem("marketmitra-admin-sidebar-collapsed", String(next));
+      return next;
+    });
+  };
+
+  const submitGlobalSearch = (value: string) => {
+    setGlobalSearch(value);
+    if (!value.trim()) return;
+    window.dispatchEvent(new CustomEvent("marketmitra-admin-user-search", { detail: value }));
+    document.querySelector("#admin-users")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const overviewFn = useServerFn(getAdminOverview);
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
   const healthFn = useServerFn(getAdminHealth);
   const diagnosticsFn = useServerFn(getProviderDiagnostics);
+  const operationsFn = useServerFn(getAdminOperations);
+  const schemesFn = useServerFn(getAdminSchemes);
+  const feedbackFn = useServerFn(getAdminFeedback);
+  const updateFeedbackStatus = useServerFn(updateAdminFeedbackStatus);
+  const registrationTrendFn = useServerFn(getAdminRegistrationTrend);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
 
@@ -337,6 +379,120 @@ function AdminConsole({ email }: { email: string }) {
     retry: false,
     refetchInterval: 60_000,
   });
+
+  const registrationTrend = useQuery({
+    queryKey: ["admin", "registration-trend", 30],
+    queryFn: () => registrationTrendFn({ data: { days: 30 } }),
+    retry: false,
+    refetchInterval: 300_000,
+  });
+
+  const operations = useQuery({
+    queryKey: ["admin", "operations"],
+    queryFn: () => operationsFn(),
+    retry: false,
+  });
+
+  const schemeCatalogue = useQuery({
+    queryKey: ["admin", "schemes"],
+    queryFn: () => schemesFn(),
+    retry: false,
+  });
+
+  const feedback = useQuery({
+    queryKey: ["admin", "feedback"],
+    queryFn: () => feedbackFn(),
+    retry: false,
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: updateFeedbackStatus,
+    onSuccess: () => {
+      toast.success("Feedback status updated.");
+      void qc.invalidateQueries({ queryKey: ["admin", "feedback"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "audit"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const [feedbackQuery, setFeedbackQuery] = useState("");
+  const [feedbackCategory, setFeedbackCategory] = useState("all");
+  const [feedbackStatus, setFeedbackStatus] = useState("all");
+
+  const sectionLabels: Record<string, string> = {
+    "admin-overview": "Overview",
+    "admin-analytics": "User activity",
+    "admin-mitra-ai": "Mitra AI",
+    "admin-users": "Users",
+    "admin-diagnose": "Diagnose",
+    "admin-mitra-link": "Mitra Link",
+    "admin-market-data": "Markets & prices",
+    "admin-weather": "Weather",
+    "admin-schemes": "Government schemes",
+    "admin-errors": "Reports & feedback",
+    "admin-feedback": "Reports & feedback",
+    "admin-notices": "Notices",
+    "admin-feature-controls": "Features",
+    "admin-system-health": "System health",
+    "admin-audit": "Audit logs",
+    "admin-recent-activity": "Live activity",
+  };
+
+  useEffect(() => {
+    document.title = `${sectionLabels[activeSection] ?? "Dashboard"} — MarketMitra Admin`;
+  }, [activeSection]);
+
+  useEffect(() => {
+    const applyHash = () => {
+      const target = window.location.hash.slice(1);
+      if (target && sectionLabels[target]) {
+        setActiveSection(target);
+        requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: "start" }));
+      } else if (!target) {
+        setActiveSection("admin-overview");
+      }
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = [
+      "admin-overview",
+      "admin-analytics",
+      "admin-recent-activity",
+      "admin-users",
+      "admin-mitra-ai",
+      "admin-diagnose",
+      "admin-mitra-link",
+      "admin-market-data",
+      "admin-weather",
+      "admin-schemes",
+      "admin-notices",
+      "admin-errors",
+      "admin-feedback",
+      "admin-feature-controls",
+      "admin-system-health",
+      "admin-audit",
+    ];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (window.location.hash) return;
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target.id) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-20% 0px -65% 0px", threshold: [0.05, 0.25, 0.5] },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [overview.data]);
 
   const flags = useQuery({
     queryKey: ["admin", "flags"],
@@ -394,14 +550,110 @@ function AdminConsole({ email }: { email: string }) {
 
   return (
     <div className="min-h-screen bg-[oklch(0.14_0.02_160)] text-[oklch(0.95_0.01_145)]">
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-[oklch(1_0_0/0.08)] bg-[oklch(0.14_0.02_160/0.86)] px-4 py-3 backdrop-blur-xl lg:px-8">
-        <LogoMark className="size-8" />
-
-        <div className="min-w-0">
-          <p className="font-display text-sm font-extrabold">Control Center</p>
-
-          <p className="truncate text-[11px] text-[oklch(0.75_0.02_150)]">{email}</p>
+      {mobileSidebar && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+          onClick={() => setMobileSidebar(false)}
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.07] bg-[oklch(0.13_0.018_160)] transition-[width,transform] duration-300 ${
+          mobileSidebar ? "translate-x-0" : "-translate-x-full"
+        } w-[248px] ${sidebarCollapsed ? "lg:w-[76px]" : "lg:w-[248px]"} lg:translate-x-0`}
+      >
+        <div className="flex h-[72px] items-center gap-3 border-b border-white/[0.07] px-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/10 ring-1 ring-emerald-300/20">
+            <LogoMark className="size-6" />
+          </span>
+          {(!sidebarCollapsed || mobileSidebar) && <div className="min-w-0">
+            <p className="font-display text-sm font-bold">MarketMitra</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">Control center</p>
+          </div>}
+          <button
+            type="button"
+            onClick={() => setMobileSidebar(false)}
+            className="ml-auto rounded-lg p-2 text-white/60 hover:bg-white/[0.07] lg:hidden"
+            aria-label="Close navigation"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
         </div>
+        <nav className="flex-1 overflow-y-auto px-3 py-5">
+          {[
+            ["Overview", ["Dashboard|admin-overview", "Analytics|admin-analytics", "Live activity|admin-recent-activity"]],
+            ["User intelligence", ["Users|admin-users", "Mitra AI|admin-mitra-ai", "Diagnose|admin-diagnose", "Mitra Link|admin-mitra-link"]],
+            ["Management", ["Markets & prices|admin-market-data", "Weather|admin-weather", "Government schemes|admin-schemes", "Notices|admin-notices", "Reports & feedback|admin-feedback", "Errors & application reports|admin-errors"]],
+            ["System", ["Feature management|admin-feature-controls", "System health|admin-system-health", "Audit logs|admin-audit"]],
+          ].map(([group, items]) => (
+            <div key={group as string} className="mb-5">
+              {(!sidebarCollapsed || mobileSidebar) && <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">{group as string}</p>}
+              <div className="space-y-1">
+                {(items as string[]).map((item) => {
+                  const [label = "", target = ""] = item.split("|");
+                  return (
+                    <a
+                      key={target}
+                      href={`#${target}`}
+                      onClick={() => {
+                        setActiveSection(target);
+                        setMobileSidebar(false);
+                      }}
+                      title={sidebarCollapsed && !mobileSidebar ? label : undefined}
+                      className={`flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors ${
+                        activeSection === target
+                          ? "bg-emerald-400/[0.12] text-white ring-1 ring-emerald-300/[0.08]"
+                          : "text-white/58 hover:bg-white/[0.055] hover:text-white"
+                      }`}
+                    >
+                      <AdminNavIcon target={target} />
+                      {(!sidebarCollapsed || mobileSidebar) && <span className="truncate">{label}</span>}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="m-3 hidden h-10 items-center justify-center rounded-xl text-white/45 hover:bg-white/[0.055] lg:flex"
+          aria-label="Toggle sidebar"
+        >
+          {sidebarCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </button>
+      </aside>
+      <header className={`sticky top-0 z-30 flex items-center gap-3 border-b border-white/[0.07] bg-[oklch(0.14_0.02_160/0.92)] px-4 py-3 backdrop-blur-xl lg:px-6 ${sidebarCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
+        <button
+          type="button"
+          onClick={() => setMobileSidebar(true)}
+          className="grid size-9 place-items-center rounded-xl border border-white/[0.08] lg:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu className="size-5" />
+        </button>
+        <div className="min-w-0">
+          <p className="font-display text-sm font-extrabold">{sectionLabels[activeSection] ?? "Dashboard"}</p>
+          <p className="truncate text-[11px] text-white/40">Operations / {sectionLabels[activeSection] ?? "Overview"}</p>
+        </div>
+
+        <label className="ml-auto hidden h-9 max-w-sm flex-1 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 md:flex">
+          <Search className="size-4 text-white/35" />
+          <input
+            type="search"
+            value={globalSearch}
+            onChange={(event) => setGlobalSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                submitGlobalSearch(globalSearch);
+              }
+            }}
+            placeholder="Search users, data, feedback..."
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-white/30"
+          />
+        </label>
 
         <div className="ml-auto flex items-center gap-2">
           <button
@@ -413,6 +665,10 @@ function AdminConsole({ email }: { email: string }) {
                 audit.refetch(),
                 health.refetch(),
                 diagnostics.refetch(),
+                registrationTrend.refetch(),
+                operations.refetch(),
+                schemeCatalogue.refetch(),
+                feedback.refetch(),
                 qc.invalidateQueries({ queryKey: ["admin", "users"] }),
                 qc.invalidateQueries({ queryKey: ["admin", "notices"] }),
               ]);
@@ -434,7 +690,11 @@ function AdminConsole({ email }: { email: string }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
+      <main
+        className={`mx-auto w-full px-4 py-6 lg:px-7 xl:px-8 ${
+          sidebarCollapsed ? "lg:ml-[76px] lg:w-[calc(100%-76px)]" : "lg:ml-[248px] lg:w-[calc(100%-248px)]"
+        }`}
+      >
         {forbidden ? (
           <Panel title="Not authorised" icon={<ShieldCheck className="size-4" />}>
             <p className="text-sm leading-relaxed text-[oklch(0.8_0.02_150)]">
@@ -444,30 +704,6 @@ function AdminConsole({ email }: { email: string }) {
           </Panel>
         ) : (
           <div className="space-y-5">
-            <nav
-              aria-label="Admin sections"
-              className="flex gap-2 overflow-x-auto rounded-2xl border border-[oklch(1_0_0/0.08)] bg-[oklch(1_0_0/0.03)] p-2"
-            >
-              {[
-                ["admin-overview", "Overview"],
-                ["admin-analytics", "Analytics"],
-                ["admin-system-health", "System health"],
-                ["admin-market-data", "Market data"],
-                ["admin-feature-controls", "Feature controls"],
-                ["admin-errors", "Errors"],
-                ["admin-users", "Users"],
-                ["admin-notices", "Notices"],
-                ["admin-audit", "Audit log"],
-              ].map(([target, label]) => (
-                <a
-                  key={target}
-                  href={`#${target}`}
-                  className="shrink-0 rounded-xl bg-[oklch(1_0_0/0.06)] px-3 py-2 text-xs font-semibold text-[oklch(0.84_0.02_150)] transition-colors hover:bg-[oklch(1_0_0/0.12)]"
-                >
-                  {label}
-                </a>
-              ))}
-            </nav>
             {overview.isLoading && (
               <div className="grid h-24 place-items-center rounded-3xl border border-[oklch(1_0_0/0.09)]">
                 <Loader2 className="size-5 animate-spin text-[oklch(0.8_0.02_150)]" />
@@ -482,6 +718,22 @@ function AdminConsole({ email }: { email: string }) {
             )}
             {overview.data && (
               <div id="admin-overview" className="space-y-5">
+                <section className="flex flex-wrap items-end justify-between gap-3 pb-1 pt-1">
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-300/70">Good morning, Admin</p>
+                    <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
+                      Here&apos;s what&apos;s happening across MarketMitra.
+                    </h1>
+                  </div>
+                  <p className="text-xs text-white/45">
+                    {new Date().toLocaleDateString("en-IN", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                </section>
                 <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                   <Stat
                     label="Registered users"
@@ -564,6 +816,20 @@ function AdminConsole({ email }: { email: string }) {
 
                   <Panel title="Usage per day" icon={<Activity className="size-4" />}>
                     <DailyChart series={overview.data.tracking.daily} />
+                  </Panel>
+                  <Panel title="User registrations · last 30 days" icon={<Users className="size-4" />}>
+                    {registrationTrend.isLoading ? (
+                      <SkeletonLines rows={4} />
+                    ) : registrationTrend.isError ? (
+                      <UnavailableState message="Registration history could not be loaded." />
+                    ) : registrationTrend.data ? (
+                      <div>
+                        <DailyChart series={registrationTrend.data.trend} />
+                        <p className="mt-2 text-[10px] text-white/35">Source: authenticated user creation records</p>
+                      </div>
+                    ) : (
+                      <UnavailableState message="Registration history is unavailable." />
+                    )}
                   </Panel>
                 </section>
 
@@ -722,15 +988,10 @@ function AdminConsole({ email }: { email: string }) {
                             onClick={() => {
                               if (f.enabled) {
                                 if (!window.confirm(`Disable ${f.label} for users?`)) return;
-                                const reason = window.prompt(
-                                  `Why is ${f.label} going into maintenance? (shown to farmers)`,
-                                  MAINTENANCE_REASONS[0],
-                                );
-                                if (reason === null) return;
                                 toggle.mutate({
                                   key: f.key,
                                   enabled: false,
-                                  reason: reason.trim() || MAINTENANCE_REASONS[0]!,
+                                  reason: MAINTENANCE_REASONS[0]!,
                                   message:
                                     "We are improving this section right now. Everything else in MarketMitra keeps working — please check back a little later.",
                                 });
@@ -827,7 +1088,7 @@ function AdminConsole({ email }: { email: string }) {
                 </Panel>
 
                 <section className="grid gap-5 lg:grid-cols-2">
-                  <Panel title="Recent activity" icon={<Activity className="size-4" />}>
+                  <Panel title="Recent activity" icon={<Activity className="size-4" />} id="admin-recent-activity">
                     {overview.data.tracking.recent.length === 0 ? (
                       <Empty />
                     ) : (
@@ -894,6 +1155,203 @@ function AdminConsole({ email }: { email: string }) {
                 </section>
               </div>
             )}
+            {!overview.data && (
+              <>
+                <section id="admin-overview" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <UnavailableState message="Dashboard data is unavailable while Supabase server configuration is missing or backend requests fail." />
+                </section>
+                <section id="admin-analytics" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="User activity unavailable">
+                    <UnavailableState message="Analytics require the admin overview and registration history server functions." />
+                  </Panel>
+                </section>
+                <section id="admin-recent-activity" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="Live activity unavailable">
+                    <UnavailableState message="Activity events require the admin overview server function." />
+                  </Panel>
+                </section>
+                <section id="admin-market-data" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="Markets & prices unavailable">
+                    <UnavailableState message="Market data requires the configured Supabase server connection and market provider integration." />
+                  </Panel>
+                </section>
+                <section id="admin-feature-controls" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="Feature management unavailable">
+                    <UnavailableState message="Feature flags require an authorized admin server connection." />
+                  </Panel>
+                </section>
+                <section id="admin-system-health" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="System health unavailable">
+                    <UnavailableState message="Service health requires the admin health server function." />
+                  </Panel>
+                </section>
+                <section id="admin-audit" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+                  <Panel title="Audit logs unavailable">
+                    <UnavailableState message="Audit records require an authorized admin server connection." />
+                  </Panel>
+                </section>
+              </>
+            )}
+            <section id="admin-mitra-ai" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Mitra AI operations</h2>
+              <p className="mt-1 text-xs text-white/55">Privacy-safe aggregate conversation analytics. Private message contents are not displayed.</p>
+              {operations.isLoading ? <div className="mt-4"><SkeletonLines rows={4} /></div> :
+                operations.isError ? <p role="alert" className="mt-4 text-sm text-red-200">Mitra AI records could not be loaded.</p> :
+                operations.data ? (
+                  <>
+                    <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                      <Stat label="Conversations" value={operations.data.mitraAi.conversations} />
+                      <Stat label="Messages" value={operations.data.mitraAi.messages} />
+                      <Stat label="User messages" value={operations.data.mitraAi.userMessages} />
+                      <Stat label="Unique users" value={operations.data.mitraAi.uniqueUsers} />
+                      <Stat label="Recorded errors" value={operations.data.mitraAi.errors} />
+                    </div>
+                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <Panel title="Question categories">
+                        {operations.data.mitraAi.categories.length ? (
+                          <Bars rows={operations.data.mitraAi.categories} />
+                        ) : <Empty />}
+                      </Panel>
+                      <Panel title="Conversation quality">
+                        <dl className="space-y-2 text-sm">
+                          <Row k="Average messages / conversation" v={operations.data.mitraAi.averageMessagesPerConversation?.toString() ?? "Unavailable"} />
+                          <Row k="Stored private content" v="Not displayed" />
+                          <Row k="Source" v="chat_conversations and chat_messages" />
+                        </dl>
+                      </Panel>
+                    </div>
+                  </>
+                ) : <UnavailableState message="Mitra AI records are unavailable." />}
+            </section>
+            <section id="admin-diagnose" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Crop diagnosis operations</h2>
+              {operations.isLoading ? <SkeletonLines rows={3} /> : operations.isError ? (
+                <p role="alert" className="mt-4 text-sm text-red-200">Diagnosis records could not be loaded.</p>
+              ) : operations.data && (
+                <>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <Stat label="Diagnosis records" value={operations.data.diagnose.total} />
+                  </div>
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="text-white/45"><tr><th className="py-2">Request</th><th>Status</th><th>Created</th></tr></thead>
+                      <tbody>{operations.data.diagnose.recent.map((row) => (
+                        <tr key={row.id} className="border-t border-white/[0.07]"><td className="py-2 font-mono">{row.id.slice(0, 8)}</td><td>{row.status ?? "Unknown"}</td><td>{new Date(row.createdAt).toLocaleString("en-IN")}</td></tr>
+                      ))}</tbody>
+                    </table>
+                    {!operations.data.diagnose.recent.length && <Empty />}
+                  </div>
+                </>
+              )}
+            </section>
+            <section id="admin-mitra-link" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Mitra Link operations</h2>
+              {operations.isLoading ? <SkeletonLines rows={3} /> : operations.isError ? (
+                <p role="alert" className="mt-4 text-sm text-red-200">Mitra Link records could not be loaded.</p>
+              ) : operations.data && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <Stat label="Listings" value={operations.data.mitraLink.listings} />
+                  <Stat label="Requests" value={operations.data.mitraLink.requests} />
+                  <Stat label="Matches" value={operations.data.mitraLink.matches} />
+                </div>
+              )}
+            </section>
+            <section id="admin-weather" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Weather operations</h2>
+              <p className="mt-1 text-xs text-white/55">A weather source status is shown only when it is available from the existing health probes.</p>
+              <Panel title="Weather health">
+                {health.isLoading ? <SkeletonLines rows={3} /> : health.isError ? (
+                  <UnavailableState message="Weather health could not be checked." />
+                ) : health.data ? (
+                  <ul className="space-y-2 text-sm">
+                    {health.data.services.filter((service) => /weather/i.test(service.name)).map((service) => (
+                      <li key={service.name}><strong>{service.name}</strong>: {service.detail}</li>
+                    ))}
+                    {!health.data.services.some((service) => /weather/i.test(service.name)) && <li>No weather-specific health probe is configured.</li>}
+                  </ul>
+                ) : <UnavailableState message="Weather health is unavailable." />}
+              </Panel>
+            </section>
+            <section id="admin-schemes" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Government schemes</h2>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="text-xs text-white/55">{schemeCatalogue.data?.source ?? "Source: farmer-facing verified catalogue"}</p>
+                <button type="button" onClick={() => void schemeCatalogue.refetch()} className="grid size-9 place-items-center rounded-xl bg-white/[0.07]" aria-label="Refresh schemes">
+                  <RefreshCw className={`size-4 ${schemeCatalogue.isFetching ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+              {schemeCatalogue.isLoading ? <div className="mt-4"><SkeletonLines rows={5} /></div> :
+                schemeCatalogue.isError ? <UnavailableState message="Government schemes could not be loaded." /> :
+                schemeCatalogue.data?.schemes.length ? (
+                  <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                    {schemeCatalogue.data.schemes.map((scheme) => (
+                      <article key={scheme.id} className="rounded-2xl border border-white/[0.08] bg-black/10 p-4">
+                        <div className="flex gap-2">
+                          <h3 className="text-sm font-bold">{scheme.name}</h3>
+                          <span className="ml-auto rounded-full bg-emerald-300/10 px-2 py-1 text-[10px] uppercase text-emerald-200">Active</span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-white/65">{scheme.description}</p>
+                        <p className="mt-3 text-[11px] text-white/55"><strong>Benefits:</strong> {scheme.benefit}</p>
+                        <p className="mt-2 text-[11px] text-white/55"><strong>Eligibility:</strong> {scheme.eligibility.join("; ")}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-white/45">
+                          <span>{scheme.source}</span>
+                          {scheme.lastUpdated && <span>Verified {scheme.lastUpdated}</span>}
+                          {scheme.applicationUrl && <a className="ml-auto font-bold text-emerald-300 underline" href={scheme.applicationUrl} target="_blank" rel="noreferrer">Official application</a>}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : <Empty />}
+            </section>
+            <section id="admin-feedback" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Reports & feedback</h2>
+                  <p className="mt-1 text-xs text-white/55">Submitted by authenticated MarketMitra users.</p>
+                </div>
+                <button type="button" onClick={() => void feedback.refetch()} className="grid size-9 place-items-center rounded-xl bg-white/[0.07]" aria-label="Refresh feedback">
+                  <RefreshCw className={`size-4 ${feedback.isFetching ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <input value={feedbackQuery} onChange={(event) => setFeedbackQuery(event.target.value)} placeholder="Search feedback" className="h-9 rounded-lg border border-white/10 bg-black/15 px-3 text-xs" />
+                <select value={feedbackCategory} onChange={(event) => setFeedbackCategory(event.target.value)} className="h-9 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs">
+                  <option value="all">All categories</option><option value="feedback">Feedback</option><option value="bug_report">Bug report</option>
+                </select>
+                <select value={feedbackStatus} onChange={(event) => setFeedbackStatus(event.target.value)} className="h-9 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs">
+                  <option value="all">All statuses</option><option value="new">New</option><option value="in_review">In review</option><option value="resolved">Resolved</option>
+                </select>
+              </div>
+              {feedback.isLoading ? <div className="mt-4"><SkeletonLines rows={4} /></div> : feedback.isError ? (
+                <UnavailableState message="Feedback records could not be loaded." />
+              ) : feedback.data ? (() => {
+                const needle = feedbackQuery.trim().toLowerCase();
+                const rows = feedback.data.filter((row) =>
+                  (!needle || `${row.subject} ${row.message}`.toLowerCase().includes(needle)) &&
+                  (feedbackCategory === "all" || row.category === feedbackCategory) &&
+                  (feedbackStatus === "all" || row.status === feedbackStatus),
+                );
+                return rows.length ? (
+                  <div className="mt-4 divide-y divide-white/[0.07]">
+                    {rows.map((row) => (
+                      <article key={row.id} className="py-4">
+                        <div className="flex flex-wrap gap-2 text-[10px] uppercase text-white/45">
+                          <span>{row.category.replace("_", " ")}</span><span>{new Date(row.createdAt).toLocaleString("en-IN")}</span>
+                        </div>
+                        <h3 className="mt-1 text-sm font-bold">{row.subject}</h3>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-white/65">{row.message}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <select aria-label={`Status for ${row.subject}`} value={row.status} disabled={feedbackMutation.isPending} onChange={(event) => feedbackMutation.mutate({ data: { id: row.id, status: event.target.value as "new" | "in_review" | "resolved" } })} className="h-8 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-2 text-xs">
+                            <option value="new">New</option><option value="in_review">In review</option><option value="resolved">Resolved</option>
+                          </select>
+                          {row.userId && <span className="ml-auto truncate font-mono text-[10px] text-white/35">{row.userId}</span>}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : <p className="mt-4 text-sm text-white/55">No feedback matches the current filters.</p>;
+              })() : <UnavailableState message="Feedback records are unavailable." />}
+            </section>
             <AdminErrors />
             <AdminUsers />
             <AdminNotices />
@@ -905,6 +1363,19 @@ function AdminConsole({ email }: { email: string }) {
 }
 
 /* ------------------------------------------------------------------- bits */
+
+function AdminNavIcon({ target }: { target: string }) {
+  if (target.includes("analytics") || target.includes("overview")) return <BarChart3 className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("activity")) return <Activity className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("users")) return <Users className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("market")) return <Database className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("notices")) return <Bell className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("errors")) return <AlertTriangle className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("feature")) return <SlidersHorizontal className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("health")) return <CloudSun className="size-[17px] shrink-0 text-emerald-300/70" />;
+  if (target.includes("audit")) return <ShieldCheck className="size-[17px] shrink-0 text-emerald-300/70" />;
+  return <Settings className="size-[17px] shrink-0 text-emerald-300/70" />;
+}
 
 function providerStatusLabel(provider: ProviderDiagnostic) {
   if (provider.archive) {
@@ -933,7 +1404,7 @@ function Panel({
   id,
 }: {
   title: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   children: React.ReactNode;
   id?: string;
 }) {
@@ -960,7 +1431,7 @@ function Stat({
 }: {
   label: string;
   value: number;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   detail?: string;
 }) {
   return (
@@ -978,6 +1449,14 @@ function Stat({
 
 function Empty() {
   return <p className="text-sm text-[oklch(0.75_0.02_150)]">No data available yet.</p>;
+}
+
+function UnavailableState({ message }: { message: string }) {
+  return (
+    <div role="status" className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-4 text-xs text-white/55">
+      {message}
+    </div>
+  );
 }
 
 function Row({ k, v }: { k: string; v: string }) {

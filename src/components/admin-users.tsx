@@ -1,9 +1,15 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Search, X } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp, Download, RefreshCw, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { getAdminUserDetail, getAdminUsers, type AdminUser } from "@/lib/admin.functions";
+import {
+  getAdminUserDetail,
+  getAdminUsers,
+  getAdminUsersExport,
+  type AdminUser,
+} from "@/lib/admin.functions";
 
 type SortKey = "created_at" | "name" | "email";
 
@@ -12,6 +18,7 @@ const mutedClass = "text-[oklch(0.72_0.02_150)]";
 
 export function AdminUsers() {
   const listUsers = useServerFn(getAdminUsers);
+  const listUsersForExport = useServerFn(getAdminUsersExport);
   const [search, setSearch] = useState("");
   const [settledSearch, setSettledSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
@@ -27,6 +34,15 @@ export function AdminUsers() {
     }, 300);
     return () => window.clearTimeout(timeout);
   }, [search]);
+
+  useEffect(() => {
+    const handleGlobalSearch = (event: Event) => {
+      const value = (event as CustomEvent<string>).detail;
+      if (typeof value === "string") setSearch(value);
+    };
+    window.addEventListener("marketmitra-admin-user-search", handleGlobalSearch);
+    return () => window.removeEventListener("marketmitra-admin-user-search", handleGlobalSearch);
+  }, []);
 
   const args = {
     search: settledSearch,
@@ -53,6 +69,40 @@ export function AdminUsers() {
     setPage(1);
   };
 
+  const exportUsers = useMutation({
+    mutationFn: () =>
+      listUsersForExport({
+        data: { search: settledSearch, sort, ascending, role: roleFilter },
+      }),
+    onSuccess: (result) => {
+      if (!result.users.length) {
+        toast.info("No matching users were available to export.");
+        return;
+      }
+    const quote = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+      const header = ["Name", "Email", "User ID", "District", "State", "Registered", "Last sign-in", "Role"];
+      const rows = result.users.map((user) => [
+        user.fullName || "",
+        user.email || "",
+        user.userId,
+        user.district || "",
+        user.state || "",
+        user.createdAt,
+        user.lastSignInAt || "",
+        user.role,
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(quote).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+      link.download = `marketmitra-users.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+      toast.success(`${result.total.toLocaleString("en-IN")} users exported.`);
+    },
+    onError: (error) => toast.error(error.message || "Could not export users."),
+  });
+
   return (
     <section id="admin-users" className={`${panelClass} scroll-mt-20`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -70,6 +120,27 @@ export function AdminUsers() {
             ? `${users.data.total.toLocaleString("en-IN")} accounts`
             : "Account count unavailable"}
         </p>
+      </div>
+
+      <div className="mt-3 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => void users.refetch()}
+          disabled={users.isFetching}
+          className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/[0.09] px-3 text-xs font-semibold hover:bg-white/[0.05] disabled:opacity-50"
+        >
+          <RefreshCw className={`size-3.5 ${users.isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+        <button
+          type="button"
+          onClick={() => exportUsers.mutate()}
+          disabled={!users.data?.total || exportUsers.isPending}
+          className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/[0.09] px-3 text-xs font-semibold hover:bg-white/[0.05] disabled:opacity-40"
+        >
+          <Download className="size-3.5" />
+          {exportUsers.isPending ? "Preparing export..." : "Export all matches"}
+        </button>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">

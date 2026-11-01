@@ -134,6 +134,45 @@ export type Database = {
         }
         Relationships: []
       }
+      application_error_logs: {
+        Row: {
+          created_at: string
+          error_type: string
+          id: string
+          message: string
+          provider: string | null
+          request_id: string | null
+          resolved_at: string | null
+          service: string
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_type: string
+          id?: string
+          message: string
+          provider?: string | null
+          request_id?: string | null
+          resolved_at?: string | null
+          service: string
+          severity: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_type?: string
+          id?: string
+          message?: string
+          provider?: string | null
+          request_id?: string | null
+          resolved_at?: string | null
+          service?: string
+          severity?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           context: Json
@@ -228,12 +267,15 @@ export type Database = {
           monitoring: string[]
           prevention: string[]
           provider: string | null
+          request_id: string | null
+          spray_recommendations: Json
           severity: string | null
           symptoms: string[]
           uncertainty_note: string | null
           updated_at: string
           usable: boolean
           user_id: string
+          conditions_favouring: string[]
           what_it_is: string | null
           what_to_do_now: string[]
           why_it_happens: string | null
@@ -253,12 +295,15 @@ export type Database = {
           monitoring?: string[]
           prevention?: string[]
           provider?: string | null
+          request_id?: string | null
+          spray_recommendations?: Json
           severity?: string | null
           symptoms?: string[]
           uncertainty_note?: string | null
           updated_at?: string
           usable?: boolean
           user_id: string
+          conditions_favouring?: string[]
           what_it_is?: string | null
           what_to_do_now?: string[]
           why_it_happens?: string | null
@@ -278,12 +323,15 @@ export type Database = {
           monitoring?: string[]
           prevention?: string[]
           provider?: string | null
+          request_id?: string | null
+          spray_recommendations?: Json
           severity?: string | null
           symptoms?: string[]
           uncertainty_note?: string | null
           updated_at?: string
           usable?: boolean
           user_id?: string
+          conditions_favouring?: string[]
           what_it_is?: string | null
           what_to_do_now?: string[]
           why_it_happens?: string | null
@@ -924,6 +972,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: {
+          _ascending?: boolean
+          _page?: number
+          _page_size?: number
+          _role?: string
+          _search?: string
+          _sort?: string
+        }
+        Returns: {
+          conversation_count: number
+          created_at: string
+          diagnosis_count: number
+          district: string | null
+          email: string | null
+          full_name: string
+          last_sign_in_at: string | null
+          profile_complete: boolean
+          role: string
+          state: string | null
+          total_count: number
+          user_id: string
+        }[]
+      }
+      admin_user_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_today: number
+          active_week: number
+          conversations_today: number
+          conversations_total: number
+          diagnoses_today: number
+          diagnoses_total: number
+          messages_today: number
+          messages_total: number
+          new_today: number
+          new_week: number
+          registered: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -948,6 +1036,14 @@ export type Database = {
           phone: string
           phone_verified: boolean
           phone_verified_at: string
+        }[]
+      }
+      link_verified_provider_profiles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          full_name: string
+          id: string
+          phone_verified: boolean
         }[]
       }
     }

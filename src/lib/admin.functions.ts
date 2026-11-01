@@ -2,9 +2,56 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { schemes } from "@/lib/schemes";
 
 export type AdminSeries = { day: string; count: number }[];
 export type AdminCount = { key: string; count: number }[];
+
+export type AdminOperations = {
+  generatedAt: string;
+  mitraAi: {
+    conversations: number;
+    messages: number;
+    userMessages: number;
+    uniqueUsers: number;
+    errors: number;
+    averageMessagesPerConversation: number | null;
+    categories: { key: string; count: number }[];
+  };
+  diagnose: {
+    total: number;
+    recent: { id: string; createdAt: string; status: string | null }[];
+  };
+  mitraLink: {
+    listings: number;
+    requests: number;
+    matches: number;
+  };
+};
+
+export type AdminScheme = {
+  id: string;
+  name: string;
+  description: string;
+  benefit: string;
+  eligibility: string[];
+  applicationUrl: string | null;
+  source: string | null;
+  lastUpdated: string | null;
+  status: "active";
+  level: "Central" | "State";
+  category: string;
+};
+
+export type AdminFeedback = {
+  id: string;
+  userId: string | null;
+  category: "feedback" | "bug_report";
+  subject: string;
+  message: string;
+  status: "new" | "in_review" | "resolved";
+  createdAt: string;
+};
 
 export type ServiceHealth = {
   name: string;
@@ -45,6 +92,7 @@ export type AdminOverview = {
       mitraErrors: number;
       schemeViews: number;
     };
+
   };
   users: {
     registered: number;
@@ -97,6 +145,49 @@ export type AdminUserPage = {
   page: number;
   pageSize: number;
 };
+
+export type AdminRegistrationDay = { day: string; count: number };
+
+export const getAdminRegistrationTrend = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ days: z.number().int().min(7).max(365).default(30) }).parse(input))
+  .handler(async ({ data, context }): Promise<{ trend: AdminRegistrationDay[]; source: "auth.users" }> => {
+    await assertAdmin(context.supabase as never, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
+    const users: { created_at: string }[] = [];
+    let page = 1;
+
+    while (page <= 100) {
+      const result = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (result.error) throw new Error(`Could not load registration history: ${result.error.message}`);
+      users.push(...result.data.users.map((user) => ({ created_at: user.created_at })));
+      const received = result.data.users.length;
+      const lastPage = result.data.lastPage ?? (received === 1000 ? page + 1 : page);
+      if (page >= lastPage || received === 0) break;
+      page += 1;
+    }
+
+    const cutoff = new Date();
+    cutoff.setUTCHours(0, 0, 0, 0);
+    cutoff.setUTCDate(cutoff.getUTCDate() - (data.days - 1));
+    const counts = new Map<string, number>();
+    for (const user of users) {
+      const created = new Date(user.created_at);
+      if (created < cutoff) continue;
+      const day = created.toISOString().slice(0, 10);
+      counts.set(day, (counts.get(day) ?? 0) + 1);
+    }
+
+    const trend: AdminRegistrationDay[] = [];
+    for (let offset = 0; offset < data.days; offset += 1) {
+      const dayDate = new Date(cutoff);
+      dayDate.setUTCDate(dayDate.getUTCDate() + offset);
+      const day = dayDate.toISOString().slice(0, 10);
+      trend.push({ day, count: counts.get(day) ?? 0 });
+    }
+    return { trend, source: "auth.users" };
+  });
 
 export type AdminUserDetail = {
   profile: {
@@ -268,7 +359,11 @@ export const getAdminOverview = createServerFn({ method: "GET" })
           })
           .limit(20000),
 
-        context.supabase.rpc("admin_user_metrics"),
+        (
+          context.supabase.rpc as unknown as (
+            name: string,
+          ) => Promise<{ data: Array<Record<string, number>> | null; error: { message: string } | null }>
+        )("admin_user_metrics"),
       ]);
 
     if (eventsError) {
@@ -403,19 +498,214 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       },
 
       users: {
-        registered: metrics.registered,
-        activeToday: metrics.active_today,
-        activeWeek: metrics.active_week,
-        newToday: metrics.new_today,
-        newWeek: metrics.new_week,
-        conversations: metrics.conversations_total,
-        conversationsToday: metrics.conversations_today,
-        messages: metrics.messages_total,
-        messagesToday: metrics.messages_today,
-        diagnoses: metrics.diagnoses_total,
-        diagnosesToday: metrics.diagnoses_today,
+        registered: metrics["registered"] ?? 0,
+        activeToday: metrics["active_today"] ?? 0,
+        activeWeek: metrics["active_week"] ?? 0,
+        newToday: metrics["new_today"] ?? 0,
+        newWeek: metrics["new_week"] ?? 0,
+        conversations: metrics["conversations_total"] ?? 0,
+        conversationsToday: metrics["conversations_today"] ?? 0,
+        messages: metrics["messages_total"] ?? 0,
+        messagesToday: metrics["messages_today"] ?? 0,
+        diagnoses: metrics["diagnoses_total"] ?? 0,
+        diagnosesToday: metrics["diagnoses_today"] ?? 0,
       },
     };
+  });
+
+export const getAdminOperations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminOperations> => {
+    await assertAdmin(context.supabase as never, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [
+      { data: conversations, count: conversationCountResult, error: conversationsError },
+      { data: messages, count: messageCountResult, error: messagesError },
+      { data: diagnoses, count: diagnosesCount, error: diagnosesError },
+      { count: listingsCount, error: listingsError },
+      { count: requestsCount, error: requestsError },
+      { count: matchesCount, error: matchesError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("chat_conversations")
+        .select("id,user_id,created_at", { count: "exact" }),
+      supabaseAdmin
+        .from("chat_messages")
+        .select("conversation_id,role,content,metadata,created_at", { count: "exact" }),
+      supabaseAdmin
+        .from("crop_diagnoses")
+        .select("id,usable,provider,created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(25),
+      supabaseAdmin.from("link_listings").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("link_requests").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("link_matches").select("id", { count: "exact", head: true }),
+    ]);
+
+    const firstError = [
+      conversationsError,
+      messagesError,
+      diagnosesError,
+      listingsError,
+      requestsError,
+      matchesError,
+    ].find(Boolean);
+    if (firstError) {
+      throw new Error(`Could not load operational records: ${firstError.message}`);
+    }
+
+    const chatMessages = messages ?? [];
+    const userMessages = chatMessages.filter((message) => message.role === "user");
+    const conversationCount = conversationCountResult ?? conversations?.length ?? 0;
+    const messageCount = messageCountResult ?? chatMessages.length;
+    const categoryCounts = new Map<string, number>();
+
+    for (const message of userMessages) {
+      const category = classifyMitraQuestion(message.content ?? "");
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+    }
+
+    const categories = [...categoryCounts.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count);
+    const uniqueConversationCount = new Set(chatMessages.map((message) => message.conversation_id).filter(Boolean)).size;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      mitraAi: {
+        conversations: conversationCount,
+        messages: messageCount,
+        userMessages: userMessages.length,
+        uniqueUsers: new Set((conversations ?? []).map((conversation) => conversation.user_id).filter(Boolean)).size,
+        errors: chatMessages.filter((message) => {
+          const metadata = message.metadata as { status?: string; error?: boolean } | null;
+          return metadata?.status === "error" || metadata?.error === true;
+        }).length,
+        averageMessagesPerConversation:
+          uniqueConversationCount > 0 ? Number((messageCount / uniqueConversationCount).toFixed(2)) : null,
+        categories,
+      },
+      diagnose: {
+        total: diagnosesCount ?? 0,
+        recent: (diagnoses ?? []).map((diagnosis) => ({
+          id: diagnosis.id,
+          createdAt: diagnosis.created_at,
+          status: diagnosis.usable === true ? "usable" : diagnosis.usable === false ? "unusable" : "unknown",
+        })),
+      },
+      mitraLink: {
+        listings: listingsCount ?? 0,
+        requests: requestsCount ?? 0,
+        matches: matchesCount ?? 0,
+      },
+    };
+  });
+
+function classifyMitraQuestion(content: string): string {
+  const text = content.toLowerCase();
+  if (/disease|diseased|fungus|blight|leaf spot|yellow|spots?/i.test(text)) return "Crop disease";
+  if (/fertiliz|urea|npk|manure|nutrient/i.test(text)) return "Fertilizer";
+  if (/irrigat|water|drip|rainfall/i.test(text)) return "Irrigation";
+  if (/weather|temperature|humidity|forecast/i.test(text)) return "Weather";
+  if (/market|price|mandi|sell/i.test(text)) return "Market prices";
+  if (/scheme|subsidy|government|grant/i.test(text)) return "Government schemes";
+  return "General farming";
+}
+
+export const getAdminSchemes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ source: string; schemes: AdminScheme[] }> => {
+    await assertAdmin(context.supabase as never, context.userId);
+
+    return {
+      source: "Verified static catalogue used by the farmer-facing Government Schemes page",
+      schemes: schemes.map((scheme) => ({
+        id: scheme.id,
+        name: scheme.name,
+        description: scheme.overview ?? scheme.benefit,
+        benefit: scheme.benefit,
+        eligibility: scheme.criteria,
+        applicationUrl: scheme.url ?? scheme.sourceUrl ?? null,
+        source: scheme.sourceName ?? scheme.dept,
+        lastUpdated: scheme.lastVerified ?? null,
+        status: "active",
+        level: scheme.level,
+        category: scheme.category,
+      })),
+    };
+  });
+
+export const getAdminFeedback = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminFeedback[]> => {
+    await assertAdmin(context.supabase as never, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const untypedAdminDb = supabaseAdmin as unknown as { from: (table: string) => any };
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
+    const { data, error } = await adminDb
+      .from("user_feedback" as never)
+      .select("id,user_id,category,subject,message,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    if (error) throw new Error(`Could not load feedback: ${error.message}`);
+    return ((data ?? []) as unknown as Array<{ id: string; user_id: string | null; category: "feedback" | "bug_report"; subject: string; message: string; status: "new" | "in_review" | "resolved"; created_at: string }>).map((item) => ({
+      id: item.id,
+      userId: item.user_id,
+      category: item.category,
+      subject: item.subject,
+      message: item.message,
+      status: item.status,
+      createdAt: item.created_at,
+    }));
+  });
+
+export const updateAdminFeedbackStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.enum(["new", "in_review", "resolved"]),
+    }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.supabase as never, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("user_feedback" as never)
+      .update({ status: data.status, updated_at: new Date().toISOString() } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(`Could not update feedback: ${error.message}`);
+    await supabaseAdmin.from("admin_audit_log").insert({
+      admin_id: context.userId,
+      action: "feedback_status_updated",
+      detail: {
+      feedbackId: data.id,
+      status: data.status,
+      },
+    });
+    return { ok: true };
+  });
+
+export const submitUserFeedback = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z.object({
+      category: z.enum(["feedback", "bug_report"]),
+      subject: z.string().trim().min(1).max(160),
+      message: z.string().trim().min(1).max(4000),
+    }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("user_feedback" as never).insert({
+      user_id: context.userId,
+      category: data.category,
+      subject: data.subject,
+      message: data.message,
+      status: "new",
+    } as never);
+    if (error) throw new Error("Could not submit feedback.");
+    return { ok: true };
   });
 
 /**
@@ -519,19 +809,15 @@ export const getAdminFeatureFlags = createServerFn({ method: "GET" })
  */
 export const setFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: { key: string; enabled: boolean; message?: string | null; reason?: string | null }) =>
-      z
-        .object({
-          key: z.string().min(1).max(64),
-
-          enabled: z.boolean(),
-
-          message: z.string().max(400).nullable().optional(),
-
-          reason: z.string().max(120).nullable().optional(),
-        })
-        .parse(input),
+  .validator((input: unknown) =>
+    z
+      .object({
+        key: z.string().min(1).max(64),
+        enabled: z.boolean(),
+        message: z.string().max(400).nullable().optional(),
+        reason: z.string().max(120).nullable().optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never, context.userId);
@@ -637,12 +923,67 @@ export const getAdminUsers = createServerFn({ method: "GET" })
     };
   });
 
+export const getAdminUsersExport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      search: z.string().trim().max(120).default(""),
+      sort: z.enum(["created_at", "name", "email"]).default("created_at"),
+      ascending: z.boolean().default(false),
+      role: z.enum(["all", "admin", "user"]).default("all"),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as never, context.userId);
+
+    const users: AdminUser[] = [];
+    let page = 1;
+    let total = 0;
+
+    while (page <= 1000) {
+      const { data: rows, error } = await context.supabase.rpc("admin_list_users", {
+        _search: data.search,
+        _sort: data.sort,
+        _ascending: data.ascending,
+        _page: page,
+        _page_size: 100,
+        _role: data.role,
+      });
+
+      if (error) throw new Error(`Could not prepare the user export: ${error.message}`);
+      if (!rows) break;
+      if (page === 1) total = rows[0]?.total_count ?? 0;
+      if (rows.length === 0) break;
+
+      users.push(
+        ...(rows.map(({ total_count: _total, ...user }) => user) as AdminUser[]),
+      );
+      if (users.length >= total || rows.length < 100) break;
+      page += 1;
+    }
+
+    return {
+      users: users.map((user) => ({
+        userId: user.user_id,
+        email: user.email,
+        fullName: user.full_name,
+        district: user.district,
+        state: user.state,
+        createdAt: user.created_at,
+        lastSignInAt: user.last_sign_in_at,
+        role: user.role,
+      })),
+      total: users.length,
+    };
+  });
+
 export const getAdminUserDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ userId: z.string().uuid() }))
   .handler(async ({ data, context }): Promise<AdminUserDetail> => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const untypedAdminDb = supabaseAdmin as unknown as { from: (table: string) => any };
 
     const [
       authResult,
@@ -671,7 +1012,7 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
         .eq("user_id", data.userId)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabaseAdmin
+      untypedAdminDb
         .from("application_error_logs")
         .select("id,service,severity,error_type,message,resolved_at,created_at")
         .eq("user_id", data.userId)
@@ -716,20 +1057,20 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
         lastSignInAt: authUser.last_sign_in_at ?? null,
         updatedAt: profile?.updated_at ?? null,
       },
-      conversations: (conversationsResult.data ?? []).map((row) => ({
+      conversations: (conversationsResult.data ?? []).map((row: { id: string; created_at: string; updated_at: string }) => ({
         id: row.id,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
-      diagnoses: (diagnosesResult.data ?? []).map((row) => ({
+      diagnoses: (diagnosesResult.data ?? []).map((row: { id: string; crop: string | null; condition: string | null; provider: string | null; usable: boolean | null; created_at: string }) => ({
         id: row.id,
-        crop: row.crop,
+        crop: row.crop ?? "",
         condition: row.condition,
         provider: row.provider,
-        usable: row.usable,
+        usable: row.usable ?? false,
         createdAt: row.created_at,
       })),
-      errors: (errorsResult.data ?? []).map((row) => ({
+      errors: (errorsResult.data ?? []).map((row: { id: string; service: string; severity: string; error_type: string; message: string; resolved_at: string | null; created_at: string }) => ({
         id: row.id,
         service: row.service,
         severity: row.severity,
@@ -746,8 +1087,9 @@ export const getAdminNotices = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<AdminNotice[]> => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
     const { data, error } = await supabaseAdmin
-      .from("system_notices")
+      .from("system_notices" as never)
       .select(
         "id,title,message,severity,enabled,starts_at,ends_at,created_at,updated_at,archived_at",
       )
@@ -758,7 +1100,7 @@ export const getAdminNotices = createServerFn({ method: "GET" })
     if (error) {
       throw new Error(`Could not load system notices: ${error.message}`);
     }
-    return data ?? [];
+    return (data ?? []) as AdminNotice[];
   });
 
 const adminErrorFiltersSchema = z.object({
@@ -776,11 +1118,12 @@ export const getAdminErrors = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
     const includeApplicationErrors = data.service !== "market_data";
     const includeMarketErrors = data.service === "all" || data.service === "market_data";
     const applicationQuery = includeApplicationErrors
       ? (() => {
-          let query = supabaseAdmin
+          let query = adminDb
             .from("application_error_logs")
             .select(
               "id,service,severity,user_id,request_id,provider,error_type,message,resolved_at,created_at",
@@ -821,13 +1164,13 @@ export const getAdminErrors = createServerFn({ method: "GET" })
       throw new Error(`Could not load market provider errors: ${marketResult.error.message}`);
     }
 
-    const appErrors = (applicationResult.data ?? []).map((row) => ({
+    const appErrors = (applicationResult.data ?? []).map((row: any) => ({
       ...row,
       service: row.service,
       error_type: row.error_type,
       message: row.message,
     }));
-    const marketErrors = (marketResult.data ?? []).map((row) => ({
+    const marketErrors = (marketResult.data ?? []).map((row: any) => ({
       id: row.id,
       service: "market_data" as const,
       severity: "error" as const,
@@ -851,8 +1194,9 @@ export const resolveAdminError = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("application_error_logs")
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
+    const { data: row, error } = await adminDb
+      .from("application_error_logs" as never)
       .update({ resolved_at: new Date().toISOString() })
       .eq("id", data.id)
       .is("resolved_at", null)
@@ -898,6 +1242,7 @@ export const saveAdminNotice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
     const values = {
       title: data.title,
       message: data.message,
@@ -908,16 +1253,16 @@ export const saveAdminNotice = createServerFn({ method: "POST" })
       updated_by: context.userId,
     };
     const result = data.id
-      ? await supabaseAdmin
-          .from("system_notices")
-          .update(values)
+      ? await adminDb
+          .from("system_notices" as never)
+          .update(values as never)
           .eq("id", data.id)
           .is("archived_at", null)
           .select("id")
           .maybeSingle()
-      : await supabaseAdmin
-          .from("system_notices")
-          .insert({ ...values, created_by: context.userId })
+      : await adminDb
+          .from("system_notices" as never)
+          .insert({ ...values, created_by: context.userId } as never)
           .select("id")
           .single();
 
@@ -949,8 +1294,9 @@ export const archiveAdminNotice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as never, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: notice, error } = await supabaseAdmin
-      .from("system_notices")
+    const adminDb = supabaseAdmin as unknown as { from: (table: string) => any };
+    const { data: notice, error } = await adminDb
+      .from("system_notices" as never)
       .update({
         enabled: false,
         archived_at: new Date().toISOString(),

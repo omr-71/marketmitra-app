@@ -24,6 +24,7 @@ export type AnalyticsEvent =
   | "mitra_ai_error"
   | "mitra_ai_retry"
   | "scheme_viewed"
+  | "scheme_portal_clicked"
   | "prediction_viewed";
 
 const SESSION_KEY = "mm-analytics-session";
