@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "317578060329",
+    "project_id": "marketmitra-app",
+    "storage_bucket": "marketmitra-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:317578060329:android:cbbfb60765e4785f993238",
+        "android_client_info": {
+          "package_name": "app.marketmitra.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0MCs9_baTVE5q3c1Ht8V0eynXYY0hrgc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

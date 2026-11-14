@@ -6,25 +6,18 @@ import {
   Check,
   ChevronRight,
   Clock3,
-  CloudRain,
   Globe,
   Info,
   Leaf,
-  Link2,
   LogOut,
-  MapPin,
-  Palette,
   RotateCcw,
   Shield,
   Sprout,
-  TrendingUp,
-  User,
   Volume2,
   Zap,
 } from "lucide-react";
 
 import { Screen, TopBar } from "@/components/app-shell";
-import { PhoneVerifyCard } from "@/components/phone-verify-card";
 import { AndroidAppDownload } from "@/components/android-app-download";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -32,12 +25,22 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { useSession } from "@/lib/session";
 import { useSettings } from "@/lib/settings";
+import { supabase } from "@/integrations/supabase/client";
 import { MITRA_VOICES } from "@/lib/voices";
 import { useMitraSpeech } from "@/lib/mitra-speech";
-import { useTheme, themes } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
 import { crops, type Lang } from "@/lib/crops";
 import { toast } from "sonner";
+import {
+  isNativeAndroidApp,
+  getNativeNotificationPermissionStatus,
+  openNativeNotificationSettings,
+  registerNativeFcmToken,
+  requestNativeNotificationPermission,
+  syncNativeFcmToken,
+  syncNotificationPreference,
+} from "@/lib/native-notifications";
+import { saveNotificationIntelligencePreferences } from "@/lib/notification-intelligence.functions";
 
 const previewLine: Record<Lang, string> = {
   en: "Namaste, I am Mitra. I can read your answers aloud like this.",
@@ -104,22 +107,31 @@ const DEFAULT_ALERTS: AlertPreferences = {
 };
 
 const ALERT_STORAGE_KEY = "marketmitra-alert-preferences";
+const DAILY_SUMMARY_TIME = "07:00";
 
 function Section({
   icon: Icon,
   title,
   children,
+  className = "",
 }: {
   icon: typeof Bell;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="space-y-3">
-      <h3 className="flex items-center gap-2 text-sm font-bold">
-        <Icon className="size-4 text-primary" />
-        {title}
-      </h3>
+    <section
+      className={`card-surface hover-lift rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] ${className}`}
+    >
+      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5 mb-4">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </span>
+        <h2 className="text-base font-bold tracking-tight text-foreground">
+          {title}
+        </h2>
+      </div>
       {children}
     </section>
   );
@@ -237,8 +249,6 @@ function SettingsPage() {
 
   const { t, lang, setLang } = useLang();
 
-  const { theme, setTheme } = useTheme();
-
   const {
     settings,
     setNotifications,
@@ -259,17 +269,19 @@ function SettingsPage() {
     lang,
   );
 
-  const [name, setName] = useState("");
-  const [village, setVillage] = useState("");
-
-  const [errors, setErrors] = useState<{
-    name?: string;
-  }>({});
-
   const [permission, setPermission] =
     useState<
-      NotificationPermission | "unsupported"
+      NotificationPermission | "unsupported" | "global-disabled"
     >("default");
+  const [fcmRegistered, setFcmRegistered] = useState(false);
+  const [registrationDiagnostics, setRegistrationDiagnostics] = useState({
+    auth: "Not attempted" as "Available" | "Missing" | "Not attempted",
+    token: "Missing" as "Available" | "Missing",
+    bridge: "Not connected" as "Connected" | "Not connected",
+    registration: "Not attempted" as "Success" | "Failed" | "Not attempted",
+    code: "",
+    message: "",
+  });
 
   const [alerts, setAlerts] =
     useState<AlertPreferences>(
@@ -279,14 +291,6 @@ function SettingsPage() {
   const [showAdvancedAlerts, setShowAdvancedAlerts] =
     useState(false);
   const saved = useMemo(() => profile.saved_crops ?? [], [profile.saved_crops]);
-
-  useEffect(() => {
-    setName(profile.full_name ?? "");
-    setVillage(profile.village ?? "");
-  }, [
-    profile.full_name,
-    profile.village,
-  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -307,6 +311,7 @@ function SettingsPage() {
       setAlerts({
         ...DEFAULT_ALERTS,
         ...parsed,
+        briefTime: DAILY_SUMMARY_TIME,
       });
     } catch {
       window.localStorage.removeItem(
@@ -316,7 +321,75 @@ function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (!isNativeAndroidApp()) return;
+    const synchronizeRegistration = async () => {
+      const bridgeConnected = isNativeAndroidApp();
+      const native = window.MarketMitraAndroidNotifications;
+      const tokenAvailable = Boolean(native?.getFcmToken());
+      const { data } = await supabase.auth.getSession();
+      setRegistrationDiagnostics((current) => ({
+        ...current,
+        bridge: bridgeConnected ? "Connected" : "Not connected",
+        token: tokenAvailable ? "Available" : "Missing",
+        auth: data.session?.user ? "Available" : "Missing",
+      }));
+      if (!tokenAvailable) {
+        return syncNativeFcmToken().then((registered) => setFcmRegistered(registered));
+      }
+      const result = await registerNativeFcmToken(native?.getFcmToken() ?? "");
+      const success = result.status === "success";
+      setFcmRegistered(success);
+      setRegistrationDiagnostics((current) => ({
+        ...current,
+        registration: success ? "Success" : "Failed",
+        code: result.status === "failed" ? result.reason : "",
+        message: result.status === "failed" && "message" in result ? result.message : "",
+      }));
+    };
+    void synchronizeRegistration();
+    const tokenListener = (event: Event) => {
+      const token = (event as CustomEvent<{ token?: string }>).detail?.token;
+      if (token) void synchronizeRegistration();
+    };
+    const permissionListener = (event: Event) => {
+      const state = (event as CustomEvent<{ state?: string }>).detail?.state;
+      if (state === "granted" || state === "denied" || state === "global-disabled") {
+        setPermission(state);
+      }
+    };
+    window.addEventListener("marketmitra:fcm-token", tokenListener);
+    window.addEventListener("marketmitra:notification-permission", permissionListener);
+    const refreshPermission = () => {
+      setPermission(getNativeNotificationPermissionStatus());
+      if (document.visibilityState === "visible") void syncNativeFcmToken();
+    };
+    refreshPermission();
+    document.addEventListener("visibilitychange", refreshPermission);
+    window.addEventListener("focus", refreshPermission);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void synchronizeRegistration();
+      }
+    });
+    const retryTimer = window.setInterval(() => {
+      void synchronizeRegistration();
+    }, 15000);
+    return () => {
+      window.removeEventListener("marketmitra:fcm-token", tokenListener);
+      window.removeEventListener("marketmitra:notification-permission", permissionListener);
+      document.removeEventListener("visibilitychange", refreshPermission);
+      window.removeEventListener("focus", refreshPermission);
+      authListener.subscription.unsubscribe();
+      window.clearInterval(retryTimer);
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
+    if (isNativeAndroidApp()) {
+      setPermission(getNativeNotificationPermissionStatus());
+      return;
+    }
 
     setPermission(
       typeof Notification === "undefined"
@@ -336,6 +409,36 @@ function SettingsPage() {
         JSON.stringify(next),
       );
     }
+    if (isNativeAndroidApp()) {
+      void syncNotificationPreference({
+        enabled: settings.notifications.market || settings.notifications.weather || settings.notifications.updates,
+        market_updates: settings.notifications.market,
+        weather_alerts: settings.notifications.weather,
+        government_schemes: settings.notifications.updates,
+        app_updates: settings.notifications.updates,
+        quiet_hours_enabled: next.quietHours,
+        quiet_from: next.quietFrom,
+        quiet_to: next.quietTo,
+      });
+    }
+    void saveNotificationIntelligencePreferences({
+      data: {
+        enabled: settings.notifications.market || settings.notifications.weather || settings.notifications.updates,
+        marketUpdates: settings.notifications.market,
+        weatherAlerts: settings.notifications.weather,
+        dailySummary: next.dailyMarket,
+        cropAlerts: next.priceRise || next.priceFall,
+        summaryTime: DAILY_SUMMARY_TIME,
+        priceThreshold: Math.max(next.priceRiseThreshold, next.priceFallThreshold),
+        selectedCrops: saved,
+        preferredState: profile.state,
+        preferredDistrict: profile.district,
+        preferredMarket: null,
+        quietHours: next.quietHours,
+        quietFrom: next.quietFrom,
+        quietTo: next.quietTo,
+      },
+    });
   };
 
   const updateAlert = <
@@ -348,42 +451,6 @@ function SettingsPage() {
       ...alerts,
       [key]: value,
     });
-  };
-
-  const msg = {
-    nameRequired: {
-      en: "Full name is required.",
-      mr: "पूर्ण नाव आवश्यक आहे.",
-      hi: "पूरा नाम आवश्यक है.",
-    },
-  } as const;
-
-  const saveProfile = async () => {
-    const next: {
-      name?: string;
-    } = {};
-
-    if (!name.trim()) {
-      next.name =
-        msg.nameRequired[lang];
-    }
-
-    setErrors(next);
-
-    if (next.name) return;
-
-    try {
-      await updateProfile({
-        full_name: name.trim(),
-        village: village.trim() || null,
-      });
-
-      toast.success(t("save"));
-    } catch {
-      toast.error(
-        "Could not save your profile.",
-      );
-    }
   };
 
   const changeLanguage = async (
@@ -408,6 +475,17 @@ function SettingsPage() {
 
   const requestNotificationPermission =
     async () => {
+      if (isNativeAndroidApp()) {
+        if (permission === "denied" || permission === "global-disabled") {
+          openNativeNotificationSettings();
+        } else {
+          requestNativeNotificationPermission();
+        }
+        setTimeout(() => void syncNativeFcmToken(), 800);
+        setPermission(getNativeNotificationPermissionStatus());
+        toast.info("Android notification settings opened.");
+        return;
+      }
       if (
         typeof Notification ===
         "undefined"
@@ -614,20 +692,33 @@ function SettingsPage() {
       );
     };
 
+  const disabledInternalCategories = [
+    !settings.notifications.market ? "Market updates" : null,
+    !settings.notifications.weather ? "Weather alerts" : null,
+    !settings.notifications.updates ? "Updates" : null,
+  ].filter((item): item is string => Boolean(item));
+
   const notificationStatus =
     permission === "granted"
-      ? "Enabled on this device"
-      : permission === "denied"
-        ? "Blocked by browser"
-        : permission ===
-            "unsupported"
-          ? "Not supported"
-          : "Not enabled";
+      ? !fcmRegistered
+        ? "Permission enabled, device registration pending"
+        : disabledInternalCategories.length === 3
+          ? "Notifications disabled in MarketMitra"
+          : disabledInternalCategories.length > 0
+            ? `Enabled; disabled: ${disabledInternalCategories.join(", ")}`
+            : "Notifications enabled"
+      : permission === "global-disabled"
+        ? "Notifications disabled globally in Android Settings"
+        : permission === "denied"
+          ? "Enable notifications in Android Settings"
+          : permission === "unsupported"
+            ? "Not supported"
+            : "Checking Android notification permission…";
 
   const notificationStatusClass =
-    permission === "granted"
+    permission === "granted" && disabledInternalCategories.length < 3
       ? "text-primary"
-      : permission === "denied"
+      : permission === "denied" || permission === "global-disabled"
         ? "text-destructive"
         : "text-muted-foreground";
 
@@ -683,160 +774,16 @@ function SettingsPage() {
           </div>
         </div>
 
-        {/* PERSONAL INFORMATION */}
-
-        <Section
-          icon={User}
-          title="Personal information"
-        >
-          <div className="card-surface hover-lift space-y-3 p-4">
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("fullName")} *
-              </span>
-
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <User className="size-4 text-muted-foreground" />
-
-                <input
-                  value={name}
-                  onChange={(e) =>
-                    setName(
-                      e.target.value,
-                    )
-                  }
-                  aria-invalid={
-                    !!errors.name
-                  }
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
-              </div>
-
-              {errors.name && (
-                <p className="mt-1 text-[11px] font-semibold text-destructive">
-                  {errors.name}
-                </p>
-              )}
-            </label>
-
-            <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t("village")}
-              </span>
-
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border border-border bg-card px-3">
-                <MapPin className="size-4 text-muted-foreground" />
-
-                <input
-                  value={village}
-                  onChange={(e) =>
-                    setVillage(
-                      e.target.value,
-                    )
-                  }
-                  className="h-12 w-full bg-transparent text-sm font-semibold outline-none"
-                />
-              </div>
-            </label>
-
-            <button
-              onClick={() =>
-                void saveProfile()
-              }
-              className="press grad-primary flex h-12 w-full items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground"
-            >
-              {t("save")}
-            </button>
-          </div>
-
-          <PhoneVerifyCard />
-        </Section>
-
-        {/* APPEARANCE */}
-
-        <Section
-          icon={Palette}
-          title="Appearance"
-        >
-          <div className="card-surface hover-lift space-y-4 p-4">
-            <Label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Theme
-            </Label>
-
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-              {themes.map((th) => (
-                <button
-                  key={th.id}
-                  onClick={() =>
-                    setTheme(th.id)
-                  }
-                  className={`press flex items-center gap-2 rounded-xl border p-3 text-left transition-all duration-300 ${
-                    theme === th.id
-                      ? "border-primary bg-primary/10 shadow-[var(--shadow-card)]"
-                      : "border-border bg-card"
-                  }`}
-                >
-                  <span className="flex shrink-0 gap-0.5">
-                    {th.swatch
-                      .slice(
-                        0,
-                        2,
-                      )
-                      .map(
-                        (c) => (
-                          <span
-                            key={c}
-                            className="size-3 rounded-full ring-1 ring-border"
-                            style={{
-                              backgroundColor:
-                                c,
-                            }}
-                          />
-                        ),
-                      )}
-                  </span>
-
-                  <span className="min-w-0 flex-1 truncate text-xs font-bold">
-                    {th.label}
-                  </span>
-
-                  {theme ===
-                    th.id && (
-                    <Check
-                      className="size-3.5 shrink-0 text-primary"
-                      strokeWidth={
-                        3
-                      }
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Section>
-
         {/* ACCESSIBILITY */}
-
-        <Section
-          icon={Accessibility}
-          title="Accessibility"
-        >
-          <div className="card-surface hover-lift space-y-5 p-4">
+        <Section icon={Accessibility} title="Accessibility">
+          <div className="space-y-4">
             <Toggle
               label="Compact Mode"
               hint="Tighter spacing so more information fits on screen."
-              checked={
-                settings
-                  .appearance
-                  .density ===
-                "compact"
-              }
+              checked={settings.appearance.density === "compact"}
               onChange={(v) =>
                 setAppearance({
-                  density:
-                    v
-                      ? "compact"
-                      : "comfortable",
+                  density: v ? "compact" : "comfortable",
                 })
               }
             />
@@ -844,18 +791,10 @@ function SettingsPage() {
             <Toggle
               label="Larger Text"
               hint="Increase text size across the app."
-              checked={
-                settings
-                  .appearance
-                  .textSize ===
-                "lg"
-              }
+              checked={settings.appearance.textSize === "lg"}
               onChange={(v) =>
                 setAppearance({
-                  textSize:
-                    v
-                      ? "lg"
-                      : "md",
+                  textSize: v ? "lg" : "md",
                 })
               }
             />
@@ -863,15 +802,10 @@ function SettingsPage() {
             <Toggle
               label="Reduce Motion"
               hint="Minimise animations and transitions."
-              checked={
-                settings
-                  .appearance
-                  .reduceMotion
-              }
+              checked={settings.appearance.reduceMotion}
               onChange={(v) =>
                 setAppearance({
-                  reduceMotion:
-                    v,
+                  reduceMotion: v,
                 })
               }
             />
@@ -879,15 +813,10 @@ function SettingsPage() {
             <Toggle
               label="High Contrast"
               hint="Use stronger borders and text contrast."
-              checked={
-                settings
-                  .appearance
-                  .highContrast
-              }
+              checked={settings.appearance.highContrast}
               onChange={(v) =>
                 setAppearance({
-                  highContrast:
-                    v,
+                  highContrast: v,
                 })
               }
             />
@@ -895,39 +824,22 @@ function SettingsPage() {
         </Section>
 
         {/* LANGUAGE */}
-
-        <Section
-          icon={Globe}
-          title={t("language")}
-        >
-          <div className="card-surface p-2">
-            {(
-              Object.keys(
-                langNames,
-              ) as Lang[]
-            ).map((l) => (
+        <Section icon={Globe} title={t("language")}>
+          <div className="space-y-1.5">
+            {(Object.keys(langNames) as Lang[]).map((l) => (
               <button
                 key={l}
-                onClick={() =>
-                  void changeLanguage(
-                    l,
-                  )
-                }
-                className={`press flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-bold transition-colors duration-300 ${
+                onClick={() => void changeLanguage(l)}
+                className={`press flex w-full items-center justify-between rounded-xl px-3.5 py-3 text-sm font-bold transition-all duration-200 ${
                   lang === l
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground"
+                    ? "border border-primary/25 bg-primary/10 text-primary shadow-xs"
+                    : "border border-transparent hover:border-slate-200/80 hover:bg-slate-50 text-foreground"
                 }`}
               >
                 {langNames[l]}
 
                 {lang === l && (
-                  <Check
-                    className="size-4"
-                    strokeWidth={
-                      3
-                    }
-                  />
+                  <Check className="size-4 text-primary" strokeWidth={3} />
                 )}
               </button>
             ))}
@@ -935,81 +847,51 @@ function SettingsPage() {
         </Section>
 
         {/* MITRA VOICE */}
-
-        <Section
-          icon={Volume2}
-          title="Mitra voice"
-        >
-          <div className="card-surface hover-lift space-y-5 p-4">
+        <Section icon={Volume2} title="Mitra voice">
+          <div className="space-y-5">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Voice personality
               </Label>
 
-              <div className="grid grid-cols-2 gap-2">
-                {MITRA_VOICES.map(
-                  (v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() =>
-                        setVoice({
-                          voiceId:
-                            v.id,
-                        })
-                      }
-                      className={`press rounded-xl border px-3 py-3 text-left transition-colors ${
-                        settings
-                          .voice
-                          .voiceId ===
-                        v.id
-                          ? "border-primary/50 bg-primary/10 text-primary"
-                          : "border-border/70 text-foreground"
-                      }`}
-                    >
-                      <span className="block text-[13px] font-bold">
-                        {v.name}
-                      </span>
+              <div className="grid grid-cols-2 gap-2.5">
+                {MITRA_VOICES.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() =>
+                      setVoice({
+                        voiceId: v.id,
+                      })
+                    }
+                    className={`press rounded-xl border p-3 text-left transition-all ${
+                      settings.voice.voiceId === v.id
+                        ? "border-primary/40 bg-primary/10 text-primary shadow-xs"
+                        : "border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 text-foreground"
+                    }`}
+                  >
+                    <span className="block text-[13px] font-bold">
+                      {v.name}
+                    </span>
 
-                      <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground">
-                        {v.style[
-                          lang
-                        ]}
-                      </span>
-                    </button>
-                  ),
-                )}
+                    <span className="mt-0.5 block text-[11px] font-semibold text-muted-foreground">
+                      {v.style[lang]}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  preview.speak(
-                    previewLine[
-                      lang
-                    ],
-                  )
-                }
-                disabled={
-                  preview.loading ||
-                  preview.speaking
-                }
-                className="press rounded-xl border border-border/70 px-3 py-2.5 text-[13px] font-bold disabled:opacity-60"
+                onClick={() => preview.speak(previewLine[lang])}
+                disabled={preview.loading || preview.speaking}
+                className="press mt-3 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs font-bold text-foreground transition-all hover:bg-slate-100 disabled:opacity-60 shadow-xs"
               >
                 {preview.loading
-                  ? previewCopy
-                      .loading[
-                      lang
-                    ]
+                  ? previewCopy.loading[lang]
                   : preview.speaking
-                    ? previewCopy
-                        .playing[
-                        lang
-                      ]
-                    : previewCopy
-                        .play[
-                        lang
-                      ]}
+                    ? previewCopy.playing[lang]
+                    : previewCopy.play[lang]}
               </button>
 
               {preview.error && (
@@ -1020,28 +902,17 @@ function SettingsPage() {
             </div>
 
             <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-              <span>
-                Speaking speed
-              </span>
+              <span>Speaking speed</span>
 
               <input
                 type="range"
                 min={0.7}
                 max={1.4}
                 step={0.1}
-                value={
-                  settings
-                    .voice
-                    .speed
-                }
+                value={settings.voice.speed}
                 onChange={(e) =>
                   setVoice({
-                    speed:
-                      Number(
-                        e
-                          .currentTarget
-                          .value,
-                      ),
+                    speed: Number(e.currentTarget.value),
                   })
                 }
                 className="w-36 accent-[var(--color-primary)]"
@@ -1049,28 +920,17 @@ function SettingsPage() {
             </label>
 
             <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-              <span>
-                Volume
-              </span>
+              <span>Volume</span>
 
               <input
                 type="range"
                 min={0.2}
                 max={1}
                 step={0.1}
-                value={
-                  settings
-                    .voice
-                    .volume
-                }
+                value={settings.voice.volume}
                 onChange={(e) =>
                   setVoice({
-                    volume:
-                      Number(
-                        e
-                          .currentTarget
-                          .value,
-                      ),
+                    volume: Number(e.currentTarget.value),
                   })
                 }
                 className="w-36 accent-[var(--color-primary)]"
@@ -1080,15 +940,10 @@ function SettingsPage() {
             <Toggle
               label="Expressive delivery"
               hint="Mitra matches the tone of the answer."
-              checked={
-                settings
-                  .voice
-                  .emotional
-              }
+              checked={settings.voice.emotional}
               onChange={(v) =>
                 setVoice({
-                  emotional:
-                    v,
+                  emotional: v,
                 })
               }
             />
@@ -1096,15 +951,10 @@ function SettingsPage() {
             <Toggle
               label="Speak answers aloud"
               hint="Mitra reads every reply automatically."
-              checked={
-                settings
-                  .voice
-                  .autoPlay
-              }
+              checked={settings.voice.autoPlay}
               onChange={(v) =>
                 setVoice({
-                  autoPlay:
-                    v,
+                  autoPlay: v,
                 })
               }
             />
@@ -1112,25 +962,17 @@ function SettingsPage() {
         </Section>
 
         {/* NOTIFICATIONS */}
-
-        <Section
-          icon={Bell}
-          title="Notifications"
-        >
-          <div className="card-surface hover-lift space-y-5 p-4">
-
+        <Section icon={Bell} title="Notifications">
+          <div className="space-y-5">
             {/* DEVICE STATUS */}
-
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10">
                   <Bell className="size-5 text-primary" />
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold">
-                    Device notifications
-                  </p>
+                  <p className="text-sm font-extrabold">Device notifications</p>
 
                   <p
                     className={`mt-1 text-[11px] font-semibold ${notificationStatusClass}`}
@@ -1141,15 +983,36 @@ function SettingsPage() {
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                     Allow MarketMitra to notify you about enabled farming alerts.
                   </p>
+
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                    <span>Firebase token</span>
+                    <span>{registrationDiagnostics.token}</span>
+                    <span>Native bridge</span>
+                    <span>{registrationDiagnostics.bridge}</span>
+                    <span>Authenticated session</span>
+                    <span>{registrationDiagnostics.auth}</span>
+                    <span>Supabase registration</span>
+                    <span>{registrationDiagnostics.registration}</span>
+                    {registrationDiagnostics.registration === "Failed" && (
+                      <>
+                        <span>Safe error</span>
+                        <span className="break-all">
+                          {[
+                            registrationDiagnostics.code,
+                            registrationDiagnostics.message,
+                          ]
+                            .filter(Boolean)
+                            .join(": ") || "Registration failed"}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {permission !==
-                  "granted" && (
+                {permission !== "granted" && (
                   <button
-                    onClick={() =>
-                      void requestNotificationPermission()
-                    }
-                    className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground"
+                    onClick={() => void requestNotificationPermission()}
+                    className="press shrink-0 rounded-xl bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground shadow-xs"
                   >
                     Enable
                   </button>
@@ -1158,187 +1021,102 @@ function SettingsPage() {
             </div>
 
             {/* BASIC ALERTS */}
-
-            <div className="space-y-5">
+            <div className="space-y-4">
               <Toggle
                 label="Market Updates"
                 hint="New official mandi prices for your saved crops."
-                checked={
-                  settings
-                    .notifications
-                    .market
-                }
-                onChange={(v) =>
-                  void enableAlerts(
-                    "market",
-                    v,
-                  )
-                }
+                checked={settings.notifications.market}
+                onChange={(v) => void enableAlerts("market", v)}
               />
 
               <Toggle
                 label="Price Rise Alerts"
                 hint={`Notify when a saved crop rises by ${alerts.priceRiseThreshold}% or more.`}
-                checked={
-                  alerts.priceRise
-                }
-                onChange={(v) =>
-                  updateAlert(
-                    "priceRise",
-                    v,
-                  )
-                }
+                checked={alerts.priceRise}
+                onChange={(v) => updateAlert("priceRise", v)}
               />
 
               <Toggle
                 label="Price Drop Alerts"
                 hint={`Notify when a saved crop falls by ${alerts.priceFallThreshold}% or more.`}
-                checked={
-                  alerts.priceFall
-                }
-                onChange={(v) =>
-                  updateAlert(
-                    "priceFall",
-                    v,
-                  )
-                }
+                checked={alerts.priceFall}
+                onChange={(v) => updateAlert("priceFall", v)}
               />
 
               <Toggle
                 label="Daily Market Update"
                 hint="A daily summary for your saved crops."
-                checked={
-                  alerts.dailyMarket
-                }
-                onChange={(v) =>
-                  updateAlert(
-                    "dailyMarket",
-                    v,
-                  )
-                }
+                checked={alerts.dailyMarket}
+                onChange={(v) => updateAlert("dailyMarket", v)}
               />
             </div>
 
             {/* WEATHER */}
-
-            <div className="border-t border-border pt-5">
-              <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                 Weather
               </p>
 
-              <div className="space-y-5">
+              <div className="space-y-4">
                 <Toggle
                   label="Weather Alerts"
                   hint="Important weather warnings for your farm location."
-                  checked={
-                    settings
-                      .notifications
-                      .weather
-                  }
-                  onChange={(v) =>
-                    void enableAlerts(
-                      "weather",
-                      v,
-                    )
-                  }
+                  checked={settings.notifications.weather}
+                  onChange={(v) => void enableAlerts("weather", v)}
                 />
 
                 <Toggle
                   label="Heavy Rain"
                   hint={`Alert when rainfall reaches ${alerts.rainThreshold} mm or more.`}
-                  checked={
-                    alerts.heavyRain
-                  }
-                  onChange={(v) =>
-                    updateAlert(
-                      "heavyRain",
-                      v,
-                    )
-                  }
+                  checked={alerts.heavyRain}
+                  onChange={(v) => updateAlert("heavyRain", v)}
                 />
 
                 <Toggle
                   label="Extreme Temperature"
                   hint={`Alert below ${alerts.temperatureLow}°C or above ${alerts.temperatureHigh}°C.`}
-                  checked={
-                    alerts.extremeTemperature
-                  }
-                  onChange={(v) =>
-                    updateAlert(
-                      "extremeTemperature",
-                      v,
-                    )
-                  }
+                  checked={alerts.extremeTemperature}
+                  onChange={(v) => updateAlert("extremeTemperature", v)}
                 />
 
                 <Toggle
                   label="Strong Wind"
                   hint="Notify about significant wind conditions."
-                  checked={
-                    alerts.strongWind
-                  }
-                  onChange={(v) =>
-                    updateAlert(
-                      "strongWind",
-                      v,
-                    )
-                  }
+                  checked={alerts.strongWind}
+                  onChange={(v) => updateAlert("strongWind", v)}
                 />
               </div>
             </div>
 
             {/* MITRA LINK */}
-
-            <div className="border-t border-border pt-5">
-              <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
                 Mitra Link
               </p>
 
               <Toggle
                 label="Mitra Link Activity"
                 hint="Requests, accepted matches and important listing activity."
-                checked={
-                  alerts.mitraLink
-                }
-                onChange={(v) =>
-                  updateAlert(
-                    "mitraLink",
-                    v,
-                  )
-                }
+                checked={alerts.mitraLink}
+                onChange={(v) => updateAlert("mitraLink", v)}
               />
             </div>
 
             {/* SYSTEM */}
-
-            <div className="border-t border-border pt-5">
+            <div className="border-t border-slate-100 pt-4">
               <Toggle
                 label="System Notifications"
                 hint="Important MarketMitra announcements and service updates."
-                checked={
-                  settings
-                    .notifications
-                    .updates
-                }
-                onChange={(v) =>
-                  void enableAlerts(
-                    "updates",
-                    v,
-                  )
-                }
+                checked={settings.notifications.updates}
+                onChange={(v) => void enableAlerts("updates", v)}
               />
             </div>
 
             {/* ADVANCED */}
-
             <button
               type="button"
-              onClick={() =>
-                setShowAdvancedAlerts(
-                  !showAdvancedAlerts,
-                )
-              }
-              className="press flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold"
+              onClick={() => setShowAdvancedAlerts(!showAdvancedAlerts)}
+              className="press flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-bold text-foreground hover:bg-slate-100 transition-all shadow-xs"
             >
               <span className="flex items-center gap-2">
                 <Zap className="size-4 text-primary" />
@@ -1347,129 +1125,91 @@ function SettingsPage() {
 
               <ChevronRight
                 className={`size-4 text-muted-foreground transition-transform ${
-                  showAdvancedAlerts
-                    ? "rotate-90"
-                    : ""
+                  showAdvancedAlerts ? "rotate-90" : ""
                 }`}
               />
             </button>
 
             {showAdvancedAlerts && (
-              <div className="space-y-5 rounded-2xl border border-border bg-muted/20 p-4">
-
+              <div className="space-y-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4">
                 {/* MARKET */}
-
                 <div>
-                  <p className="text-sm font-extrabold">
-                    Market thresholds
-                  </p>
+                  <p className="text-sm font-extrabold">Market thresholds</p>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Choose how large a price movement should be before a market alert is generated.
+                    Choose how large a price movement should be before a market
+                    alert is generated.
                   </p>
 
                   <div className="mt-4 space-y-2">
                     <NumberSetting
                       label="Price rise"
-                      value={
-                        alerts.priceRiseThreshold
-                      }
+                      value={alerts.priceRiseThreshold}
                       min={1}
                       max={100}
                       suffix="%"
                       onChange={(value) =>
-                        updateAlert(
-                          "priceRiseThreshold",
-                          value,
-                        )
+                        updateAlert("priceRiseThreshold", value)
                       }
                     />
 
                     <NumberSetting
                       label="Price fall"
-                      value={
-                        alerts.priceFallThreshold
-                      }
+                      value={alerts.priceFallThreshold}
                       min={1}
                       max={100}
                       suffix="%"
                       onChange={(value) =>
-                        updateAlert(
-                          "priceFallThreshold",
-                          value,
-                        )
+                        updateAlert("priceFallThreshold", value)
                       }
                     />
                   </div>
                 </div>
 
                 {/* WEATHER */}
-
-                <div className="border-t border-border pt-4">
-                  <p className="text-sm font-extrabold">
-                    Weather thresholds
-                  </p>
+                <div className="border-t border-slate-200/80 pt-4">
+                  <p className="text-sm font-extrabold">Weather thresholds</p>
 
                   <div className="mt-3 space-y-2">
                     <NumberSetting
                       label="Rainfall"
-                      value={
-                        alerts.rainThreshold
-                      }
+                      value={alerts.rainThreshold}
                       min={1}
                       max={300}
                       suffix="mm"
-                      onChange={(value) =>
-                        updateAlert(
-                          "rainThreshold",
-                          value,
-                        )
-                      }
+                      onChange={(value) => updateAlert("rainThreshold", value)}
                     />
 
                     <NumberSetting
                       label="High temperature"
-                      value={
-                        alerts.temperatureHigh
-                      }
+                      value={alerts.temperatureHigh}
                       min={20}
                       max={60}
                       suffix="°C"
                       onChange={(value) =>
-                        updateAlert(
-                          "temperatureHigh",
-                          value,
-                        )
+                        updateAlert("temperatureHigh", value)
                       }
                     />
 
                     <NumberSetting
                       label="Low temperature"
-                      value={
-                        alerts.temperatureLow
-                      }
+                      value={alerts.temperatureLow}
                       min={-10}
                       max={30}
                       suffix="°C"
                       onChange={(value) =>
-                        updateAlert(
-                          "temperatureLow",
-                          value,
-                        )
+                        updateAlert("temperatureLow", value)
                       }
                     />
                   </div>
                 </div>
 
                 {/* QUIET HOURS */}
-
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-slate-200/80 pt-4">
                   <div className="flex items-center gap-2">
                     <Clock3 className="size-4 text-primary" />
 
-                    <p className="text-sm font-extrabold">
-                      Quiet hours
-                    </p>
+                    <p className="text-sm font-extrabold">Quiet hours</p>
                   </div>
 
                   <p className="mt-1 text-[11px] text-muted-foreground">
@@ -1479,15 +1219,8 @@ function SettingsPage() {
                   <div className="mt-4">
                     <Toggle
                       label="Enable quiet hours"
-                      checked={
-                        alerts.quietHours
-                      }
-                      onChange={(v) =>
-                        updateAlert(
-                          "quietHours",
-                          v,
-                        )
-                      }
+                      checked={alerts.quietHours}
+                      onChange={(v) => updateAlert("quietHours", v)}
                     />
                   </div>
 
@@ -1500,17 +1233,11 @@ function SettingsPage() {
 
                         <input
                           type="time"
-                          value={
-                            alerts.quietFrom
-                          }
+                          value={alerts.quietFrom}
                           onChange={(e) =>
-                            updateAlert(
-                              "quietFrom",
-                              e.currentTarget
-                                .value,
-                            )
+                            updateAlert("quietFrom", e.currentTarget.value)
                           }
-                          className="mt-1.5 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none"
                         />
                       </label>
 
@@ -1521,17 +1248,11 @@ function SettingsPage() {
 
                         <input
                           type="time"
-                          value={
-                            alerts.quietTo
-                          }
+                          value={alerts.quietTo}
                           onChange={(e) =>
-                            updateAlert(
-                              "quietTo",
-                              e.currentTarget
-                                .value,
-                            )
+                            updateAlert("quietTo", e.currentTarget.value)
                           }
-                          className="mt-1.5 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none"
+                          className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none"
                         />
                       </label>
                     </div>
@@ -1539,8 +1260,7 @@ function SettingsPage() {
                 </div>
 
                 {/* DAILY BRIEF */}
-
-                <div className="border-t border-border pt-4">
+                <div className="border-t border-slate-200/80 pt-4">
                   <div className="flex items-center gap-2">
                     <Leaf className="size-4 text-primary" />
 
@@ -1550,57 +1270,27 @@ function SettingsPage() {
                   </div>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    One morning summary can combine your saved crop markets, weather and important activity.
+                    Your saved-crop market summary runs once daily around 7:00
+                    AM IST. Vercel Hobby timing is approximate, so delivery is
+                    eligible from 6:00 to 8:00 AM IST. If your quiet hours cover
+                    the actual run time, that day&apos;s summary is skipped.
                   </p>
 
                   <div className="mt-4">
                     <Toggle
                       label="Morning brief"
-                      checked={
-                        alerts.dailyBrief
-                      }
-                      onChange={(v) =>
-                        updateAlert(
-                          "dailyBrief",
-                          v,
-                        )
-                      }
+                      checked={alerts.dailyBrief}
+                      onChange={(v) => updateAlert("dailyBrief", v)}
                     />
                   </div>
-
-                  {alerts.dailyBrief && (
-                    <label className="mt-4 block">
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                        Delivery time
-                      </span>
-
-                      <input
-                        type="time"
-                        value={
-                          alerts.briefTime
-                        }
-                        onChange={(e) =>
-                          updateAlert(
-                            "briefTime",
-                            e.currentTarget
-                              .value,
-                          )
-                        }
-                        className="mt-1.5 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-bold outline-none"
-                      />
-                    </label>
-                  )}
                 </div>
               </div>
             )}
 
             {/* PREVIEW */}
-
-            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+            <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <div className="min-w-0">
-                <p
-                  className={`text-xs font-bold ${notificationStatusClass}`}
-                >
+                <p className={`text-xs font-bold ${notificationStatusClass}`}>
                   {notificationStatus}
                 </p>
 
@@ -1610,10 +1300,8 @@ function SettingsPage() {
               </div>
 
               <button
-                onClick={() =>
-                  void previewNotification()
-                }
-                className="press shrink-0 rounded-xl border border-border px-3 py-2 text-xs font-bold"
+                onClick={() => void previewNotification()}
+                className="press shrink-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold hover:bg-slate-50 transition-all shadow-xs"
               >
                 Preview
               </button>
@@ -1622,200 +1310,71 @@ function SettingsPage() {
         </Section>
 
         {/* FARMING PREFERENCES */}
-
-        <Section
-          icon={Sprout}
-          title="Farming preferences"
-        >
-          <div className="card-surface space-y-4 p-4">
+        <Section icon={Sprout} title="Farming preferences">
+          <div className="space-y-4">
             <div>
-              <Label className="text-sm font-bold">
-                {t("savedCrops")}
-              </Label>
+              <Label className="text-sm font-bold">{t("savedCrops")}</Label>
 
               <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                Your saved crops control which crops MarketMitra prioritises for market information and future alerts.
+                Your saved crops control which crops MarketMitra prioritises for
+                market information and future alerts.
               </p>
             </div>
 
-            {savedCropNames.length >
-              0 && (
-              <div className="rounded-2xl bg-primary/5 p-3">
+            {savedCropNames.length > 0 && (
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                   Currently tracking
                 </p>
 
                 <p className="mt-1 text-sm font-bold">
-                  {savedCropNames.join(
-                    " · ",
-                  )}
+                  {savedCropNames.join(" · ")}
                 </p>
               </div>
             )}
 
             <div className="flex flex-wrap gap-2">
               {crops.map((c) => {
-                const active =
-                  saved.includes(
-                    c.id,
-                  );
+                const active = saved.includes(c.id);
 
                 return (
                   <button
                     key={c.id}
-                    onClick={() =>
-                      toggleCrop(
-                        c.id,
-                      )
-                    }
-                    className={`press inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold transition-colors duration-300 ${
+                    onClick={() => toggleCrop(c.id)}
+                    className={`press inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-xs font-bold transition-all duration-200 ${
                       active
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card"
+                        ? "border-primary/40 bg-primary/10 text-primary shadow-xs"
+                        : "border-slate-200/80 bg-white hover:bg-slate-50 text-foreground"
                     }`}
                   >
-                    <span className="text-base">
-                      {c.emoji}
-                    </span>
+                    <span className="text-base">{c.emoji}</span>
 
                     {c.name[lang]}
 
                     {active ? (
                       <Check
-                        className="size-3.5"
-                        strokeWidth={
-                          3
-                        }
+                        className="size-3.5 text-primary"
+                        strokeWidth={3}
                       />
                     ) : (
-                      <Sprout className="size-3.5" />
+                      <Sprout className="size-3.5 text-muted-foreground" />
                     )}
                   </button>
                 );
               })}
             </div>
-
-            <Link
-              to="/weather"
-              className="press flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm font-bold"
-            >
-              <span className="flex items-center gap-2">
-                <MapPin className="size-4 text-primary" />
-                Farm location & weather
-              </span>
-
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </Link>
-          </div>
-        </Section>
-
-        {/* QUICK CONTROLS */}
-
-        <Section
-          icon={Zap}
-          title="Quick controls"
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link
-              to="/crops"
-              className="card-surface hover-lift group flex items-center gap-4 p-4"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                <TrendingUp className="size-5 text-primary" />
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-extrabold">
-                  Market prices
-                </p>
-
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Check your saved crop markets.
-                </p>
-              </div>
-
-              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/diagnose"
-              className="card-surface hover-lift group flex items-center gap-4 p-4"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                <Sprout className="size-5 text-primary" />
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-extrabold">
-                  Crop diagnosis
-                </p>
-
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Check a crop when something looks wrong.
-                </p>
-              </div>
-
-              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/link"
-              className="card-surface hover-lift group flex items-center gap-4 p-4"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                <Link2 className="size-5 text-primary" />
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-extrabold">
-                  Mitra Link
-                </p>
-
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Manage sharing and matching activity.
-                </p>
-              </div>
-
-              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-
-            <Link
-              to="/weather"
-              className="card-surface hover-lift group flex items-center gap-4 p-4"
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                <CloudRain className="size-5 text-primary" />
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-extrabold">
-                  Weather
-                </p>
-
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Check conditions around your location.
-                </p>
-              </div>
-
-              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
           </div>
         </Section>
 
         {/* PRIVACY & ACCOUNT */}
-
-        <Section
-          icon={Shield}
-          title="Privacy & account"
-        >
-          <div className="card-surface overflow-hidden p-2">
+        <Section icon={Shield} title="Privacy & account">
+          <div className="space-y-2">
             <button
               onClick={handleReset}
-              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold"
+              className="press flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80 px-4 py-3 text-sm font-bold transition-all shadow-xs"
             >
-              <RotateCcw className="size-4 text-primary" />
-
-              <span className="flex-1 text-left">
+              <span className="flex items-center gap-2.5">
+                <RotateCcw className="size-4 text-primary" />
                 Reset app settings
               </span>
 
@@ -1824,21 +1383,16 @@ function SettingsPage() {
 
             <button
               onClick={() => {
-                if (
-                  !window.confirm(
-                    "Sign out of MarketMitra?",
-                  )
-                ) {
+                if (!window.confirm("Sign out of MarketMitra?")) {
                   return;
                 }
 
                 void handleSignOut();
               }}
-              className="press flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-destructive hover:bg-destructive/10"
+              className="press flex w-full items-center justify-between rounded-xl border border-red-200 bg-red-50/60 hover:bg-red-100/60 px-4 py-3 text-sm font-bold text-destructive transition-all shadow-xs"
             >
-              <LogOut className="size-4" />
-
-              <span className="flex-1 text-left">
+              <span className="flex items-center gap-2.5">
+                <LogOut className="size-4" />
                 Sign Out
               </span>
 
@@ -1848,30 +1402,22 @@ function SettingsPage() {
         </Section>
 
         {/* ABOUT */}
-
-        <Section
-          icon={Info}
-          title="About"
-        >
-          <div className="card-surface overflow-hidden p-2">
+        <Section icon={Info} title="About">
+          <div className="space-y-2">
             <Link
               to="/about"
-              className="press flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm font-bold"
+              className="press flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80 px-4 py-3 text-sm font-bold transition-all shadow-xs"
             >
-              <span>
-                About MarketMitra
-              </span>
+              <span>About MarketMitra</span>
 
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
 
             <Link
               to="/terms"
-              className="press flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm font-bold"
+              className="press flex w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80 px-4 py-3 text-sm font-bold transition-all shadow-xs"
             >
-              <span>
-                Terms & Conditions
-              </span>
+              <span>Terms & Conditions</span>
 
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>

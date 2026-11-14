@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { marketCommodityVariants } from "./market-commodity";
+import { filterDistrictRecords, marketDistrictVariants } from "./market-district";
 
 const inputSchema = z.object({
   commodity: z.string().trim().min(1).max(80),
@@ -87,6 +89,7 @@ export const fetchMandiPrices = createServerFn({ method: "POST" })
 const historySchema = z.object({
   commodity: z.string().trim().min(1).max(80),
   state: z.string().trim().min(1).max(60),
+  district: z.string().trim().min(1).max(60),
   market: z.string().trim().min(1).max(80),
 });
 
@@ -104,7 +107,7 @@ export const fetchPriceHistory = createServerFn({ method: "POST" })
 
     try {
       const { fetchAgmarknetHistory } = await import("./market-providers.server");
-      const records = await fetchAgmarknetHistory(data);
+      const records = filterDistrictRecords(await fetchAgmarknetHistory(data), data.district);
       for (const record of records) {
         if (!byDate.has(record.date)) {
           byDate.set(record.date, {
@@ -123,14 +126,15 @@ export const fetchPriceHistory = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: rows, error } = await supabaseAdmin
         .from("market_prices")
-        .select("arrival_date, min_price, max_price, modal_price")
-        .eq("commodity", data.commodity)
+        .select("district, arrival_date, min_price, max_price, modal_price")
+        .in("commodity", marketCommodityVariants(data.commodity))
         .eq("state", data.state)
+        .in("district", marketDistrictVariants(data.district))
         .eq("market", data.market)
         .order("arrival_date", { ascending: false })
         .limit(60);
       if (error) console.error("price history read failed", error.message);
-      for (const row of rows ?? []) {
+      for (const row of filterDistrictRecords(rows ?? [], data.district)) {
         if (byDate.has(row.arrival_date)) continue;
         byDate.set(row.arrival_date, {
           date: row.arrival_date,

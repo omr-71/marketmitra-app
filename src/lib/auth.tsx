@@ -10,11 +10,12 @@ import {
 } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { deactivateNativeFcmDevice } from "@/lib/native-notifications";
 
 type AuthCtx = {
   user: User | null;
   session: Session | null;
-  /** True until the very first session check resolves. */
+  /** True until Supabase finishes restoring its initial session. */
   loading: boolean;
   signOut: () => Promise<void>;
 };
@@ -35,25 +36,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsubscribe: (() => void) | undefined;
 
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      const { data } = supabase.auth.onAuthStateChange((event, next) => {
         if (!active) return;
+        if (event === "SIGNED_OUT") {
+          void deactivateNativeFcmDevice();
+        }
         setSession(next);
-        setLoading(false);
+        if (event === "INITIAL_SESSION") {
+          setLoading(false);
+        }
       });
       unsubscribe = () => data.subscription.unsubscribe();
-
-      void supabase.auth
-        .getSession()
-        .then(({ data: { session: current } }) => {
-          if (!active) return;
-          setSession(current);
-        })
-        .catch((error: unknown) => {
-          console.error("Unable to restore the authentication session", error);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
     } catch (error) {
       console.error("Unable to initialize authentication", error);
       setLoading(false);
@@ -66,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await deactivateNativeFcmDevice();
     await supabase.auth.signOut();
   }, []);
 

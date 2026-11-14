@@ -17,6 +17,7 @@ import { LocationProvider } from "../lib/location";
 import { ThemeProvider } from "../lib/theme";
 import { AuthProvider } from "../lib/auth";
 import { SettingsProvider } from "../lib/settings";
+import { SystemNotices } from "../components/system-notices";
 
 import { Toaster } from "@/components/ui/sonner";
 import { MitraAILauncher } from "@/components/mitra-ai-launcher";
@@ -127,7 +128,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "dns-prefetch", href: "https://api.data.gov.in" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&family=Epilogue:wght@600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap",
       },
     ],
 
@@ -187,6 +188,31 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const preventAppUiContextMenu = (event: MouseEvent | PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      const selectable = target.closest(
+        "input, textarea, [contenteditable='true'], [data-selectable='true']",
+      );
+      if (selectable) return;
+
+      const textContent = target.closest("p, article, main [data-content]");
+      if (
+        textContent &&
+        !target.closest("a, button, [role='button'], img, picture")
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+    };
+
+    document.addEventListener("contextmenu", preventAppUiContextMenu);
+    return () => document.removeEventListener("contextmenu", preventAppUiContextMenu);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -197,6 +223,7 @@ function RootComponent() {
         <SettingsProvider>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
+          <SystemNotices />
           <MitraAILauncher />
           <Toaster position="top-center" richColors />
 

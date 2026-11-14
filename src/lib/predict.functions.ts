@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { marketCommodityVariants } from "./market-commodity";
+import { filterDistrictRecords, marketDistrictVariants } from "./market-district";
 
 const schema = z.object({
   commodity: z.string().trim().min(1).max(80),
   state: z.string().trim().min(1).max(60),
+  district: z.string().trim().min(1).max(60),
   market: z.string().trim().min(1).max(80),
 });
 
@@ -20,7 +23,12 @@ export type PredictionResult =
       basedOnDays: number;
       generatedAt: string;
     }
-  | { ok: false; reason: "insufficient_history" | "unavailable"; message: string; basedOnDays: number };
+  | {
+      ok: false;
+      reason: "insufficient_history" | "unavailable";
+      message: string;
+      basedOnDays: number;
+    };
 
 const MIN_DAYS = 7;
 
@@ -30,20 +38,26 @@ export const predictPrice = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("market_prices")
-      .select("arrival_date, min_price, max_price, modal_price")
-      .eq("commodity", data.commodity)
+      .select("district, arrival_date, min_price, max_price, modal_price")
+      .in("commodity", marketCommodityVariants(data.commodity))
       .eq("state", data.state)
+      .in("district", marketDistrictVariants(data.district))
       .eq("market", data.market)
       .order("arrival_date", { ascending: false })
       .limit(45);
 
     if (error) {
       console.error("prediction history read failed", error.message);
-      return { ok: false, reason: "unavailable", message: "Price history could not be read.", basedOnDays: 0 };
+      return {
+        ok: false,
+        reason: "unavailable",
+        message: "Price history could not be read.",
+        basedOnDays: 0,
+      };
     }
 
     const seen = new Set<string>();
-    const history = (rows ?? [])
+    const history = filterDistrictRecords(rows ?? [], data.district)
       .filter((r) => (seen.has(r.arrival_date) ? false : seen.add(r.arrival_date)))
       .map((r) => ({
         date: r.arrival_date,
@@ -64,7 +78,12 @@ export const predictPrice = createServerFn({ method: "POST" })
 
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) {
-      return { ok: false, reason: "unavailable", message: "Prediction service is not configured.", basedOnDays: history.length };
+      return {
+        ok: false,
+        reason: "unavailable",
+        message: "Prediction service is not configured.",
+        basedOnDays: history.length,
+      };
     }
 
     const latest = history[history.length - 1]!;
@@ -88,7 +107,9 @@ export const predictPrice = createServerFn({ method: "POST" })
               role: "user",
               content: `Commodity: ${data.commodity}\nMarket: ${data.market}, ${data.state}\nUnit: INR per quintal\nDaily series (date, min, modal, max):\n${history
                 .map((h) => `${h.date}, ${h.min}, ${h.modal}, ${h.max}`)
-                .join("\n")}\n\nReturn JSON with keys: direction ("up"|"down"|"flat"), expectedPrice (number, INR/quintal in 3 days), changePercent (number), confidence (0-100 integer), recommendation ("sell_now"|"hold"), explanation (max 240 chars, plain language for a farmer, cite the trend you observed).`,
+                .join(
+                  "\n",
+                )}\n\nReturn JSON with keys: direction ("up"|"down"|"flat"), expectedPrice (number, INR/quintal in 3 days), changePercent (number), confidence (0-100 integer), recommendation ("sell_now"|"hold"), explanation (max 240 chars, plain language for a farmer, cite the trend you observed).`,
             },
           ],
           response_format: { type: "json_object" },
@@ -131,7 +152,9 @@ export const predictPrice = createServerFn({ method: "POST" })
         direction: parsed.direction,
         expectedPrice: Math.round(parsed.expectedPrice),
         changePercent: Number(
-          (parsed.changePercent || ((parsed.expectedPrice - latest.modal) / latest.modal) * 100).toFixed(1),
+          (
+            parsed.changePercent || ((parsed.expectedPrice - latest.modal) / latest.modal) * 100
+          ).toFixed(1),
         ),
         confidence: Math.max(1, Math.min(99, Math.round(parsed.confidence))),
         horizonDays: 3,

@@ -7,6 +7,7 @@ import type { TreatmentGuidance } from "./treatments.schema";
 import { getCachedTreatmentGuidance } from "./treatments.cache.server";
 
 export type {
+  SprayItem,
   TreatmentGuidance,
   TreatmentRecommendation,
   TreatmentSource,

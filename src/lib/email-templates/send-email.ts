@@ -7,7 +7,7 @@ export type SendTemplateEmailResult =
   | { sent: false; reason: "recipient_suppressed" };
 
 export interface SendTemplateEmailOptions {
-  templateData?: Record<string, any>;
+  templateData?: Record<string, unknown>;
   idempotencyKey?: string;
   replyTo?: string;
 }

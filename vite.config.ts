@@ -11,35 +11,27 @@ import { loadEnv } from "vite";
 
 // Load all env vars (including non-VITE_* server secrets) into process.env for
 // server-side code only. These are NOT exposed to the client bundle.
-const serverEnv = loadEnv(
-  process.env["NODE_ENV"] ?? "development",
-  process.cwd(),
-  "",
-);
+const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
-// These are public browser connection values (not secrets). Keeping the managed
-// project values as a final fallback prevents an otherwise healthy deployment
-// from shipping an empty auth configuration when build-time env forwarding is
-// temporarily unavailable.
+// These are public browser connection values (not secrets).
 const managedSupabaseUrl = "https://bulpboucdnkvepxabyuy.supabase.co";
-
-const managedSupabasePublishableKey =
-  "sb_publishable_F8NR-8jKb4D6x28q-ffsPw_kvv9lVX1";
 
 // Lovable Cloud provides the canonical backend bindings as SUPABASE_*.
 // The generated browser client intentionally reads VITE_SUPABASE_* instead,
 // so make the URL and publishable (public) key available at bundle time even
 // when a deployment only injects the canonical names.
 const browserSupabaseUrl =
-  process.env["VITE_SUPABASE_URL"] ??
-  process.env["SUPABASE_URL"] ??
-  managedSupabaseUrl;
+  process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"] ?? managedSupabaseUrl;
 
 const browserSupabasePublishableKey =
-  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
-  process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-  managedSupabasePublishableKey;
+  process.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_PUBLISHABLE_KEY"];
+
+if (!browserSupabasePublishableKey) {
+  throw new Error(
+    "Missing VITE_SUPABASE_PUBLISHABLE_KEY or SUPABASE_PUBLISHABLE_KEY for the browser Supabase client.",
+  );
+}
 
 export default defineConfig({
   // Vercel supplies server environment variables to the Node runtime. The
@@ -56,9 +48,7 @@ export default defineConfig({
 
   vite: {
     define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
-        browserSupabaseUrl,
-      ),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(browserSupabaseUrl),
 
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         browserSupabasePublishableKey,
@@ -89,10 +79,7 @@ export default defineConfig({
           "node_modules/entities/lib/esm/decode.js",
         ),
 
-        entities: path.resolve(
-          import.meta.dirname,
-          "node_modules/entities",
-        ),
+        entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },
   },

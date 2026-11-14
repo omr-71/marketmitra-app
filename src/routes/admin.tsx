@@ -34,9 +34,11 @@ import { toast } from "sonner";
 import { LogoMark } from "@/components/brand";
 import { AdminErrors } from "@/components/admin-errors";
 import { AdminNotices } from "@/components/admin-notices";
+import { AdminFcmTest } from "@/components/admin-fcm-test";
 import { AdminUsers } from "@/components/admin-users";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ADMIN_FEEDBACK_CATEGORIES,
   getAdminAuditLog,
   getAdminFeatureFlags,
   getAdminHealth,
@@ -46,6 +48,7 @@ import {
   getAdminSchemes,
   getAdminFeedback,
   updateAdminFeedbackStatus,
+  updateAdminFeedbackNotes,
   setFeatureFlag,
   type AdminCount,
 } from "@/lib/admin.functions";
@@ -59,6 +62,26 @@ const MAINTENANCE_REASONS = [
   "Performance issue under investigation",
   "Accuracy verification in progress",
 ];
+
+const ADMIN_SECTION_LABELS: Record<string, string> = {
+  "admin-overview": "Overview",
+  "admin-analytics": "User activity",
+  "admin-mitra-ai": "Mitra AI",
+  "admin-users": "Users",
+  "admin-diagnose": "Diagnose",
+  "admin-mitra-link": "Mitra Link",
+  "admin-market-data": "Markets & prices",
+  "admin-weather": "Weather",
+  "admin-schemes": "Government schemes",
+  "admin-errors": "Reports & feedback",
+  "admin-feedback": "Reports & feedback",
+  "admin-notices": "Notices",
+  "admin-fcm-test": "Test push notification",
+  "admin-feature-controls": "Features",
+  "admin-system-health": "System health",
+  "admin-audit": "Audit logs",
+  "admin-recent-activity": "Live activity",
+};
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -369,6 +392,7 @@ function AdminConsole({ email }: { email: string }) {
   const schemesFn = useServerFn(getAdminSchemes);
   const feedbackFn = useServerFn(getAdminFeedback);
   const updateFeedbackStatus = useServerFn(updateAdminFeedbackStatus);
+  const updateFeedbackNotes = useServerFn(updateAdminFeedbackNotes);
   const registrationTrendFn = useServerFn(getAdminRegistrationTrend);
   const updateFlag = useServerFn(setFeatureFlag);
   const qc = useQueryClient();
@@ -399,9 +423,34 @@ function AdminConsole({ email }: { email: string }) {
     retry: false,
   });
 
+  const [feedbackQuery, setFeedbackQuery] = useState("");
+  const [feedbackCategory, setFeedbackCategory] = useState("all");
+  const [feedbackType, setFeedbackType] = useState("all");
+  const [feedbackStatus, setFeedbackStatus] = useState("all");
+  const [feedbackPage, setFeedbackPage] = useState(1);
+  const [feedbackNoteDrafts, setFeedbackNoteDrafts] = useState<Record<string, string>>({});
+
   const feedback = useQuery({
-    queryKey: ["admin", "feedback"],
-    queryFn: () => feedbackFn(),
+    queryKey: [
+      "admin",
+      "feedback",
+      feedbackQuery,
+      feedbackCategory,
+      feedbackType,
+      feedbackStatus,
+      feedbackPage,
+    ],
+    queryFn: () =>
+      feedbackFn({
+        data: {
+          search: feedbackQuery,
+          category: feedbackCategory === "all" ? undefined : feedbackCategory,
+          feedbackType: feedbackType === "all" ? undefined : feedbackType,
+          status: feedbackStatus === "all" ? undefined : feedbackStatus,
+          page: feedbackPage,
+          pageSize: 25,
+        },
+      }),
     retry: false,
   });
 
@@ -414,39 +463,28 @@ function AdminConsole({ email }: { email: string }) {
     },
     onError: (error) => toast.error(error.message),
   });
-  const [feedbackQuery, setFeedbackQuery] = useState("");
-  const [feedbackCategory, setFeedbackCategory] = useState("all");
-  const [feedbackStatus, setFeedbackStatus] = useState("all");
-
-  const sectionLabels: Record<string, string> = {
-    "admin-overview": "Overview",
-    "admin-analytics": "User activity",
-    "admin-mitra-ai": "Mitra AI",
-    "admin-users": "Users",
-    "admin-diagnose": "Diagnose",
-    "admin-mitra-link": "Mitra Link",
-    "admin-market-data": "Markets & prices",
-    "admin-weather": "Weather",
-    "admin-schemes": "Government schemes",
-    "admin-errors": "Reports & feedback",
-    "admin-feedback": "Reports & feedback",
-    "admin-notices": "Notices",
-    "admin-feature-controls": "Features",
-    "admin-system-health": "System health",
-    "admin-audit": "Audit logs",
-    "admin-recent-activity": "Live activity",
-  };
+  const feedbackNotesMutation = useMutation({
+    mutationFn: updateFeedbackNotes,
+    onSuccess: () => {
+      toast.success("Internal note saved.");
+      void qc.invalidateQueries({ queryKey: ["admin", "feedback"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "audit"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   useEffect(() => {
-    document.title = `${sectionLabels[activeSection] ?? "Dashboard"} — MarketMitra Admin`;
+    document.title = `${ADMIN_SECTION_LABELS[activeSection] ?? "Dashboard"} — MarketMitra Admin`;
   }, [activeSection]);
 
   useEffect(() => {
     const applyHash = () => {
       const target = window.location.hash.slice(1);
-      if (target && sectionLabels[target]) {
+      if (target && ADMIN_SECTION_LABELS[target]) {
         setActiveSection(target);
-        requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: "start" }));
+        requestAnimationFrame(() =>
+          document.getElementById(target)?.scrollIntoView({ block: "start" }),
+        );
       } else if (!target) {
         setActiveSection("admin-overview");
       }
@@ -584,7 +622,7 @@ function AdminConsole({ email }: { email: string }) {
           {[
             ["Overview", ["Dashboard|admin-overview", "Analytics|admin-analytics", "Live activity|admin-recent-activity"]],
             ["User intelligence", ["Users|admin-users", "Mitra AI|admin-mitra-ai", "Diagnose|admin-diagnose", "Mitra Link|admin-mitra-link"]],
-            ["Management", ["Markets & prices|admin-market-data", "Weather|admin-weather", "Government schemes|admin-schemes", "Notices|admin-notices", "Reports & feedback|admin-feedback", "Errors & application reports|admin-errors"]],
+            ["Management", ["Markets & prices|admin-market-data", "Weather|admin-weather", "Government schemes|admin-schemes", "Notices|admin-notices", "Test push notification|admin-fcm-test", "Reports & feedback|admin-feedback", "Errors & application reports|admin-errors"]],
             ["System", ["Feature management|admin-feature-controls", "System health|admin-system-health", "Audit logs|admin-audit"]],
           ].map(([group, items]) => (
             <div key={group as string} className="mb-5">
@@ -635,8 +673,12 @@ function AdminConsole({ email }: { email: string }) {
           <Menu className="size-5" />
         </button>
         <div className="min-w-0">
-          <p className="font-display text-sm font-extrabold">{sectionLabels[activeSection] ?? "Dashboard"}</p>
-          <p className="truncate text-[11px] text-white/40">Operations / {sectionLabels[activeSection] ?? "Overview"}</p>
+          <p className="font-display text-sm font-extrabold">
+            {ADMIN_SECTION_LABELS[activeSection] ?? "Dashboard"}
+          </p>
+          <p className="truncate text-[11px] text-white/40">
+            Operations / {ADMIN_SECTION_LABELS[activeSection] ?? "Overview"}
+          </p>
         </div>
 
         <label className="ml-auto hidden h-9 max-w-sm flex-1 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 md:flex">
@@ -1303,58 +1345,284 @@ function AdminConsole({ email }: { email: string }) {
                   </div>
                 ) : <Empty />}
             </section>
-            <section id="admin-feedback" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
+            <section
+              id="admin-feedback"
+              className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Reports & feedback</h2>
-                  <p className="mt-1 text-xs text-white/55">Submitted by authenticated MarketMitra users.</p>
+                  <h2 className="text-sm font-bold uppercase tracking-[0.14em]">
+                    Reports & feedback
+                  </h2>
+                  <p className="mt-1 text-xs text-white/55">
+                    Submitted by authenticated MarketMitra users.
+                  </p>
                 </div>
-                <button type="button" onClick={() => void feedback.refetch()} className="grid size-9 place-items-center rounded-xl bg-white/[0.07]" aria-label="Refresh feedback">
+                <button
+                  type="button"
+                  onClick={() => void feedback.refetch()}
+                  className="grid size-9 place-items-center rounded-xl bg-white/[0.07]"
+                  aria-label="Refresh feedback"
+                >
                   <RefreshCw className={`size-4 ${feedback.isFetching ? "animate-spin" : ""}`} />
                 </button>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <input value={feedbackQuery} onChange={(event) => setFeedbackQuery(event.target.value)} placeholder="Search feedback" className="h-9 rounded-lg border border-white/10 bg-black/15 px-3 text-xs" />
-                <select value={feedbackCategory} onChange={(event) => setFeedbackCategory(event.target.value)} className="h-9 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs">
-                  <option value="all">All categories</option><option value="feedback">Feedback</option><option value="bug_report">Bug report</option>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <input
+                  value={feedbackQuery}
+                  maxLength={120}
+                  onChange={(event) => {
+                    setFeedbackQuery(event.target.value);
+                    setFeedbackPage(1);
+                  }}
+                  placeholder="Search subject, user, email or ID"
+                  aria-label="Search feedback"
+                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/15 px-3 text-xs"
+                />
+                <select
+                  value={feedbackType}
+                  onChange={(event) => {
+                    setFeedbackType(event.target.value);
+                    setFeedbackPage(1);
+                  }}
+                  aria-label="Filter by feedback type"
+                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                >
+                  <option value="all">All feedback types</option>
+                  <option value="share_feedback">Share feedback</option>
+                  <option value="report_problem">Report a problem</option>
                 </select>
-                <select value={feedbackStatus} onChange={(event) => setFeedbackStatus(event.target.value)} className="h-9 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs">
-                  <option value="all">All statuses</option><option value="new">New</option><option value="in_review">In review</option><option value="resolved">Resolved</option>
+                <select
+                  value={feedbackCategory}
+                  onChange={(event) => {
+                    setFeedbackCategory(event.target.value);
+                    setFeedbackPage(1);
+                  }}
+                  aria-label="Filter by category"
+                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                >
+                  <option value="all">All categories</option>
+                  {ADMIN_FEEDBACK_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                  <option value="feedback">Legacy: feedback</option>
+                  <option value="bug_report">Legacy: bug report</option>
+                </select>
+                <select
+                  value={feedbackStatus}
+                  onChange={(event) => {
+                    setFeedbackStatus(event.target.value);
+                    setFeedbackPage(1);
+                  }}
+                  aria-label="Filter by status"
+                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="new">New</option>
+                  <option value="in_review">Under review</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
-              {feedback.isLoading ? <div className="mt-4"><SkeletonLines rows={4} /></div> : feedback.isError ? (
+              {feedback.isLoading ? (
+                <div className="mt-4">
+                  <SkeletonLines rows={4} />
+                </div>
+              ) : feedback.isError ? (
                 <UnavailableState message="Feedback records could not be loaded." />
-              ) : feedback.data ? (() => {
-                const needle = feedbackQuery.trim().toLowerCase();
-                const rows = feedback.data.filter((row) =>
-                  (!needle || `${row.subject} ${row.message}`.toLowerCase().includes(needle)) &&
-                  (feedbackCategory === "all" || row.category === feedbackCategory) &&
-                  (feedbackStatus === "all" || row.status === feedbackStatus),
-                );
-                return rows.length ? (
-                  <div className="mt-4 divide-y divide-white/[0.07]">
-                    {rows.map((row) => (
-                      <article key={row.id} className="py-4">
-                        <div className="flex flex-wrap gap-2 text-[10px] uppercase text-white/45">
-                          <span>{row.category.replace("_", " ")}</span><span>{new Date(row.createdAt).toLocaleString("en-IN")}</span>
+              ) : feedback.data ? (
+                (() => {
+                  const totalPages = Math.max(
+                    1,
+                    Math.ceil(feedback.data.total / feedback.data.pageSize),
+                  );
+                  return feedback.data.items.length ? (
+                    <>
+                      <div className="mt-4 space-y-3">
+                        {feedback.data.items.map((row) => (
+                          <article
+                            key={row.id}
+                            className="rounded-2xl border border-white/[0.08] bg-black/[0.08] p-4"
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide text-white/45">
+                                  <span>
+                                    {row.feedbackType === "share_feedback"
+                                      ? "Share feedback"
+                                      : "Report a problem"}
+                                  </span>
+                                  <span aria-hidden="true">·</span>
+                                  <span>
+                                    {row.category}
+                                    {row.customCategory ? ` — ${row.customCategory}` : ""}
+                                  </span>
+                                </div>
+                                <h3 className="mt-1 break-words text-sm font-bold">
+                                  {row.subject}
+                                </h3>
+                                <p className="mt-1 text-[11px] text-white/45">
+                                  {new Date(row.createdAt).toLocaleString("en-IN", {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                  })}
+                                </p>
+                              </div>
+                              <select
+                                aria-label={`Status for ${row.subject}`}
+                                value={row.status}
+                                disabled={feedbackMutation.isPending}
+                                onChange={(event) =>
+                                  feedbackMutation.mutate({
+                                    data: {
+                                      id: row.id,
+                                      status: event.target.value as
+                                        "new" | "in_review" | "resolved" | "rejected",
+                                    },
+                                  })
+                                }
+                                className="h-10 w-full shrink-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-2 text-xs sm:w-40"
+                              >
+                                <option value="new">New</option>
+                                <option value="in_review">Under review</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="rejected">Rejected</option>
+                              </select>
+                            </div>
+                            <details className="group mt-3 border-t border-white/[0.07] pt-3">
+                              <summary className="cursor-pointer text-xs font-semibold text-emerald-200 marker:text-emerald-300">
+                                View submission and user details
+                              </summary>
+                              <div className="mt-3 space-y-4">
+                                <p className="whitespace-pre-wrap break-words text-xs leading-5 text-white/70">
+                                  {row.message}
+                                </p>
+                                <dl className="grid gap-x-4 gap-y-2 rounded-xl bg-white/[0.035] p-3 text-xs sm:grid-cols-2">
+                                  <div>
+                                    <dt className="text-white/40">User</dt>
+                                    <dd className="mt-0.5 break-words text-white/75">
+                                      {row.userFullName || "Name not provided"}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-white/40">Email</dt>
+                                    <dd className="mt-0.5 break-all text-white/75">
+                                      {row.userEmail || "Not available"}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-white/40">Farming location</dt>
+                                    <dd className="mt-0.5 break-words text-white/75">
+                                      {row.userLocation || "Not provided"}
+                                    </dd>
+                                  </div>
+                                  <div>
+                                    <dt className="text-white/40">Application area</dt>
+                                    <dd className="mt-0.5 break-all text-white/75">
+                                      {row.pageContext || "Not captured"}
+                                    </dd>
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <dt className="text-white/40">Feedback ID</dt>
+                                    <dd className="mt-0.5 break-all font-mono text-[10px] text-white/60">
+                                      {row.id}
+                                    </dd>
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <dt className="text-white/40">User ID</dt>
+                                    <dd className="mt-0.5 break-all font-mono text-[10px] text-white/60">
+                                      {row.userId || "Not available"}
+                                    </dd>
+                                  </div>
+                                </dl>
+                                <div>
+                                  <label
+                                    htmlFor={`feedback-note-${row.id}`}
+                                    className="text-xs font-semibold"
+                                  >
+                                    Internal admin note
+                                  </label>
+                                  <textarea
+                                    id={`feedback-note-${row.id}`}
+                                    maxLength={4000}
+                                    rows={3}
+                                    value={feedbackNoteDrafts[row.id] ?? row.adminNotes ?? ""}
+                                    onChange={(event) =>
+                                      setFeedbackNoteDrafts((drafts) => ({
+                                        ...drafts,
+                                        [row.id]: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="Visible only to administrators"
+                                    className="mt-1.5 w-full resize-y rounded-xl border border-white/10 bg-black/15 px-3 py-2.5 text-xs leading-relaxed outline-none focus:border-emerald-300/40"
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      feedbackNotesMutation.isPending ||
+                                      (feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "") ===
+                                        (row.adminNotes ?? "")
+                                    }
+                                    onClick={() =>
+                                      feedbackNotesMutation.mutate({
+                                        data: {
+                                          id: row.id,
+                                          notes: feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "",
+                                        },
+                                      })
+                                    }
+                                    className="mt-2 min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    Save internal note
+                                  </button>
+                                </div>
+                              </div>
+                            </details>
+                          </article>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-4">
+                        <p className="text-xs text-white/50">
+                          {feedback.data.total} submission
+                          {feedback.data.total === 1 ? "" : "s"} · Page {feedbackPage} of{" "}
+                          {totalPages}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={feedbackPage <= 1 || feedback.isFetching}
+                            onClick={() => setFeedbackPage((page) => Math.max(1, page - 1))}
+                            className="min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:opacity-40"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            disabled={feedbackPage >= totalPages || feedback.isFetching}
+                            onClick={() => setFeedbackPage((page) => page + 1)}
+                            className="min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:opacity-40"
+                          >
+                            Next
+                          </button>
                         </div>
-                        <h3 className="mt-1 text-sm font-bold">{row.subject}</h3>
-                        <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-white/65">{row.message}</p>
-                        <div className="mt-3 flex items-center gap-2">
-                          <select aria-label={`Status for ${row.subject}`} value={row.status} disabled={feedbackMutation.isPending} onChange={(event) => feedbackMutation.mutate({ data: { id: row.id, status: event.target.value as "new" | "in_review" | "resolved" } })} className="h-8 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-2 text-xs">
-                            <option value="new">New</option><option value="in_review">In review</option><option value="resolved">Resolved</option>
-                          </select>
-                          {row.userId && <span className="ml-auto truncate font-mono text-[10px] text-white/35">{row.userId}</span>}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : <p className="mt-4 text-sm text-white/55">No feedback matches the current filters.</p>;
-              })() : <UnavailableState message="Feedback records are unavailable." />}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-4 text-sm text-white/55">
+                      No feedback matches the current filters.
+                    </p>
+                  );
+                })()
+              ) : (
+                <UnavailableState message="Feedback records are unavailable." />
+              )}
             </section>
             <AdminErrors />
             <AdminUsers />
             <AdminNotices />
+            <AdminFcmTest />
           </div>
         )}
       </main>

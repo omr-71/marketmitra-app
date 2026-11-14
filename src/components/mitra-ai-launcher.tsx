@@ -4,7 +4,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useFeature } from "@/lib/features";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
-import mitraFarmerMascot from "@/assets/mitra-farmer-mascot.webp";
+import { MitraAiLogo } from "@/components/mitra-ai-logo";
 
 const DeferredMitraAI = lazy(() =>
   import("@/components/mitra-ai").then((module) => ({
@@ -113,27 +113,25 @@ function LauncherOrb({
           : undefined
       }
       className={[
-        "fixed z-[60] grid place-items-center",
+        "group fixed z-[60] grid place-items-center",
         "size-14 lg:size-16",
         "touch-none select-none",
         "cursor-grab active:cursor-grabbing",
         "rounded-full",
-        "overflow-hidden",
-        "border-2 border-primary/80",
-        "bg-card",
-        "shadow-[0_8px_24px_rgba(22,101,52,0.22)]",
-        "transition-[transform,opacity] duration-300",
-        "hover:scale-105",
-        "active:scale-95",
+        "bg-transparent",
+        "transition-all duration-300",
+        "hover:scale-110 hover:-translate-y-1",
+        "active:scale-95 active:translate-y-0",
         hideOrb ? "pointer-events-none scale-90 opacity-0" : "opacity-100",
       ].join(" ")}
     >
-      <img
-        src={mitraFarmerMascot}
-        alt="Mitra AI Farmer Assistant"
-        draggable={false}
-        className="size-full select-none object-cover object-center"
-      />
+      {/* Sleek Intelligent Hover Tooltip Badge */}
+      <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-slate-200/90 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-800 opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100 flex items-center gap-1.5">
+        <span className="size-1.5 rounded-full bg-emerald-600 shadow-[0_0_4px_#059669]" />
+        <span>Mitra AI</span>
+      </span>
+
+      <MitraAiLogo size="lg" active={false} pulse={true} withOrb={true} />
     </button>
   );
 }
@@ -219,14 +217,19 @@ export function MitraAILauncher() {
     return (
       <Suspense
         fallback={
-          <LauncherOrb
-            position={position}
-            hideOrb={keyboardInset > 0}
-            onPointerDown={() => {}}
-            onPointerMove={() => {}}
-            onPointerUp={() => {}}
-            onClick={() => {}}
-          />
+          <>
+            <LauncherOrb
+              position={position}
+              hideOrb={keyboardInset > 0}
+              onPointerDown={() => {}}
+              onPointerMove={() => {}}
+              onPointerUp={() => {}}
+              onClick={() => {}}
+            />
+            <span className="sr-only" role="status">
+              Preparing your AI agriculture assistant
+            </span>
+          </>
         }
       >
         <DeferredMitraAI initialOpen />

@@ -1,9 +1,5 @@
-import { useState } from "react";
-import {
-  Link,
-  useNavigate,
-  createFileRoute,
-} from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import {
   Mail,
   Lock,
@@ -21,14 +17,43 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { getOAuthCallbackUrl, getPostAuthRedirect } from "@/lib/auth-redirect";
 import marketMitraLogo from "@/assets/marketmitra-logo-256.png";
 
+const PENDING_AUTH_REDIRECT_KEY = "marketmitra.auth.post-auth-redirect";
+
+function readPendingAuthRedirect(): string | undefined {
+  try {
+    return window.sessionStorage.getItem(PENDING_AUTH_REDIRECT_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function clearPendingAuthRedirect(): void {
+  try {
+    window.sessionStorage.removeItem(PENDING_AUTH_REDIRECT_KEY);
+  } catch {
+    return;
+  }
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search["redirect"] === "string" ? search["redirect"] : undefined,
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { loading: authLoading, user } = useAuth();
+  const { redirect } = Route.useSearch();
+  const hasRedirected = useRef(false);
+  const postAuthTarget = getPostAuthRedirect(
+    redirect ?? (typeof window === "undefined" ? undefined : readPendingAuthRedirect()),
+  );
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -39,21 +64,37 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const google = () => {
+  useEffect(() => {
+    if (authLoading || !user || hasRedirected.current) return;
+
+    hasRedirected.current = true;
+    clearPendingAuthRedirect();
+    router.history.replace(postAuthTarget);
+  }, [authLoading, postAuthTarget, router, user]);
+
+  const google = async () => {
     setError(null);
     setNotice(null);
     setBusy("google");
 
-    const redirectTo = `${window.location.origin}/auth`;
+    try {
+      window.sessionStorage.setItem(PENDING_AUTH_REDIRECT_KEY, postAuthTarget);
 
-    const url = new URL(
-      "https://bulpboucdnkvepxabyuy.supabase.co/auth/v1/authorize",
-    );
+      const { error: googleError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: getOAuthCallbackUrl(window.location.origin),
+        },
+      });
 
-    url.searchParams.set("provider", "google");
-    url.searchParams.set("redirect_to", redirectTo);
-
-    window.location.assign(url.toString());
+      if (googleError) throw googleError;
+    } catch (err) {
+      clearPendingAuthRedirect();
+      setError(
+        err instanceof Error ? err.message : "Unable to connect to Google. Please try again.",
+      );
+      setBusy(null);
+    }
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -87,28 +128,19 @@ function AuthPage() {
           throw signUpError;
         }
 
-        setNotice(
-          "Account created. Please check your email if confirmation is required.",
-        );
+        setNotice("Account created. Please check your email if confirmation is required.");
       } else {
-        const { error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
 
         if (signInError) {
           throw signInError;
         }
-
-        navigate({ to: "/home" });
       }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -144,7 +176,6 @@ function AuthPage() {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid w-full overflow-hidden rounded-[30px] border border-white/[0.10] bg-white/[0.025] shadow-[0_35px_120px_rgba(0,0,0,0.62)] backdrop-blur-2xl lg:min-h-[720px] lg:grid-cols-[1.08fr_0.92fr]">
-
           {/* ====================================================== */}
           {/* LEFT PRODUCT PANEL */}
           {/* ====================================================== */}
@@ -167,7 +198,6 @@ function AuthPage() {
             <div className="absolute bottom-[27%] left-[11%] h-1 w-1 animate-pulse rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.8)] [animation-delay:1200ms]" />
 
             <div className="relative z-10 flex w-full flex-col p-12">
-
               {/* BRAND */}
               <div className="flex items-center gap-3">
                 <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/[0.045] shadow-[0_0_35px_rgba(16,185,129,0.16)]">
@@ -181,9 +211,7 @@ function AuthPage() {
                 </div>
 
                 <div>
-                  <div className="text-xl font-bold tracking-tight">
-                    Market Mitra
-                  </div>
+                  <div className="text-xl font-bold tracking-tight">Market Mitra</div>
 
                   <div className="mt-0.5 text-[10px] font-semibold tracking-[0.20em] text-emerald-400/80">
                     SELL SMARTER. EARN BETTER.
@@ -201,16 +229,14 @@ function AuthPage() {
                 <h1 className="text-[52px] font-bold leading-[1.04] tracking-[-0.035em]">
                   Smarter farming.
                   <br />
-
                   <span className="bg-gradient-to-r from-emerald-300 via-green-200 to-emerald-400 bg-clip-text text-transparent">
                     Better decisions.
                   </span>
                 </h1>
 
                 <p className="mt-7 max-w-lg text-[15px] leading-7 text-slate-400">
-                  One powerful platform for market prices, crop diagnosis,
-                  weather, government schemes and farmer-to-farmer resource
-                  connections.
+                  One powerful platform for market prices, crop diagnosis, weather, government
+                  schemes and farmer-to-farmer resource connections.
                 </p>
               </div>
 
@@ -219,7 +245,6 @@ function AuthPage() {
               {/* ================================================== */}
 
               <div className="mt-12 grid grid-cols-2 gap-4">
-
                 {/* MARKET CARD */}
                 <div className="group relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#08150f]/80 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-emerald-400/[0.18] hover:bg-[#0a1b13]">
                   <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-emerald-400/[0.07] blur-2xl transition-all duration-500 group-hover:bg-emerald-400/[0.13]" />
@@ -237,9 +262,7 @@ function AuthPage() {
                     </div>
 
                     <div className="mt-5">
-                      <div className="text-sm font-semibold text-white">
-                        Real Market Data
-                      </div>
+                      <div className="text-sm font-semibold text-white">Real Market Data</div>
 
                       <div className="mt-1 text-xs leading-5 text-slate-500">
                         Current mandi information for smarter selling.
@@ -286,9 +309,7 @@ function AuthPage() {
                     </div>
 
                     <div className="mt-5">
-                      <div className="text-sm font-semibold text-white">
-                        Mitra Intelligence
-                      </div>
+                      <div className="text-sm font-semibold text-white">Mitra Intelligence</div>
 
                       <div className="mt-1 text-xs leading-5 text-slate-500">
                         Agriculture intelligence built around farmers.
@@ -367,7 +388,6 @@ function AuthPage() {
             <div className="absolute inset-y-0 left-0 hidden w-px bg-gradient-to-b from-transparent via-emerald-400/[0.10] to-transparent lg:block" />
 
             <div className="w-full max-w-md">
-
               {/* MOBILE BRAND */}
               <div className="mb-10 flex items-center justify-center gap-3 lg:hidden">
                 <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-emerald-400/20 bg-white/[0.045] shadow-[0_0_30px_rgba(16,185,129,0.15)]">
@@ -440,9 +460,7 @@ function AuthPage() {
                 </svg>
 
                 <span className="relative">
-                  {busy === "google"
-                    ? "Connecting..."
-                    : "Continue with Google"}
+                  {busy === "google" ? "Connecting..." : "Continue with Google"}
                 </span>
               </button>
 
@@ -493,9 +511,7 @@ function AuthPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-medium text-slate-400">
-                    Password
-                  </label>
+                  <label className="mb-2 block text-xs font-medium text-slate-400">Password</label>
 
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-600" />
@@ -512,9 +528,7 @@ function AuthPage() {
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 transition-colors hover:text-slate-300"
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
                         <EyeOff className="h-[18px] w-[18px]" />
@@ -549,9 +563,7 @@ function AuthPage() {
 
                   <span className="relative">
                     {busy === "email"
-                      ? isSignin
-                        ? "Signing in..."
-                        : "Creating account..."
+                      ? "Securing your workspace"
                       : isSignin
                         ? "Sign in"
                         : "Create account"}
@@ -563,9 +575,7 @@ function AuthPage() {
 
               {/* SWITCH */}
               <div className="mt-7 text-center text-sm text-slate-500">
-                {isSignin
-                  ? "Don't have an account?"
-                  : "Already have an account?"}{" "}
+                {isSignin ? "Don't have an account?" : "Already have an account?"}{" "}
                 <button
                   type="button"
                   onClick={() => {
@@ -592,10 +602,7 @@ function AuthPage() {
                     </div>
                   </div>
 
-                  <Link
-                    to="/about"
-                    className="text-xs font-medium text-emerald-400"
-                  >
+                  <Link to="/about" className="text-xs font-medium text-emerald-400">
                     About
                   </Link>
                 </div>

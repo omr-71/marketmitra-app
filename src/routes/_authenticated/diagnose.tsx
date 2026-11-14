@@ -254,9 +254,19 @@ const L = {
     hi: "उपचार जानकारी नहीं मिल सकी। फिर कोशिश करें।",
   },
   treatmentInvalidResponse: {
-    en: "No complete, source-checked spray results were returned. No product is recommended; use the non-chemical steps below and confirm the cause with your local KVK before spraying.",
-    mr: "पूर्ण आणि स्रोत-पडताळलेले फवारणी परिणाम मिळाले नाहीत. कोणतेही उत्पादन सुचवलेले नाही; खालील विना-रासायनिक पायऱ्या वापरा आणि फवारणीपूर्वी स्थानिक KVK कडून कारणाची खात्री करा.",
-    hi: "पूरे और स्रोत-जाँचे स्प्रे परिणाम नहीं मिले। कोई उत्पाद सुझाया नहीं गया है; नीचे दिए गैर-रासायनिक कदम अपनाएँ और छिड़काव से पहले स्थानीय KVK से कारण की पुष्टि करें।",
+    en: "The spray recommendation service could not return data. Please try again.",
+    mr: "फवारणी शिफारस सेवेकडून डेटा मिळू शकला नाही. कृपया पुन्हा प्रयत्न करा.",
+    hi: "स्प्रे सुझाव सेवा से डेटा प्राप्त नहीं हो सका। कृपया पुनः प्रयास करें।",
+  },
+  dosageLabel: {
+    en: "Dosage",
+    mr: "मात्रा (डोस)",
+    hi: "मात्रा (डोज़)",
+  },
+  noSpraysFound: {
+    en: "No specific sprays listed for this category.",
+    mr: "या श्रेणीसाठी कोणतीही विशिष्ट फवारणी आढळली नाही.",
+    hi: "इस श्रेणी के लिए कोई विशिष्ट स्प्रे नहीं मिला।",
   },
   treatmentRateLimit: {
     en: "The spray research service is temporarily busy. Wait a moment and retry.",
@@ -542,10 +552,10 @@ function Block({
 }) {
   return (
     <section
-      className={`diagnose-block rounded-2xl border border-border/70 bg-card/40 p-4 lg:p-5 ${className}`}
+      className={`diagnose-block rounded-2xl border border-border/80 !bg-white dark:!bg-card p-5 sm:p-6 !shadow-md transition-all ${className}`}
     >
-      <h3 className="text-sm font-bold">{title}</h3>
-      <div className="mt-2.5">{children}</div>
+      <h3 className="text-sm font-bold sm:text-base text-foreground tracking-tight">{title}</h3>
+      <div className="mt-3">{children}</div>
     </section>
   );
 }
@@ -868,7 +878,7 @@ function DiagnosePage() {
   ];
 
   const uploader = (
-    <section className="diagnose-uploader card-surface p-4 sm:p-5 lg:p-5">
+    <section className="diagnose-uploader card-surface !overflow-visible !max-h-none rounded-2xl border border-border/80 !bg-white dark:!bg-card p-5 sm:p-6 !shadow-md">
       <h2 className="flex items-center gap-2 text-sm font-bold">
         <Stethoscope className="size-4 text-primary" />
         {s("aiAnalysis")}
@@ -1130,45 +1140,44 @@ function DiagnosePage() {
     switch (tab) {
       case "overview":
         return (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Block title={s("observed")}>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground">{s("symptoms")}</p>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{s("symptoms")}</p>
+                <div className="mt-2">
                   <Bullets items={d.symptoms} empty={s("noInfo")} />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground">{s("evidence")}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    {d.whyItHappens || d.whatItIs || s("noInfo")}
-                  </p>
-                </div>
-                {d.causes.length > 0 && (
-                  <details className="rounded-xl border border-border/70 p-3">
-                    <summary className="cursor-pointer text-sm font-semibold">
-                      {s("otherPossibilities")}
-                    </summary>
-                    <div className="mt-2">
-                      <Bullets items={d.causes} empty={s("noInfo")} />
-                    </div>
-                  </details>
-                )}
               </div>
+              {d.causes.length > 0 && (
+                <details className="mt-3.5 rounded-xl border border-border/80 bg-muted/20 p-3 shadow-xs">
+                  <summary className="cursor-pointer text-xs sm:text-sm font-semibold">
+                    {s("otherPossibilities")}
+                  </summary>
+                  <div className="mt-2.5">
+                    <Bullets items={d.causes} empty={s("noInfo")} />
+                  </div>
+                </details>
+              )}
+            </Block>
+            <Block title={s("evidence")}>
+              <p className="text-sm leading-relaxed text-foreground/85">
+                {d.whyItHappens || d.whatItIs || s("noInfo")}
+              </p>
             </Block>
             <Block title={s("nextSteps")}>
               {d.whatToDoNow.length === 0 ? (
                 <p className="text-sm leading-relaxed text-muted-foreground">{s("noInfo")}</p>
               ) : (
-                <ol className="space-y-2.5">
+                <ol className="space-y-3">
                   {d.whatToDoNow.map((step, index) => (
                     <li
                       key={`${index}-${step}`}
                       className="flex items-start gap-3 text-sm leading-relaxed"
                     >
-                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary shadow-xs">
                         {index + 1}
                       </span>
-                      <span className="pt-0.5 text-muted-foreground">{step}</span>
+                      <span className="pt-0.5 text-foreground/85 font-medium">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -1218,10 +1227,14 @@ function DiagnosePage() {
               </p>
             )}
             <Block title={s("nonChemicalSteps")} className="diagnose-care">
-              {treatmentGuidance.data?.generalCare.length ? (
+              {treatmentGuidance.data?.non_chemical_steps && treatmentGuidance.data.non_chemical_steps.length > 0 ? (
+                <Bullets items={treatmentGuidance.data.non_chemical_steps} empty={s("noInfo")} />
+              ) : treatmentGuidance.data?.generalCare && treatmentGuidance.data.generalCare.length > 0 ? (
                 <Bullets items={treatmentGuidance.data.generalCare} empty={s("noInfo")} />
-              ) : (
+              ) : !treatmentGuidance.isLoading && treatmentGuidance.isError ? (
                 <Bullets items={diagnosisManagementFallback} empty={s("noInfo")} />
+              ) : (
+                <Bullets items={[]} empty={s("noInfo")} />
               )}
               <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
                 {s("treatmentNote")}
@@ -1230,7 +1243,7 @@ function DiagnosePage() {
             <div
               role="tablist"
               aria-label={s("organicSection")}
-              className="grid grid-cols-2 gap-2 rounded-xl border border-border/70 bg-muted/30 p-1"
+              className="grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-muted/40 p-1.5 shadow-inner"
             >
               {(
                 [
@@ -1245,10 +1258,10 @@ function DiagnosePage() {
                   aria-controls="treatment-category-panel"
                   aria-selected={treatmentCategory === category}
                   onClick={() => setTreatmentCategory(category)}
-                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`min-h-11 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     treatmentCategory === category
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-card text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.4)] border border-border/80 scale-[0.99]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/40"
                   }`}
                 >
                   {label}
@@ -1257,82 +1270,87 @@ function DiagnosePage() {
             </div>
             <div id="treatment-category-panel" role="tabpanel" className="space-y-3">
               {treatmentCategory === "organic" ? (
-                <>
-                  {treatmentGuidance.data?.organicBiological.length ? (
-                    <Block title={s("treatmentOrganic")} className="diagnose-organic">
-                      {renderTreatmentOptions(treatmentGuidance.data.organicBiological)}
-                    </Block>
-                  ) : null}
-                  {treatmentGuidance.data?.organicManagement.length ? (
-                    <Block title={s("treatmentOrganicNatural")} className="diagnose-organic">
-                      <div className="space-y-3">
-                        {treatmentGuidance.data.organicManagement.map((item) => (
-                          <article
-                            key={`${item.sourceUrl}-${item.name}`}
-                            className="rounded-2xl border border-border/70 p-4"
-                          >
-                            <p className="text-sm font-bold">{item.name}</p>
-                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                              {item.rationale}
-                            </p>
-                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                              {item.limitations}
-                            </p>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {item.targetCrop} — {item.targetCondition}
-                            </p>
-                            <a
-                              href={item.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-2 inline-block text-sm font-semibold text-primary underline"
-                            >
-                              {item.sourceName}
-                            </a>
-                          </article>
-                        ))}
-                      </div>
-                    </Block>
-                  ) : null}
-                  {treatmentGuidance.data &&
-                    treatmentGuidance.data.organicBiological.length === 0 &&
-                    treatmentGuidance.data.organicManagement.length === 0 && (
-                      <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
-                        {s("treatmentMissingCategory")}
-                      </p>
-                    )}
-                </>
-              ) : treatmentGuidance.data?.chemical.length ? (
-                <Block title={s("treatmentChemical")} className="diagnose-chemical">
-                  {renderTreatmentOptions(treatmentGuidance.data.chemical)}
+                <Block title={s("treatmentOrganic")} className="diagnose-organic">
+                  {treatmentGuidance.data?.organic_sprays && treatmentGuidance.data.organic_sprays.length > 0 ? (
+                    <div className="space-y-3">
+                      {treatmentGuidance.data.organic_sprays.map((spray, idx) => (
+                        <article
+                          key={`${idx}-${spray.name}`}
+                          className="group relative rounded-xl border border-border/80 !bg-white dark:!bg-card p-4 sm:p-5 !shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:!shadow-lg"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm font-bold text-foreground sm:text-base">
+                                {spray.name}
+                              </h4>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground/75">{s("dosageLabel")}:</span> {spray.dosage}
+                              </p>
+                            </div>
+                            <div className="self-start sm:self-center shrink-0">
+                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs">
+                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                {spray.dosage}
+                              </span>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : treatmentGuidance.data?.organicBiological?.length ? (
+                    renderTreatmentOptions(treatmentGuidance.data.organicBiological)
+                  ) : treatmentGuidance.isError ? (
+                    <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
+                      {s("noInfo")}
+                    </p>
+                  ) : treatmentGuidance.isLoading ? null : (
+                    <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
+                      {s("noSpraysFound")}
+                    </p>
+                  )}
                 </Block>
-              ) : treatmentGuidance.data ? (
-                <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
-                  {s("treatmentMissingCategory")}
-                </p>
-              ) : null}
+              ) : (
+                <Block title={s("treatmentChemical")} className="diagnose-chemical">
+                  {treatmentGuidance.data?.inorganic_sprays && treatmentGuidance.data.inorganic_sprays.length > 0 ? (
+                    <div className="space-y-3">
+                      {treatmentGuidance.data.inorganic_sprays.map((spray, idx) => (
+                        <article
+                          key={`${idx}-${spray.name}`}
+                          className="group relative rounded-xl border border-border/80 !bg-white dark:!bg-card p-4 sm:p-5 !shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:!shadow-lg"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm font-bold text-foreground sm:text-base">
+                                {spray.name}
+                              </h4>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground/75">{s("dosageLabel")}:</span> {spray.dosage}
+                              </p>
+                            </div>
+                            <div className="self-start sm:self-center shrink-0">
+                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs">
+                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                {spray.dosage}
+                              </span>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : treatmentGuidance.data?.chemical?.length ? (
+                    renderTreatmentOptions(treatmentGuidance.data.chemical)
+                  ) : treatmentGuidance.isError ? (
+                    <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
+                      {s("noInfo")}
+                    </p>
+                  ) : treatmentGuidance.isLoading ? null : (
+                    <p className="rounded-xl border border-border/70 p-3 text-sm leading-relaxed text-muted-foreground">
+                      {s("noSpraysFound")}
+                    </p>
+                  )}
+                </Block>
+              )}
             </div>
-            {treatmentGuidance.data?.sourceStatus === "no_authoritative_sources" && (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {s("treatmentPartial")}
-              </p>
-            )}
-            {treatmentGuidance.data?.sourceStatus === "sources_found" &&
-              (treatmentGuidance.data.organicManagement.length > 0 ||
-                treatmentGuidance.data.organicBiological.length > 0 ||
-                treatmentGuidance.data.chemical.length > 0) && (
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {s("treatmentComplete")}
-                </p>
-              )}
-            {treatmentGuidance.data?.sourceStatus === "sources_found" &&
-              !treatmentGuidance.data.organicManagement.length &&
-              !treatmentGuidance.data.organicBiological.length &&
-              !treatmentGuidance.data.chemical.length && (
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {s("treatmentPartial")}
-                </p>
-              )}
           </div>
         );
       case "prevention":
@@ -1467,8 +1485,8 @@ function DiagnosePage() {
           </div>
         </header>
 
-        <div className="diagnose-workspace grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,0.86fr)_minmax(0,1.14fr)] lg:items-start lg:gap-6">
-          <div className="min-w-0 lg:sticky lg:top-6">{uploader}</div>
+        <div className="diagnose-workspace grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(340px,0.85fr)_minmax(0,1.15fr)] lg:gap-8 lg:items-start">
+          <div className="min-w-0 lg:sticky lg:top-4 lg:self-start">{uploader}</div>
 
           <div className="min-w-0 space-y-4">
             {busy && (
@@ -1546,7 +1564,7 @@ function DiagnosePage() {
 
             {!busy && diagnosis && (
               <div className="diagnose-results animate-fade-in space-y-4">
-                <div className="diagnose-summary card-surface p-4 sm:p-5 lg:p-6">
+                <div className="diagnose-summary card-surface !bg-white dark:!bg-card rounded-2xl border border-border/80 p-5 sm:p-6 !shadow-md">
                   <div className="grid gap-5 lg:grid-cols-2 lg:items-center">
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -1613,7 +1631,7 @@ function DiagnosePage() {
                     buttons[nextIndex]?.focus();
                     buttons[nextIndex]?.click();
                   }}
-                  className="diagnose-tabs flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-wrap lg:overflow-visible"
+                  className="diagnose-tabs flex flex-nowrap items-center gap-1.5 sm:gap-2.5 w-full overflow-x-auto pb-2 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   {tabs.map(({ id, label, icon: Icon }) => {
                     const active = tab === id;
@@ -1627,14 +1645,22 @@ function DiagnosePage() {
                         aria-selected={active}
                         tabIndex={active ? 0 : -1}
                         onClick={() => setTab(id)}
-                        className={`press flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                        className={`press flex-1 min-w-0 flex min-h-12 items-center justify-center gap-1.5 sm:gap-2 rounded-full border px-2 sm:px-3.5 py-2 text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                           active
-                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                            : "border-border/70 bg-card text-muted-foreground hover:bg-muted"
+                            ? "border-primary/80 bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(25,45,34,0.22),inset_0_1px_1px_rgba(255,255,255,0.4)] -translate-y-0.5"
+                            : "border-border/80 !bg-white dark:!bg-card text-muted-foreground shadow-[0_2px_5px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.8)] hover:bg-muted/50 hover:text-foreground hover:-translate-y-0.5"
                         }`}
                       >
-                        <Icon className="size-3.5" />
-                        {label}
+                        <span
+                          className={`grid size-7 shrink-0 place-items-center rounded-full transition-all duration-200 ${
+                            active
+                              ? "bg-white/20 text-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(255,255,255,0.3)]"
+                              : "bg-muted/70 text-foreground/80 shadow-[0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                          }`}
+                        >
+                          <Icon className="size-3.5" />
+                        </span>
+                        <span className="truncate">{label}</span>
                       </button>
                     );
                   })}

@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { UnavailableState } from "@/components/market-meta";
 import { useLang } from "@/lib/i18n";
 import { crops, findCrop } from "@/lib/crops";
@@ -14,7 +15,7 @@ import { formatIstDate, inr } from "@/lib/format";
 const MarketHistoryBarChart = lazy(
   () => import("@/components/charts/market-history-bar-chart"),
 );
-import { BarChart3, Loader2, TrendingUp } from "lucide-react";
+import { BarChart3, TrendingUp } from "lucide-react";
 
 const searchSchema = z.object({
   crop: z.string().catch("onion"),
@@ -93,9 +94,7 @@ function MarketDetailPage() {
         {!district ? (
           <UnavailableState message="Select a district to view verified prices for this market." />
         ) : todayQuery.isPending ? (
-          <div className="card-surface hover-lift flex items-center gap-2 p-5 text-xs text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> {t("loading")}
-          </div>
+          <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
         ) : todayQuery.isError ? (
           <UnavailableState onRetry={() => void todayQuery.refetch()} />
         ) : latest ? (
@@ -133,9 +132,7 @@ function MarketDetailPage() {
               Select a district to view verified market history.
             </p>
           ) : historyQuery.isPending ? (
-            <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> {t("loading")}
-            </p>
+            <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
           ) : chartData.length < 2 ? (
             <p className="mt-3 text-xs text-muted-foreground">
               {points.length === 0
@@ -146,7 +143,7 @@ function MarketDetailPage() {
             <Suspense
               fallback={
                 <div className="flex h-44 items-center justify-center text-xs text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
+                  <BrandLoader variant="inline" message="Preparing market history" />
                 </div>
               }
             >

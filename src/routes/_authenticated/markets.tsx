@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { motion } from "motion/react";
 import { Screen, TopBar } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { UnavailableState } from "@/components/market-meta";
 import { Reveal } from "@/components/reveal";
 import {
@@ -28,7 +29,6 @@ import {
 import { inr } from "@/lib/format";
 import {
   Award,
-  Loader2,
   MapPin,
   RefreshCw,
   Search,
@@ -436,17 +436,13 @@ function MarketsPage() {
             </Reveal>
           ) : priceQuery.isPending ? (
             <div className="mt-5 space-y-3">
+              <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className="card-surface hover-lift h-28 animate-pulse"
                 />
               ))}
-
-              <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                {t("loading")}
-              </p>
             </div>
           ) : priceQuery.isError ? (
             <Reveal className="mt-5" y={18}>

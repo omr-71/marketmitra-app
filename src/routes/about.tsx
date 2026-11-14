@@ -490,6 +490,25 @@ function AboutPage() {
             </div>
           </section>
         </Reveal>
+
+        <section className="border-t border-border/60 py-5 lg:py-6">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Product &amp; Technology
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                Om Labhade
+              </p>
+            </div>
+            <a
+              href="mailto:hello.marketmitra@gmail.com"
+              className="mt-1 text-sm text-muted-foreground transition-colors hover:text-foreground sm:mt-0"
+            >
+              hello.marketmitra@gmail.com
+            </a>
+          </div>
+        </section>
       </div>
     </Screen>
   );

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ComponentType, ReactNode } from "react";
 
 import { Screen } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { LocationCard } from "@/components/location-card";
 import { UnavailableState } from "@/components/market-meta";
 import { Reveal } from "@/components/reveal";
@@ -19,7 +20,7 @@ import { latestPerMarket, marketPricesQuery } from "@/lib/market-queries";
 import { getWeather } from "@/lib/weather-fetch";
 import type { WeatherResult } from "@/lib/weather.functions";
 import type { PriceRecord } from "@/lib/market-types";
-import { inr, useIstNow } from "@/lib/format";
+import { formatIstDateTime, inr, useIstNow } from "@/lib/format";
 import { bestFarmingWindow, conditionLabel, todayInsight, uvLabel } from "@/lib/farm-insights";
 
 import {
@@ -76,7 +77,7 @@ export const Route = createFileRoute("/_authenticated/home")({
 
 function HomePage() {
   const { t, lang } = useLang();
-  const { profile } = useSession();
+  const { profile, loading: profileLoading } = useSession();
   const { location } = useLocationContext();
 
   const savedIds = profile?.saved_crops?.length ? profile.saved_crops : ["onion"];
@@ -110,9 +111,9 @@ function HomePage() {
   const farmingWindow = weather ? bestFarmingWindow(weather) : null;
 
   const WeatherIcon = weather
-    ? weather.current.code <= 1
+    ? weather.current.code !== null && weather.current.code <= 1
       ? Sun
-      : weather.current.code >= 51
+      : weather.current.code !== null && weather.current.code >= 51
         ? CloudRain
         : CloudSun
     : CloudSun;
@@ -148,6 +149,12 @@ function HomePage() {
             </div>
           </header>
         </Reveal>
+
+        {(profileLoading || priceQuery.isPending || weatherQuery.isPending) && (
+          <div className="mb-5">
+            <BrandLoader variant="inline" message="Bringing your agricultural insights together" />
+          </div>
+        )}
 
         <div className="mb-5 md:hidden">
           <AndroidAppDownload />
@@ -315,7 +322,7 @@ function WeatherSummaryCard({
 
   if (!hasLocation) {
     return (
-      <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#103826] p-5 text-white shadow-xs sm:p-6">
+      <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#103826] p-5 text-white shadow-[0_10px_28px_-6px_rgba(16,56,38,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-8px_rgba(16,56,38,0.45)] sm:p-6">
         <div>
           <div className="flex items-center gap-2 text-emerald-200">
             <CloudSun className="size-4" />
@@ -343,7 +350,7 @@ function WeatherSummaryCard({
 
   if (!weather) {
     return (
-      <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#103826] p-5 text-white shadow-xs sm:p-6">
+      <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[#103826] p-5 text-white shadow-[0_10px_28px_-6px_rgba(16,56,38,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-8px_rgba(16,56,38,0.45)] sm:p-6">
         <div>
           <div className="flex items-center gap-2 text-emerald-200">
             <CloudSun className="size-4" />
@@ -377,7 +384,7 @@ function WeatherSummaryCard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#174831] bg-[#0e3322] p-5 text-white shadow-xs sm:p-6">
+    <div className="relative overflow-hidden rounded-2xl border border-[#174831] bg-[#0e3322] p-5 text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.12),0_4px_6px_-2px_rgba(0,0,0,0.06)] sm:p-6">
       {/* Top row: Condition, Time, Location */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -399,14 +406,16 @@ function WeatherSummaryCard({
               <p className="text-xs font-extrabold sm:text-sm">
                 {conditionLabel(weather.current.code)}
               </p>
-              <p className="text-[10px] font-semibold text-emerald-200/75">
-                Feels like {weather.current.apparent}°C
-              </p>
+              {weather.current.apparent !== null && (
+                <p className="text-[10px] font-semibold text-emerald-200/75">
+                  Feels like {weather.current.apparent}°C
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/10 text-emerald-200 sm:size-14">
+        <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/10 text-emerald-200 sm:size-14 transition-transform duration-200 hover:scale-105">
           <WeatherIcon className="size-6 sm:size-7" strokeWidth={1.75} />
         </div>
       </div>
@@ -420,31 +429,37 @@ function WeatherSummaryCard({
 
       {/* Weather Metrics Grid */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
             <Droplets className="size-3.5" />
             <span>{t("humidity")}</span>
           </div>
-          <p className="mt-1 text-xs font-black sm:text-sm">{weather.current.humidity}%</p>
+          <p className="mt-1 text-xs font-black sm:text-sm">
+            {weather.current.humidity === null ? "—" : `${weather.current.humidity}%`}
+          </p>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
             <Wind className="size-3.5" />
             <span>{t("wind")}</span>
           </div>
-          <p className="mt-1 text-xs font-black sm:text-sm">{weather.current.wind} km/h</p>
+          <p className="mt-1 text-xs font-black sm:text-sm">
+            {weather.current.wind === null ? "—" : `${weather.current.wind} km/h`}
+          </p>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
             <CloudRain className="size-3.5" />
             <span>{t("rainChance")}</span>
           </div>
-          <p className="mt-1 text-xs font-black sm:text-sm">{weather.current.rainChance}%</p>
+          <p className="mt-1 text-xs font-black sm:text-sm">
+            {weather.current.rainChance === null ? "—" : `${weather.current.rainChance}%`}
+          </p>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10">
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
             <Sun className="size-3.5" />
             <span>UV Index</span>
@@ -452,6 +467,12 @@ function WeatherSummaryCard({
           <p className="mt-1 text-xs font-black sm:text-sm">{uvLabel(weather.current.uvIndex)}</p>
         </div>
       </div>
+
+      <p className="mt-2 text-[10px] font-medium text-emerald-100/65">
+        {weather.source === "MET Norway"
+          ? `MET Norway forecast for ${formatIstDateTime(weather.observedAt)} IST`
+          : `${weather.source} · Updated ${formatIstDateTime(weather.updatedAt)} IST`}
+      </p>
 
       {/* Bottom bar: Farming window & full link */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 pt-3">
@@ -504,7 +525,7 @@ function MarketIntelligenceCard({
   t: (key: DictKey) => string;
 }) {
   return (
-    <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6 lg:p-7">
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] sm:p-6 lg:p-7">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div>
@@ -581,7 +602,7 @@ function MarketIntelligenceCard({
             </div>
 
             {/* Min / Modal / Max Numbers */}
-            <div className="mt-5 grid grid-cols-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-center">
+            <div className="mt-5 grid grid-cols-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-center shadow-xs">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
                   {t("minPrice")}
@@ -615,7 +636,7 @@ function MarketIntelligenceCard({
                 crop: primary.id,
                 qty: 20,
               }}
-              className="press mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-extrabold text-primary-foreground shadow-xs transition-opacity hover:opacity-95"
+              className="press mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-extrabold text-primary-foreground shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-95"
             >
               <span>Compare all markets</span>
               <ArrowRight className="size-3.5" />
@@ -656,7 +677,7 @@ function MarketIntelligenceCard({
 
             {records.length > 0 && (
               <div className="mt-4 grid grid-cols-3 gap-2.5">
-                <div className="rounded-xl border border-border/70 bg-card p-3">
+                <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
                   <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
                     Reporting Mandis
                   </p>
@@ -664,7 +685,7 @@ function MarketIntelligenceCard({
                     {marketCount}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-card p-3">
+                <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
                   <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
                     District Average
                   </p>
@@ -672,7 +693,7 @@ function MarketIntelligenceCard({
                     {inr(avgModal)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-card p-3">
+                <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
                   <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
                     Price Spread
                   </p>
@@ -703,7 +724,7 @@ function PriceRange({ min, modal, max }: { min: number; modal: number; max: numb
 
   return (
     <div>
-      <div className="relative h-2 w-full rounded-full bg-muted">
+      <div className="relative h-2 w-full rounded-full bg-muted shadow-inner">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-primary"
           style={{ width: `${position}%` }}
@@ -716,7 +737,7 @@ function PriceRange({ min, modal, max }: { min: number; modal: number; max: numb
 
       <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold text-muted-foreground tabular-nums">
         <span>Min: {inr(min)}</span>
-        <span className="text-primary">Modal: {inr(modal)}</span>
+        <span className="text-primary font-extrabold">Modal: {inr(modal)}</span>
         <span>Max: {inr(max)}</span>
       </div>
     </div>
@@ -834,31 +855,33 @@ function FieldSignal({ weather }: { weather: ActiveWeather }) {
   return (
     <Link
       to="/weather"
-      className="group block rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-colors hover:border-primary/50 sm:p-5"
+      className="group block rounded-2xl border border-slate-200/80 bg-white p-4.5 text-foreground shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] sm:p-5"
     >
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-          <Leaf className="size-4" />
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
+          <Leaf className="size-5" />
         </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
               Field Signal
             </p>
             <ArrowRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
           </div>
 
-          <p className="mt-1 text-xs font-extrabold text-foreground sm:text-sm">
+          <p className="mt-1 text-xs font-bold text-foreground sm:text-sm">
             {todayInsight(weather)}
           </p>
 
-          <div className="mt-2.5 flex flex-wrap gap-2 text-[10px] font-bold text-muted-foreground">
-            <span className="rounded-md bg-muted px-2 py-0.5">{weather.current.temperature}°C</span>
-            <span className="rounded-md bg-muted px-2 py-0.5">
+          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded-md border border-border bg-muted/60 px-2 py-0.5">
+              {weather.current.temperature}°C
+            </span>
+            <span className="rounded-md border border-border bg-muted/60 px-2 py-0.5">
               {weather.current.humidity}% humidity
             </span>
-            <span className="rounded-md bg-muted px-2 py-0.5">
+            <span className="rounded-md border border-border bg-muted/60 px-2 py-0.5">
               {weather.current.wind} km/h wind
             </span>
           </div>
@@ -888,8 +911,8 @@ function MarketActivity({
   t: (key: DictKey) => string;
 }) {
   return (
-    <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs sm:p-6">
-      <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3.5">
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] sm:p-6">
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             APMC Market Activity
@@ -901,10 +924,10 @@ function MarketActivity({
 
         <Link
           to="/crops"
-          className="inline-flex items-center gap-1 text-xs font-bold text-primary transition-colors hover:text-primary/80"
+          className="group inline-flex items-center gap-1 text-xs font-bold text-primary transition-colors hover:text-primary/80"
         >
           {t("viewAll")}
-          <ArrowRight className="size-3.5" />
+          <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
@@ -917,7 +940,7 @@ function MarketActivity({
           {t("noPrices")}
         </div>
       ) : (
-        <div className="mt-2 divide-y divide-border/60">
+        <div className="mt-3 divide-y divide-border/60">
           {records.slice(0, 4).map((record, index) => (
             <Link
               key={`${record.market}-${record.variety}-${record.date}`}
@@ -930,10 +953,10 @@ function MarketActivity({
                 state: record.state,
                 district: record.district,
               }}
-              className="group flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted/30 sm:px-2 rounded-lg"
+              className="group flex items-center justify-between gap-3 rounded-xl py-3.5 transition-colors hover:bg-muted/40 sm:px-3"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-sm font-black text-foreground">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-muted/60 text-sm font-bold text-foreground">
                   {index === 0 ? "1" : primary.emoji}
                 </span>
 
@@ -943,7 +966,7 @@ function MarketActivity({
                       {record.market}
                     </p>
                     {index === 0 && (
-                      <span className="rounded bg-primary/10 px-1.5 py-0.2 text-[8px] font-black uppercase text-primary">
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                         Top Rate
                       </span>
                     )}
@@ -954,12 +977,12 @@ function MarketActivity({
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2.5">
                 <div className="text-right">
                   <p className="font-display text-xs font-black tabular-nums text-foreground sm:text-sm">
                     {inr(record.modalPrice)}
                   </p>
-                  <p className="text-[9px] text-muted-foreground">/ quintal</p>
+                  <p className="text-[9px] font-medium text-muted-foreground">/ quintal</p>
                 </div>
                 <ArrowRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
               </div>

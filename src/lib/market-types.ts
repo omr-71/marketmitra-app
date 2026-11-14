@@ -30,12 +30,18 @@ export type PriceRecord = {
 
 export type ProviderAttempt = {
   providerId: string;
+
   provider: string;
   ok: boolean;
   statusCode: number | null;
   recordCount: number;
+
   latestDataDate: string | null;
+
+  sourceUpdatedAt: string | null;
+
   durationMs: number;
+
   error: string | null;
 };
 

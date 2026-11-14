@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_audit_log: {
@@ -113,24 +138,6 @@ export type Database = {
           record_count?: number
           state?: string | null
           status_code?: number | null
-        }
-        Relationships: []
-      }
-      app_config: {
-        Row: {
-          key: string
-          updated_at: string
-          value: Json
-        }
-        Insert: {
-          key: string
-          updated_at?: string
-          value: Json
-        }
-        Update: {
-          key?: string
-          updated_at?: string
-          value?: Json
         }
         Relationships: []
       }
@@ -256,6 +263,7 @@ export type Database = {
           advice: string | null
           causes: string[]
           condition: string | null
+          conditions_favouring: string[]
           confidence: number | null
           created_at: string
           crop: string | null
@@ -268,14 +276,13 @@ export type Database = {
           prevention: string[]
           provider: string | null
           request_id: string | null
-          spray_recommendations: Json
           severity: string | null
+          spray_recommendations: Json
           symptoms: string[]
           uncertainty_note: string | null
           updated_at: string
           usable: boolean
           user_id: string
-          conditions_favouring: string[]
           what_it_is: string | null
           what_to_do_now: string[]
           why_it_happens: string | null
@@ -284,6 +291,7 @@ export type Database = {
           advice?: string | null
           causes?: string[]
           condition?: string | null
+          conditions_favouring?: string[]
           confidence?: number | null
           created_at?: string
           crop?: string | null
@@ -296,14 +304,13 @@ export type Database = {
           prevention?: string[]
           provider?: string | null
           request_id?: string | null
-          spray_recommendations?: Json
           severity?: string | null
+          spray_recommendations?: Json
           symptoms?: string[]
           uncertainty_note?: string | null
           updated_at?: string
           usable?: boolean
           user_id: string
-          conditions_favouring?: string[]
           what_it_is?: string | null
           what_to_do_now?: string[]
           why_it_happens?: string | null
@@ -312,6 +319,7 @@ export type Database = {
           advice?: string | null
           causes?: string[]
           condition?: string | null
+          conditions_favouring?: string[]
           confidence?: number | null
           created_at?: string
           crop?: string | null
@@ -324,14 +332,13 @@ export type Database = {
           prevention?: string[]
           provider?: string | null
           request_id?: string | null
-          spray_recommendations?: Json
           severity?: string | null
+          spray_recommendations?: Json
           symptoms?: string[]
           uncertainty_note?: string | null
           updated_at?: string
           usable?: boolean
           user_id?: string
-          conditions_favouring?: string[]
           what_it_is?: string | null
           what_to_do_now?: string[]
           why_it_happens?: string | null
@@ -709,6 +716,83 @@ export type Database = {
         }
         Relationships: []
       }
+      notice_reads: {
+        Row: {
+          id: string
+          notice_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notice_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notice_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notice_reads_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "system_notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_delivery_attempts: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          error_code: string | null
+          id: string
+          notification_id: string
+          provider: string
+          provider_message_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          error_code?: string | null
+          id?: string
+          notification_id: string
+          provider?: string
+          provider_message_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          error_code?: string | null
+          id?: string
+          notification_id?: string
+          provider?: string
+          provider_message_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_delivery_attempts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "notification_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_delivery_attempts_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notification_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_devices: {
         Row: {
           app_version: string | null
@@ -719,6 +803,7 @@ export type Database = {
           disabled: boolean
           district: string | null
           endpoint: string
+          fcm_token: string | null
           id: string
           lang: string
           last_seen_at: string
@@ -726,7 +811,9 @@ export type Database = {
           longitude: number | null
           p256dh: string | null
           prefs: Json
+          provider: string
           state: string | null
+          user_id: string | null
         }
         Insert: {
           app_version?: string | null
@@ -737,6 +824,7 @@ export type Database = {
           disabled?: boolean
           district?: string | null
           endpoint: string
+          fcm_token?: string | null
           id?: string
           lang?: string
           last_seen_at?: string
@@ -744,7 +832,9 @@ export type Database = {
           longitude?: number | null
           p256dh?: string | null
           prefs?: Json
+          provider?: string
           state?: string | null
+          user_id?: string | null
         }
         Update: {
           app_version?: string | null
@@ -755,6 +845,7 @@ export type Database = {
           disabled?: boolean
           district?: string | null
           endpoint?: string
+          fcm_token?: string | null
           id?: string
           lang?: string
           last_seen_at?: string
@@ -762,67 +853,186 @@ export type Database = {
           longitude?: number | null
           p256dh?: string | null
           prefs?: Json
+          provider?: string
           state?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
-      notification_log: {
-        Row: {
-          created_at: string
-          dedupe_key: string
-          device_id: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          dedupe_key: string
-          device_id: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          dedupe_key?: string
-          device_id?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      notification_outbox: {
+      notification_history: {
         Row: {
           body: string
           category: string
           created_at: string
-          delivered_at: string | null
-          device_id: string
+          data: Json
+          dedupe_key: string | null
           id: string
-          priority: string
-          tag: string | null
+          is_read: boolean
           title: string
           url: string
+          user_id: string
         }
         Insert: {
           body: string
           category: string
           created_at?: string
-          delivered_at?: string | null
-          device_id: string
+          data?: Json
+          dedupe_key?: string | null
           id?: string
-          priority?: string
-          tag?: string | null
+          is_read?: boolean
           title: string
           url?: string
+          user_id: string
         }
         Update: {
           body?: string
           category?: string
           created_at?: string
-          delivered_at?: string | null
-          device_id?: string
+          data?: Json
+          dedupe_key?: string | null
           id?: string
-          priority?: string
-          tag?: string | null
+          is_read?: boolean
           title?: string
           url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          app_updates: boolean
+          crop_alerts_enabled: boolean
+          daily_summary_enabled: boolean
+          enabled: boolean
+          government_schemes: boolean
+          market_updates: boolean
+          price_threshold_percent: number
+          preferred_district: string | null
+          preferred_market: string | null
+          preferred_state: string | null
+          quiet_from: string
+          quiet_hours_enabled: boolean
+          quiet_to: string
+          selected_crops: string[]
+          sound: string
+          summary_time: string
+          updated_at: string
+          user_id: string
+          weather_alerts: boolean
+          weather_intelligence_enabled: boolean
+        }
+        Insert: {
+          app_updates?: boolean
+          crop_alerts_enabled?: boolean
+          daily_summary_enabled?: boolean
+          enabled?: boolean
+          government_schemes?: boolean
+          market_updates?: boolean
+          price_threshold_percent?: number
+          preferred_district?: string | null
+          preferred_market?: string | null
+          preferred_state?: string | null
+          quiet_from?: string
+          quiet_hours_enabled?: boolean
+          quiet_to?: string
+          selected_crops?: string[]
+          sound?: string
+          summary_time?: string
+          updated_at?: string
+          user_id: string
+          weather_alerts?: boolean
+          weather_intelligence_enabled?: boolean
+        }
+        Update: {
+          app_updates?: boolean
+          crop_alerts_enabled?: boolean
+          daily_summary_enabled?: boolean
+          enabled?: boolean
+          government_schemes?: boolean
+          market_updates?: boolean
+          price_threshold_percent?: number
+          preferred_district?: string | null
+          preferred_market?: string | null
+          preferred_state?: string | null
+          quiet_from?: string
+          quiet_hours_enabled?: boolean
+          quiet_to?: string
+          selected_crops?: string[]
+          sound?: string
+          summary_time?: string
+          updated_at?: string
+          user_id?: string
+          weather_alerts?: boolean
+          weather_intelligence_enabled?: boolean
+        }
+        Relationships: []
+      }
+      notification_intelligence_events: {
+        Row: {
+          created_at: string
+          event_key: string
+          event_type: string
+          id: string
+          observation: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_key: string
+          event_type: string
+          id?: string
+          observation?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_key?: string
+          event_type?: string
+          id?: string
+          observation?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_intelligence_runs: {
+        Row: {
+          alerts_generated: number
+          completed_at: string | null
+          details: Json
+          error: string | null
+          failed_deliveries: number
+          id: string
+          job_type: string
+          notifications_accepted: number
+          provider_freshness: Json
+          started_at: string
+          users_evaluated: number
+        }
+        Insert: {
+          alerts_generated?: number
+          completed_at?: string | null
+          details?: Json
+          error?: string | null
+          failed_deliveries?: number
+          id?: string
+          job_type: string
+          notifications_accepted?: number
+          provider_freshness?: Json
+          started_at?: string
+          users_evaluated?: number
+        }
+        Update: {
+          alerts_generated?: number
+          completed_at?: string | null
+          details?: Json
+          error?: string | null
+          failed_deliveries?: number
+          id?: string
+          job_type?: string
+          notifications_accepted?: number
+          provider_freshness?: Json
+          started_at?: string
+          users_evaluated?: number
         }
         Relationships: []
       }
@@ -919,6 +1129,96 @@ export type Database = {
         }
         Relationships: []
       }
+      system_notices: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          ends_at: string | null
+          id: string
+          message: string
+          severity: string
+          starts_at: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          ends_at?: string | null
+          id?: string
+          message: string
+          severity: string
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          ends_at?: string | null
+          id?: string
+          message?: string
+          severity?: string
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      user_feedback: {
+        Row: {
+          category: string
+          created_at: string
+          custom_category: string | null
+          feedback_type: string
+          id: string
+          message: string
+          admin_notes: string | null
+          page_context: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          custom_category?: string | null
+          feedback_type?: string
+          id?: string
+          message: string
+          admin_notes?: string | null
+          page_context?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          custom_category?: string | null
+          feedback_type?: string
+          id?: string
+          message?: string
+          admin_notes?: string | null
+          page_context?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -940,38 +1240,15 @@ export type Database = {
         }
         Relationships: []
       }
-      voice_usage: {
-        Row: {
-          characters: number
-          device_id: string
-          id: string
-          updated_at: string
-          usage_date: string
-          used: number
-        }
-        Insert: {
-          characters?: number
-          device_id: string
-          id?: string
-          updated_at?: string
-          usage_date?: string
-          used?: number
-        }
-        Update: {
-          characters?: number
-          device_id?: string
-          id?: string
-          updated_at?: string
-          usage_date?: string
-          used?: number
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_system_notice: {
+        Args: { _notice_id: string }
+        Returns: boolean
+      }
       admin_list_users: {
         Args: {
           _ascending?: boolean
@@ -985,19 +1262,56 @@ export type Database = {
           conversation_count: number
           created_at: string
           diagnosis_count: number
-          district: string | null
-          email: string | null
+          district: string
+          email: string
           full_name: string
-          last_sign_in_at: string | null
+          last_sign_in_at: string
           profile_complete: boolean
           role: string
-          state: string | null
+          state: string
           total_count: number
           user_id: string
         }[]
       }
+      admin_list_user_feedback: {
+        Args: {
+          _category?: string
+          _feedback_type?: string
+          _page?: number
+          _page_size?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: {
+          admin_notes: string | null
+          category: string
+          created_at: string
+          custom_category: string | null
+          feedback_type: string
+          id: string
+          message: string
+          page_context: string | null
+          status: string
+          subject: string
+          total_count: number
+          user_email: string | null
+          user_full_name: string
+          user_id: string | null
+          user_location: string | null
+        }[]
+      }
+      admin_update_user_feedback: {
+        Args: {
+          _admin_id: string;
+          _admin_notes?: string | null;
+          _feedback_id: string;
+          _operation: string;
+          _status?: string | null;
+        };
+        Returns: undefined;
+      };
       admin_user_metrics: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active_today: number
           active_week: number
@@ -1019,6 +1333,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      register_native_fcm_device: {
+        Args: { p_fcm_token: string }
+        Returns: string
+      }
+      link_can_create_match: {
+        Args: { _listing_id: string; _provider_id: string; _request_id: string }
+        Returns: boolean
+      }
       link_cluster_opportunities: {
         Args: { _district?: string; _state?: string }
         Returns: {
@@ -1028,6 +1350,10 @@ export type Database = {
           state: string
           window_date: string
         }[]
+      }
+      link_is_verified_provider: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       link_provider_contact: {
         Args: { _match_id: string }
@@ -1174,6 +1500,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "user"],

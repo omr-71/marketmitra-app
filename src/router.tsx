@@ -19,10 +19,10 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    // Prefetch route code + data as soon as a link is hovered/touched.
+    // Prefetch route code + data immediately upon intent with zero lag.
     defaultPreload: "intent",
-    defaultPreloadDelay: 40,
-    defaultPreloadStaleTime: 30_000,
+    defaultPreloadDelay: 0,
+    defaultPreloadStaleTime: 60_000,
   });
 
 

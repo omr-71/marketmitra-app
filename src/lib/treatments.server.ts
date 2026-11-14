@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import {
+  buildGroqTreatmentGuidance,
   buildTreatmentGuidance,
   extractTreatmentSources,
   normalizeTreatmentModelResponse,
+  validateGroqStructuredOutput,
   type TreatmentGuidance,
 } from "./treatments.schema.ts";
 
@@ -229,14 +231,7 @@ function readRateLimitDetails(headers: Headers): TreatmentRateLimitDetails {
   };
 }
 
-const SYSTEM_PROMPT = `Research crop care for farmers in India. Use browser_search and cite only exact URLs returned by opened official Indian agriculture, ICAR, agricultural-university, or government registration pages.
-
-Never infer a pathogen from generic symptoms such as "leaf spot", rename/narrow the diagnosis, or invent product names, evidence, URLs, doses, label claims, or registrations. Include products and crop/problem-specific practices only when an opened source explicitly supports the crop and stated diagnosis. Never put synthetic pesticides or chemical seed treatments in organicManagement. Do not provide doses or application instructions. For viral or uncertain causes, return no products. If evidence is insufficient, return empty candidate arrays and conservative generalCare.
-
-Return only one JSON object with these keys:
-{"causeCategory":"fungal|bacterial|viral|pest|nutrient|environmental|mixed|uncertain","generalCare":["..."],"organicManagement":[{"category":"cultural|sanitation|water|spacing|rotation|resistant_variety|biological_control|organic_input","name":"...","targetCrop":"...","targetCondition":"...","rationale":"...","limitations":"...","sourceUrl":"https://..."}],"organicBiological":[{"recommendationType":"commercial_product|biological_control|active_ingredient|general_organic_treatment","productName":"... or null","brand":"... or null","activeIngredient":"... or null","formulation":"... or null","targetCrop":"...","targetCondition":"...","rationale":"...","applicationMethod":null,"dose":null,"waterVolume":null,"applicationInterval":null,"maximumApplications":null,"requiredPpe":[],"preHarvestInterval":null,"reEntryInterval":null,"precautions":[],"sourceUrl":"https://... or null"}],"chemical":[{"recommendationType":"commercial_product|active_ingredient","productName":"... or null","brand":"... or null","activeIngredient":"... or null","formulation":"... or null","targetCrop":"...","targetCondition":"...","rationale":"...","applicationMethod":null,"dose":null,"waterVolume":null,"applicationInterval":null,"maximumApplications":null,"requiredPpe":[],"preHarvestInterval":null,"reEntryInterval":null,"precautions":[],"sourceUrl":"https://... or null"}]}
-
-Use the requested language for brief generalCare. Request crop/problem-specific product evidence, but never treat an AI-generated name or claim as evidence. Include active ingredients when official guidance supports them even if no brand is verified. Use applicationMethod only when the opened source or current product label explicitly provides it; all dosage, interval, PPE, PHI and re-entry fields remain null/empty unless directly supported by an opened label. Clearly retain uncertainty and alternatives from the diagnosis. Never fill fields from memory.`;
+const SYSTEM_PROMPT = `You are an expert agronomist. Analyze the crop and disease. You MUST recommend real, specific, commercially available chemical (inorganic) formulations (e.g., Mancozeb 75% WP, Azoxystrobin) and organic sprays (e.g., Neem Oil 10000 ppm). Respond STRICTLY in this JSON format and nothing else: { 'disease': 'name', 'organic_sprays': [{ 'name': 'Spray Name', 'dosage': 'Amount/L' }], 'inorganic_sprays': [{ 'name': 'Chemical Name', 'dosage': 'Amount/L' }], 'non_chemical_steps': ['step 1', 'step 2'] }.`;
 
 const UNCERTAIN_DIAGNOSIS_GUIDANCE: Record<"en" | "mr" | "hi", string> = {
   en: "The image diagnosis is too uncertain for a responsible product recommendation. Confirm the crop problem with your local KVK or agriculture officer before spraying.",
@@ -268,29 +263,12 @@ export async function retrieveTreatmentGuidance(
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: JSON.stringify({
-              language: lang,
-              diagnosis: {
-                crop: diagnosis.detectedCrop,
-                farmerCropHint: diagnosis.selectedCrop,
-                likelyCondition: diagnosis.condition,
-                confidence: diagnosis.confidence,
-                uncertainty: diagnosis.uncertaintyNote,
-                visibleSymptoms: diagnosis.symptoms,
-                alternativeConditions: diagnosis.alternativeConditions,
-                severity: diagnosis.severity,
-              },
-              instruction:
-                "Use the image-confirmed crop, not a conflicting farmer hint. Search current authoritative sources for the exact crop and stated condition. Tailor the answer to this confidence, uncertainty, visible symptoms, and alternatives. Do not convert a syndrome into a confirmed pathogen. Return an empty product array rather than guessing when the cause or crop-specific evidence is unclear.",
-            }),
+            content: `Crop: ${diagnosis.detectedCrop || diagnosis.selectedCrop || "Plant"}, Disease: ${diagnosis.condition}.${diagnosis.symptoms?.length ? ` Symptoms: ${diagnosis.symptoms.join(", ")}.` : ""}`,
           },
         ],
-        tools: [{ type: "browser_search" }],
-        tool_choice: "required",
         response_format: { type: "json_object" },
-        temperature: 1,
+        temperature: 0.2,
         max_completion_tokens: 2400,
-        reasoning_effort: "low",
       }),
       signal: AbortSignal.timeout(45_000),
     });
@@ -452,10 +430,7 @@ export async function retrieveTreatmentGuidance(
     );
   }
 
-  let modelResponse: ReturnType<typeof normalizeTreatmentModelResponse>;
-  try {
-    modelResponse = normalizeTreatmentModelResponse(parsedResponse);
-  } catch {
+  if (!validateGroqStructuredOutput(parsedResponse)) {
     throw providerError(
       "TREATMENT_PROVIDER_INVALID_RESPONSE",
       requestId,
@@ -467,26 +442,13 @@ export async function retrieveTreatmentGuidance(
     );
   }
 
-  const sources = extractTreatmentSources(message?.executed_tools ?? message?.tool_results);
-  const targetCrop = diagnosis.detectedCrop;
   try {
-    const guidance = buildTreatmentGuidance(
-      modelResponse,
-      sources,
+    return buildGroqTreatmentGuidance(
+      parsedResponse,
       new Date().toISOString(),
-      targetCrop,
+      diagnosis.detectedCrop,
       diagnosis.condition,
     );
-    if (diagnosis.confidence !== null && diagnosis.confidence >= 45) return guidance;
-    return {
-      ...guidance,
-      generalCare:
-        guidance.generalCare.length > 0
-          ? guidance.generalCare
-          : [UNCERTAIN_DIAGNOSIS_GUIDANCE[lang]],
-      organicBiological: [],
-      chemical: [],
-    };
   } catch {
     throw providerError(
       "TREATMENT_PROVIDER_INVALID_RESPONSE",

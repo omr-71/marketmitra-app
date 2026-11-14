@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Screen, TopBar } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { crops, findCrop } from "@/lib/crops";
@@ -14,7 +15,7 @@ import { formatIstDate, formatIstDateTime, inr } from "@/lib/format";
 const PriceHistoryAreaChart = lazy(
   () => import("@/components/charts/price-history-area-chart"),
 );
-import { BarChart3, Loader2, ShieldCheck, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { BarChart3, ShieldCheck, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 
 const searchSchema = z.object({
   crop: z.string().catch("onion"),
@@ -118,8 +119,8 @@ function PredictPage() {
           </div>
 
           {ready && currentPriceQuery.isPending ? (
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> {t("loading")}
+            <div className="mt-4">
+              <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
             </div>
           ) : currentPriceQuery.isError ? (
             <p className="mt-4 text-xs text-muted-foreground">{t("noPrices")}</p>
@@ -128,8 +129,11 @@ function PredictPage() {
               {noRecentMarketPricesMessage(district)}
             </p>
           ) : predictionQuery.isPending ? (
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> {t("loading")}
+            <div className="mt-4">
+              <BrandLoader
+                variant="inline"
+                message="Bringing your agricultural insights together"
+              />
             </div>
           ) : prediction?.ok ? (
             <>
@@ -188,9 +192,7 @@ function PredictPage() {
           </div>
 
           {historyQuery.isPending ? (
-            <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> {t("loading")}
-            </p>
+            <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
           ) : chart.length < 2 ? (
             <p className="mt-3 text-xs text-muted-foreground">
               {points.length === 0
@@ -201,7 +203,7 @@ function PredictPage() {
             <Suspense
               fallback={
                 <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
+                  <BrandLoader variant="inline" message="Preparing market history" />
                 </div>
               }
             >
@@ -217,4 +219,3 @@ function PredictPage() {
     </Screen>
   );
 }
-

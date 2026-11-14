@@ -20,6 +20,12 @@ import {
   istToday,
   type Freshness,
 } from "./market-freshness";
+import {
+  marketCommodityMatches,
+  marketCommodityVariants,
+  normalizeMarketCommodity,
+} from "./market-commodity";
+import { marketDistrictMatches, marketDistrictVariants } from "./market-district";
 
 export type PriceRecord = {
   providerId: string;
@@ -69,6 +75,8 @@ export type ProviderAttempt = {
   recordCount: number;
 
   latestDataDate: string | null;
+
+  sourceUpdatedAt: string | null;
 
   durationMs: number;
 
@@ -292,38 +300,6 @@ function numericValue(value: unknown): number | null {
 
 const normalizedName = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-const DISTRICT_ALIASES: string[][] = [
-  ["Nashik", "Nasik"],
-
-  ["Chhatrapati Sambhajinagar", "Chattrapati Sambhajinagar", "Aurangabad"],
-
-  ["Ahilyanagar", "Ahmednagar"],
-
-  ["Dharashiv", "Osmanabad"],
-
-  ["Gurugram", "Gurgaon"],
-
-  ["Prayagraj", "Allahabad"],
-
-  ["Ayodhya", "Faizabad"],
-
-  ["Bengaluru Urban", "Bangalore Urban", "Bangalore"],
-
-  ["Mysuru", "Mysore"],
-
-  ["Belagavi", "Belgaum"],
-
-  ["Kalaburagi", "Gulbarga"],
-
-  ["Vijayapura", "Bijapur"],
-
-  ["Ballari", "Bellary"],
-
-  ["Shivamogga", "Shimoga"],
-
-  ["Tumakuru", "Tumkur"],
-];
-
 function titleCase(value: string) {
   return value
 
@@ -334,22 +310,10 @@ function titleCase(value: string) {
     .replace(/(^|[\s()-])\p{L}/gu, (letter) => letter.toUpperCase());
 }
 
-function districtVariants(value: string) {
-  const normalized = normalizedName(value);
-
-  const aliases = DISTRICT_ALIASES.find((group) =>
-    group.some((candidate) => normalizedName(candidate) === normalized),
-  );
-
-  return [...new Set([titleCase(value), ...(aliases ?? [])])];
-}
-
 const looseEq = (a: string, b: string) => normalizedName(a) === normalizedName(b);
 
 function districtEq(a: string, b: string) {
-  const accepted = districtVariants(b).map(normalizedName);
-
-  return accepted.includes(normalizedName(a));
+  return marketDistrictMatches(a, b);
 }
 
 /** Rejects malformed / impossible rows so bad upstream data can never render. */
@@ -372,7 +336,7 @@ function isValid(record: PriceRecord) {
 
 export function matchesMarketFilters(record: PriceRecord, filters: MarketFilters) {
   return (
-    looseEq(record.commodity, filters.commodity) &&
+    marketCommodityMatches(record.commodity, filters.commodity) &&
     looseEq(record.state, filters.state) &&
     (!filters.district || districtEq(record.district, filters.district)) &&
     (!filters.market || looseEq(record.market, filters.market))
@@ -428,7 +392,7 @@ function dedupe(records: PriceRecord[]) {
   return out;
 }
 
-function normalizeRows(
+export function normalizeRows(
   rows: Record<string, unknown>[],
 
   meta: { providerId: string; source: string; sourceUpdatedAt: string | null; fetchedAt: string },
@@ -717,7 +681,11 @@ export async function fetchAgmarknetHistory(filters: MarketFilters): Promise<Pri
   if (!apiKey) throw new Error(`${AGMARKNET_KEY_ENV} is not configured`);
 
   const fetchedAt = new Date().toISOString();
-  const result = await fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, filters, 60);
+  let result = await fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, filters, 60);
+  for (const commodity of marketCommodityVariants(filters.commodity).slice(1)) {
+    if (result.rows.length > 0) break;
+    result = await fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, { ...filters, commodity }, 60);
+  }
   return normalizeRows(result.rows, {
     providerId: "agmarknet_variety",
     source: "AGMARKNET · Government of India",
@@ -803,47 +771,48 @@ const agmarknetVariety: Provider = {
     const request = (f: MarketFilters, arrivalDate?: string, limit = AGMARKNET_MAX_RECORDS) =>
       fetchAgmarknetRows(AGMARKNET_VARIETY, apiKey, f, limit, arrivalDate, deadlineAtMs);
 
-    const districtAttempts = filters.district ? districtVariants(filters.district) : [undefined];
+    const commodityAttempts = marketCommodityVariants(filters.commodity);
+    const districtAttempts = filters.district
+      ? marketDistrictVariants(filters.district)
+      : [undefined];
 
     let payload: unknown = null;
 
     let statusCode: number | null = null;
 
-    let rows: Record<string, unknown>[] = [];
+    let records: PriceRecord[] = [];
+    let sawRows = false;
+    let sawNormalizedRecords = false;
 
-    for (const district of districtAttempts) {
-      const response = await request({ ...filters, ...(district ? { district } : {}) });
+    for (const commodity of commodityAttempts) {
+      for (const district of districtAttempts) {
+        const response = await request({
+          ...filters,
+          commodity,
+          ...(district ? { district } : {}),
+        });
 
-      payload = response.payload;
+        payload = response.payload;
 
-      statusCode = response.statusCode;
+        statusCode = response.statusCode;
 
-      rows = response.rows;
+        sawRows ||= response.rows.length > 0;
+        const normalizedRecords = normalizeRows(response.rows, {
+          providerId: this.id,
+          source: "AGMARKNET · Government of India",
+          sourceUpdatedAt: datasetUpdatedAt((response.payload ?? {}) as { updated_date?: string }),
+          fetchedAt,
+        });
+        sawNormalizedRecords ||= normalizedRecords.length > 0;
+        records = currentMarketRecords(normalizedRecords, filters);
 
-      if (rows.length > 0) break;
-    }
-
-    // Geocoders and the official dataset often use different district spellings.
-    // Retry without a server-side district filter, then strictly re-check every row below before it can reach the UI.
-    if (rows.length === 0 && filters.district) {
-      const fallbackFilters = { commodity: filters.commodity, state: filters.state };
-      const fallback = await request(fallbackFilters, undefined, AGMARKNET_MAX_RECORDS);
-      payload = fallback.payload;
-      statusCode = fallback.statusCode;
-      rows = fallback.rows;
+        if (records.length > 0) break;
+      }
+      if (records.length > 0) break;
     }
 
     const sourceUpdatedAt = datasetUpdatedAt((payload ?? {}) as { updated_date?: string });
-    const records = normalizeRows(rows, {
-      providerId: this.id,
-
-      source: "AGMARKNET · Government of India",
-
-      sourceUpdatedAt,
-
-      fetchedAt,
-    });
-    if (rows.length > 0 && records.length === 0) {
+    if (sawRows && !sawNormalizedRecords) {
       throw new DataGovRequestError(
         "invalid_json",
         "data.gov.in returned no usable market-price records",
@@ -891,7 +860,7 @@ const agmarknetDaily: Provider = {
 
     const rows = ((payload as { records?: Record<string, unknown>[] }).records ?? []).filter(
       (row) =>
-        looseEq(pick(row, "commodity"), filters.commodity) &&
+        marketCommodityMatches(pick(row, "commodity"), filters.commodity) &&
         looseEq(pick(row, "state"), filters.state) &&
         (!filters.district || districtEq(pick(row, "district"), filters.district)) &&
         (!filters.market || looseEq(pick(row, "market"), filters.market)),
@@ -959,7 +928,7 @@ const storedArchive: Provider = {
         "commodity, variety, state, district, market, min_price, max_price, modal_price, arrival_date",
       )
 
-      .eq("commodity", filters.commodity)
+      .in("commodity", marketCommodityVariants(filters.commodity))
 
       .eq("state", filters.state)
 
@@ -988,7 +957,7 @@ const storedArchive: Provider = {
 
       .limit(250);
 
-    if (filters.district) query = query.eq("district", filters.district);
+    if (filters.district) query = query.in("district", marketDistrictVariants(filters.district));
 
     if (filters.market) query = query.eq("market", filters.market);
 
@@ -1054,13 +1023,11 @@ const cedaAgmarknet: Provider = {
       return { records: [], sourceUpdatedAt: null, statusCode: 200 };
     }
 
-    let commMatch = lookup.commodities.find((c) => looseEq(c.name, filters.commodity));
-    if (!commMatch && filters.commodity.includes("(")) {
-      const cleanName = filters.commodity.split("(")[0]!.trim();
-      commMatch = lookup.commodities.find(
-        (c) => looseEq(c.name, cleanName) || c.name.toLowerCase().includes(cleanName.toLowerCase()),
-      );
-    }
+    const commMatch = marketCommodityVariants(filters.commodity)
+      .map((candidate) =>
+        lookup.commodities.find((commodity) => looseEq(commodity.name, candidate)),
+      )
+      .find((commodity) => commodity !== undefined);
     if (!commMatch) {
       return { records: [], sourceUpdatedAt: null, statusCode: 200 };
     }
@@ -1231,11 +1198,16 @@ export function normalizeCedaPriceRecords(
 ): PriceRecord[] {
   const rows = payloadRows(payload);
   const records = rows.map<PriceRecord | null>((row) => {
+    const commodity = normalizeMarketCommodity(
+      pick(row, "cmdty", "commodity"),
+      options.filters.commodity,
+    );
     const date = toIsoDate(pick(row, "t", "arrival_date", "date"));
     const minPrice = numericValue(pick(row, "p_min", "min_price", "minPrice"));
     const maxPrice = numericValue(pick(row, "p_max", "max_price", "maxPrice"));
     const modalPrice = numericValue(pick(row, "p_modal", "modal_price", "modalPrice"));
-    if (!date || minPrice == null || maxPrice == null || modalPrice == null) return null;
+    if (!commodity || !date || minPrice == null || maxPrice == null || modalPrice == null)
+      return null;
 
     const actualMarket = pick(row, "market", "mandi");
     if (options.filters.market && !looseEq(actualMarket, options.filters.market)) return null;
@@ -1251,7 +1223,7 @@ export function normalizeCedaPriceRecords(
     return {
       providerId: options.providerId ?? CEDA_ID,
       source: "CEDA Agmarknet open research API",
-      commodity: pick(row, "cmdty", "commodity") || options.filters.commodity,
+      commodity,
       variety: pick(row, "variety") || null,
       grade: pick(row, "grade") || null,
       state: pick(row, "state") || options.stateName,
@@ -1473,6 +1445,8 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
         latestDataDate: null,
 
+        sourceUpdatedAt: null,
+
         durationMs: 0,
 
         error: "API key not configured",
@@ -1505,6 +1479,8 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
           recordCount: result.records.length,
 
           latestDataDate: result.records[0]?.date ?? rawResult.records[0]?.date ?? null,
+
+          sourceUpdatedAt: rawResult.sourceUpdatedAt,
 
           durationMs: Date.now() - started,
 
@@ -1546,6 +1522,8 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
           latestDataDate: null,
 
+          sourceUpdatedAt: null,
+
           durationMs: Date.now() - started,
 
           error: dataGovError?.message ?? "Provider request failed",
@@ -1556,13 +1534,9 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
 
   await logAttempts(attempts, filters);
 
-  // Prefer live sources; stored official rows are eligible only inside the same
-
-  // today/yesterday window already enforced above.
-
-  const live = successes.filter((s) => !s.provider.archive);
-
-  const pool = live.length > 0 ? live : successes;
+  // Combine live and stored official rows; the per-market selection below
+  // prefers the newest eligible date and higher-priority source.
+  const pool = successes;
 
   if (pool.length === 0) {
     const receivedEmptyResponses = attempts.some(
@@ -1682,9 +1656,7 @@ export async function aggregateMarketPrices(filters: MarketFilters): Promise<Agg
       ? yesterday
       : allDates[0]!;
 
-  const records = selectLatestPerMarket(
-    [...mergedByDate.values()].flatMap((group) => group.records),
-  );
+  const records = selectLatestPerMarket(mergedByDate.get(latestDate)?.records ?? []);
 
   const onLatest = pool.filter((s) =>
     s.result.records.some((record) => record.date === latestDate),

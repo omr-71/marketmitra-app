@@ -2,25 +2,32 @@ import { useEffect, useState } from "react";
 import { Download, Smartphone } from "lucide-react";
 
 import { useAndroidRelease } from "@/lib/android-release";
+import { shouldShowAndroidAppDownload } from "@/lib/android-app-download-policy";
 
-export function AndroidAppDownload({
-  compact = false,
-}: {
-  compact?: boolean;
-}) {
+type NativeAndroidWindow = Window & { MarketMitraAndroidNotifications?: object };
+
+export function AndroidAppDownload({ compact = false }: { compact?: boolean }) {
   const release = useAndroidRelease();
-  const [mobile, setMobile] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
-    const update = () => setMobile(media.matches);
+    const update = () => {
+      setShowPrompt(
+        shouldShowAndroidAppDownload({
+          isMobileViewport: media.matches,
+          hasNativeBridge: Boolean((window as NativeAndroidWindow).MarketMitraAndroidNotifications),
+          referrer: document.referrer,
+        }),
+      );
+    };
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
 
-  if (!mobile || !release?.available) return null;
+  if (!showPrompt || !release?.available) return null;
 
   return (
     <section

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { LocationCard } from "@/components/location-card";
 import { CardSkeleton, StatSkeleton } from "@/components/skeletons";
 import { AnimatedNumber } from "@/components/motion/animated-number";
@@ -76,8 +77,9 @@ type OkWeather = Extract<WeatherResult, { ok: true }>;
 
 /* ─── Weather Code Helpers ─── */
 
-function weatherAtmosphere(code: number, isDay: boolean): string {
-  if (!isDay) return "weather-atmo-night";
+function weatherAtmosphere(code: number | null, isDay: boolean | null): string {
+  if (code === null) return "weather-atmo-cloudy";
+  if (isDay === false) return "weather-atmo-night";
   if (code === 0 || code <= 1) return "weather-atmo-sunny";
   if (code <= 3) return "weather-atmo-cloudy";
   if (code <= 48) return "weather-atmo-fog";
@@ -91,14 +93,15 @@ function weatherAtmosphere(code: number, isDay: boolean): string {
 
 function WeatherIcon({
   code,
-  isDay = true,
+  isDay,
   className = "size-5",
 }: {
-  code: number;
-  isDay?: boolean;
+  code: number | null;
+  isDay?: boolean | null;
   className?: string;
 }) {
-  if (!isDay && code <= 2) return <Moon className={`${className} text-indigo-300`} />;
+  if (code === null) return null;
+  if (isDay === false && code <= 2) return <Moon className={`${className} text-indigo-300`} />;
   if (code === 0) return <Sun className={`${className} text-amber-400 weather-icon-sun`} />;
   if (code <= 2) return <CloudSun className={`${className} text-amber-400 weather-icon-cloud`} />;
   if (code === 3) return <CloudSun className={`${className} text-slate-400 weather-icon-cloud`} />;
@@ -126,14 +129,14 @@ function generateAlerts(data: OkWeather): WeatherAlert[] {
   if (!today) return alerts;
 
   // Heavy rain
-  if (today.rainMm >= 30) {
+  if (today.rainMm !== null && today.rainMm >= 30) {
     alerts.push({
       severity: "high",
       title: "Heavy rainfall expected",
       description: `Up to ${today.rainMm} mm rain forecast today with ${today.rainChance}% probability. Protect harvested stock and avoid open-field operations.`,
       icon: <CloudRain className="size-5" />,
     });
-  } else if (today.rainMm >= 10) {
+  } else if (today.rainMm !== null && today.rainMm >= 10) {
     alerts.push({
       severity: "moderate",
       title: "Moderate rainfall expected",
@@ -143,14 +146,20 @@ function generateAlerts(data: OkWeather): WeatherAlert[] {
   }
 
   // Strong winds
-  if (data.current.windGust >= 50 || data.current.wind >= 40) {
+  if (
+    (data.current.windGust !== null && data.current.windGust >= 50) ||
+    (data.current.wind !== null && data.current.wind >= 40)
+  ) {
     alerts.push({
       severity: "high",
       title: "Strong winds",
       description: `Wind gusts up to ${data.current.windGust} km/h. Secure loose materials and avoid spraying operations.`,
       icon: <Wind className="size-5" />,
     });
-  } else if (data.current.windGust >= 30 || data.current.wind >= 25) {
+  } else if (
+    (data.current.windGust !== null && data.current.windGust >= 30) ||
+    (data.current.wind !== null && data.current.wind >= 25)
+  ) {
     alerts.push({
       severity: "moderate",
       title: "Windy conditions",
@@ -160,14 +169,14 @@ function generateAlerts(data: OkWeather): WeatherAlert[] {
   }
 
   // Extreme heat
-  if (today.max >= 42) {
+  if (today.max !== null && today.max >= 42) {
     alerts.push({
       severity: "high",
       title: "Extreme heat",
       description: `Temperature peaking at ${today.max}°C. Avoid prolonged outdoor work between 11am–4pm. Ensure adequate irrigation.`,
       icon: <ThermometerSun className="size-5" />,
     });
-  } else if (today.max >= 38) {
+  } else if (today.max !== null && today.max >= 38) {
     alerts.push({
       severity: "moderate",
       title: "Heat advisory",
@@ -177,7 +186,7 @@ function generateAlerts(data: OkWeather): WeatherAlert[] {
   }
 
   // Thunderstorm from weather code
-  if (data.current.code >= 95) {
+  if (data.current.code !== null && data.current.code >= 95) {
     alerts.push({
       severity: "high",
       title: "Thunderstorm",
@@ -188,7 +197,7 @@ function generateAlerts(data: OkWeather): WeatherAlert[] {
   }
 
   // UV
-  if (data.current.uvIndex >= 11) {
+  if (data.current.uvIndex !== null && data.current.uvIndex >= 11) {
     alerts.push({
       severity: "high",
       title: "Extreme UV radiation",
@@ -266,7 +275,10 @@ function WeatherPage() {
         {!hasLocation ? (
           <NoLocationState />
         ) : query.isPending ? (
-          <WeatherSkeleton />
+          <>
+            <BrandLoader variant="inline" message="Checking local weather intelligence" />
+            <WeatherSkeleton />
+          </>
         ) : !data ? (
           <ErrorState
             message={
@@ -424,7 +436,9 @@ function WeatherContent({
           <WeatherMetrics data={data} />
 
           {/* Sunrise/Sunset */}
-          <SunriseSunset sunrise={data.sunrise} sunset={data.sunset} />
+          {data.sunrise && data.sunset && (
+            <SunriseSunset sunrise={data.sunrise} sunset={data.sunset} />
+          )}
 
           {/* Best Farming Window */}
           <FarmingWindowCard data={data} />
@@ -475,8 +489,10 @@ function WeatherHero({ data, atmosphere }: { data: OkWeather; atmosphere: string
 
             {/* Feels like + High/Low */}
             <div className="mt-1.5 flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="font-medium">Feels like {data.current.apparent}°</span>
-              {today && (
+              {data.current.apparent !== null && (
+                <span className="font-medium">Feels like {data.current.apparent}°</span>
+              )}
+              {today?.max !== null && today?.max !== undefined && today.min !== null && (
                 <span className="font-semibold">
                   H:{today.max}° L:{today.min}°
                 </span>
@@ -499,17 +515,17 @@ function WeatherHero({ data, atmosphere }: { data: OkWeather; atmosphere: string
           <QuickStat
             icon={<Droplets className="size-3.5 text-sky-500" />}
             label="Humidity"
-            value={`${data.current.humidity}%`}
+            value={data.current.humidity === null ? "—" : `${data.current.humidity}%`}
           />
           <QuickStat
             icon={<Wind className="size-3.5 text-teal-500" />}
             label="Wind"
-            value={`${data.current.wind} km/h`}
+            value={data.current.wind === null ? "—" : `${data.current.wind} km/h`}
           />
           <QuickStat
             icon={<CloudRain className="size-3.5 text-blue-500" />}
             label="Rain"
-            value={`${data.current.rainChance}%`}
+            value={data.current.rainChance === null ? "—" : `${data.current.rainChance}%`}
           />
         </div>
       </div>
@@ -586,7 +602,7 @@ function HourlyForecastSection({ hourly }: { hourly: HourlyForecast[] }) {
 
               <span className="text-sm font-extrabold tabular-nums">{h.temperature}°</span>
 
-              {h.rainChance > 0 && (
+              {h.rainChance !== null && h.rainChance > 0 && (
                 <span className="text-[10px] font-bold text-blue-500">{h.rainChance}%</span>
               )}
             </div>
@@ -620,76 +636,91 @@ function WeatherMetrics({ data }: { data: OkWeather }) {
     {
       icon: <Droplets className="size-4 text-sky-500" />,
       label: "Humidity",
-      value: `${data.current.humidity}`,
+      value: data.current.humidity === null ? "—" : `${data.current.humidity}`,
       unit: "%",
       description:
-        data.current.humidity >= 80
-          ? "High — slows drying"
-          : data.current.humidity >= 60
-            ? "Moderate"
-            : "Low — good for drying",
+        data.current.humidity === null
+          ? "Unavailable"
+          : data.current.humidity >= 80
+            ? "High — slows drying"
+            : data.current.humidity >= 60
+              ? "Moderate"
+              : "Low — good for drying",
     },
     {
       icon: <Wind className="size-4 text-teal-500" />,
       label: "Wind",
-      value: `${data.current.wind}`,
+      value: data.current.wind === null ? "—" : `${data.current.wind}`,
       unit: "km/h",
       description:
-        data.current.wind >= 25
-          ? "Strong — avoid spraying"
-          : data.current.wind >= 15
-            ? "Moderate breeze"
-            : "Light breeze",
+        data.current.wind === null
+          ? "Unavailable"
+          : data.current.wind >= 25
+            ? "Strong — avoid spraying"
+            : data.current.wind >= 15
+              ? "Moderate breeze"
+              : "Light breeze",
     },
     {
       icon: <Wind className="size-4 text-teal-600" />,
       label: "Gusts",
-      value: `${data.current.windGust}`,
+      value: data.current.windGust === null ? "—" : `${data.current.windGust}`,
       unit: "km/h",
       description:
-        data.current.windGust >= 40
-          ? "Strong gusts"
-          : data.current.windGust >= 20
-            ? "Moderate gusts"
-            : "Calm",
+        data.current.windGust === null
+          ? "Unavailable"
+          : data.current.windGust >= 40
+            ? "Strong gusts"
+            : data.current.windGust >= 20
+              ? "Moderate gusts"
+              : "Calm",
     },
     {
       icon: <CloudRain className="size-4 text-blue-500" />,
       label: "Rain Probability",
-      value: `${data.current.rainChance}`,
+      value: data.current.rainChance === null ? "—" : `${data.current.rainChance}`,
       unit: "%",
       description:
-        data.current.rainChance >= 60
-          ? "Rain likely today"
-          : data.current.rainChance >= 30
-            ? "Some chance"
-            : "Dry conditions",
+        data.current.rainChance === null
+          ? "Unavailable"
+          : data.current.rainChance >= 60
+            ? "Rain likely today"
+            : data.current.rainChance >= 30
+              ? "Some chance"
+              : "Dry conditions",
     },
     {
       icon: <Droplets className="size-4 text-blue-400" />,
       label: "Precipitation",
-      value: `${data.current.precipitation}`,
+      value: data.current.precipitation === null ? "—" : `${data.current.precipitation}`,
       unit: "mm",
-      description: data.current.precipitation > 0 ? "Active rain" : "No rain currently",
+      description:
+        data.current.precipitation === null
+          ? "Unavailable"
+          : data.current.precipitation > 0
+            ? "Active rain"
+            : "No rain currently",
     },
     {
       icon: <Sun className="size-4 text-amber-500" />,
       label: "UV Index",
-      value: `${data.current.uvIndex}`,
+      value: data.current.uvIndex === null ? "—" : `${data.current.uvIndex}`,
       unit: "",
       description: uvLabel(data.current.uvIndex),
     },
     {
       icon: <Gauge className="size-4 text-violet-500" />,
       label: "Pressure",
-      value: `${data.current.pressure}`,
+      value: data.current.pressure === null ? "—" : `${data.current.pressure}`,
       unit: "hPa",
       description:
-        data.current.pressure < 1000
-          ? "Low — unsettled weather"
-          : data.current.pressure > 1020
-            ? "High — stable weather"
-            : "Normal",
+        data.current.pressure === null
+          ? "Unavailable"
+          : data.current.pressure < 1000
+            ? "Low — unsettled weather"
+            : data.current.pressure > 1020
+              ? "High — stable weather"
+              : "Normal",
     },
     ...(data.current.visibility != null
       ? [
@@ -835,6 +866,7 @@ function SunriseSunset({ sunrise, sunset }: { sunrise: string; sunset: string })
 
 function FarmingWindowCard({ data }: { data: OkWeather }) {
   const window = bestFarmingWindow(data);
+  if (!window) return null;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-gold/30 bg-gold/5 p-5">
@@ -907,7 +939,7 @@ function WeatherAlerts({ alerts }: { alerts: WeatherAlert[] }) {
 
 function RainAlertBanner({ days }: { days: WeatherDay[] }) {
   const { t } = useLang();
-  const wetDays = days.filter((d) => d.rainChance >= 60);
+  const wetDays = days.filter((d) => d.rainChance !== null && d.rainChance >= 60);
 
   if (wetDays.length === 0) return null;
 
@@ -919,8 +951,9 @@ function RainAlertBanner({ days }: { days: WeatherDay[] }) {
           <p className="text-sm font-bold text-warning-foreground">{t("rainAlert")}</p>
           <p className="mt-1.5 text-[13px] font-semibold leading-relaxed">
             Rain is likely on {wetDays.map((d) => formatIstWeekday(d.date)).join(", ")} — up to{" "}
-            {Math.max(...wetDays.map((d) => d.rainMm))} mm. Cover harvested stock and plan mandi
-            trips around these days.
+            {wetDays.some((day) => day.rainMm !== null) &&
+              `up to ${Math.max(...wetDays.map((day) => day.rainMm ?? 0))} mm. `}
+            Cover harvested stock and plan mandi trips around these days.
           </p>
         </div>
       </div>
@@ -935,9 +968,11 @@ function SevenDayForecast({ days }: { days: WeatherDay[] }) {
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   // Calculate temp range for the bar visualization
-  const allTemps = days.flatMap((d) => [d.min, d.max]);
-  const weekMin = Math.min(...allTemps);
-  const weekMax = Math.max(...allTemps);
+  const allTemps = days.flatMap((day) =>
+    [day.min, day.max].filter((value): value is number => value !== null),
+  );
+  const weekMin = allTemps.length ? Math.min(...allTemps) : 0;
+  const weekMax = allTemps.length ? Math.max(...allTemps) : 1;
   const range = weekMax - weekMin || 1;
 
   return (
@@ -949,8 +984,9 @@ function SevenDayForecast({ days }: { days: WeatherDay[] }) {
       <div className="divide-y divide-border/40 px-5 pb-4">
         {days.map((day) => {
           const isExpanded = expandedDay === day.date;
-          const leftPct = ((day.min - weekMin) / range) * 100;
-          const widthPct = ((day.max - day.min) / range) * 100;
+          const leftPct = day.min === null ? 0 : ((day.min - weekMin) / range) * 100;
+          const widthPct =
+            day.min === null || day.max === null ? 0 : ((day.max - day.min) / range) * 100;
 
           return (
             <div key={day.date}>
@@ -970,28 +1006,30 @@ function SevenDayForecast({ days }: { days: WeatherDay[] }) {
 
                 {/* Rain chance */}
                 <span className="w-9 shrink-0 text-right text-[11px] font-bold text-blue-500">
-                  {day.rainChance > 0 ? `${day.rainChance}%` : ""}
+                  {day.rainChance === null ? "—" : day.rainChance > 0 ? `${day.rainChance}%` : ""}
                 </span>
 
                 {/* Temperature range bar */}
                 <div className="mx-2 min-w-0 flex-1">
                   <div className="weather-temp-range">
-                    <div
-                      className="weather-temp-range-fill"
-                      style={{
-                        left: `${leftPct}%`,
-                        width: `${Math.max(widthPct, 8)}%`,
-                      }}
-                    />
+                    {day.min !== null && day.max !== null && (
+                      <div
+                        className="weather-temp-range-fill"
+                        style={{
+                          left: `${leftPct}%`,
+                          width: `${Math.max(widthPct, 8)}%`,
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
 
                 {/* Min/Max */}
                 <span className="w-7 shrink-0 text-right text-xs font-semibold text-muted-foreground tabular-nums">
-                  {day.min}°
+                  {day.min === null ? "—" : `${day.min}°`}
                 </span>
                 <span className="w-7 shrink-0 text-right text-sm font-extrabold tabular-nums">
-                  {day.max}°
+                  {day.max === null ? "—" : `${day.max}°`}
                 </span>
 
                 {/* Expand arrow */}
@@ -1006,9 +1044,22 @@ function SevenDayForecast({ days }: { days: WeatherDay[] }) {
               {isExpanded && (
                 <div className="grid grid-cols-2 gap-2 pb-3 pl-10 sm:grid-cols-4">
                   <MiniStat label="Condition" value={conditionLabel(day.code)} />
-                  <MiniStat label="Rainfall" value={`${day.rainMm} mm`} />
-                  <MiniStat label="Max wind" value={`${day.windMax} km/h`} />
-                  <MiniStat label="UV Index" value={`${day.uvIndex} — ${uvLabel(day.uvIndex)}`} />
+                  <MiniStat
+                    label="Rainfall"
+                    value={day.rainMm === null ? "Unavailable" : `${day.rainMm} mm`}
+                  />
+                  <MiniStat
+                    label="Max wind"
+                    value={day.windMax === null ? "Unavailable" : `${day.windMax} km/h`}
+                  />
+                  <MiniStat
+                    label="UV Index"
+                    value={
+                      day.uvIndex === null
+                        ? "Unavailable"
+                        : `${day.uvIndex} — ${uvLabel(day.uvIndex)}`
+                    }
+                  />
                 </div>
               )}
             </div>
@@ -1048,6 +1099,11 @@ function HarvestAdviceCard({ days }: { days: WeatherDay[] }) {
             <span>{line}</span>
           </li>
         ))}
+        {advice.length === 0 && (
+          <li className="text-[13px] font-medium text-muted-foreground">
+            This forecast does not include enough daily detail for harvest guidance.
+          </li>
+        )}
       </ul>
     </section>
   );
@@ -1073,6 +1129,11 @@ function FarmingTipsCard({ data }: { data: OkWeather }) {
           </li>
         ))}
       </ul>
+      {tips.length === 0 && (
+        <p className="mt-4 text-[13px] font-medium text-muted-foreground">
+          This forecast does not include enough detail for field guidance.
+        </p>
+      )}
     </section>
   );
 }
@@ -1081,17 +1142,43 @@ function FarmingTipsCard({ data }: { data: OkWeather }) {
 
 function DataAttribution({ data }: { data: OkWeather }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 px-4 py-3">
       <div className="flex items-center gap-1.5">
         <div className="size-1.5 rounded-full bg-green-500 animate-pulse" />
         <span className="text-[11px] font-semibold text-muted-foreground">
-          {data.source || "Open-Meteo"}
+          {data.source === "MET Norway" ? (
+            <a
+              href="https://api.met.no/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              MET Norway
+            </a>
+          ) : (
+            data.source || "Open-Meteo"
+          )}
         </span>
+        {data.source === "MET Norway" && (
+          <span className="text-[10px] text-muted-foreground">
+            · © MET Norway, adapted under{" "}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              CC BY 4.0
+            </a>
+          </span>
+        )}
       </div>
       <span className="text-[11px] font-medium text-muted-foreground">
-        {data.observedAt
-          ? `Observed ${formatIstTime(data.observedAt)} IST`
-          : `Updated ${formatIstDateTime(data.updatedAt)} IST`}
+        {data.observedAt && data.source === "MET Norway"
+          ? `Forecast for ${formatIstDateTime(data.observedAt)} IST`
+          : data.observedAt
+            ? `Observed ${formatIstTime(data.observedAt)} IST`
+            : `Updated ${formatIstDateTime(data.updatedAt)} IST`}
         {data.days.length > 0 &&
           ` · Forecast to ${formatIstWeekday(data.days[data.days.length - 1]!.date)}`}
       </span>

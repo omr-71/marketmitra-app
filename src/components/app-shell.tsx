@@ -16,7 +16,6 @@ import { useLang } from "@/lib/i18n";
 import { usePageTracking } from "@/lib/analytics";
 import { featureKeyForPath, MaintenanceNotice, useFeature } from "@/lib/features";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
-import { SystemNotices } from "./system-notices";
 
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
@@ -96,7 +95,7 @@ export function SideNav() {
   const simplifyMotion = reducedMotion || coarsePointer;
 
   return (
-    <aside className="app-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-card px-4 py-6 lg:flex">
+    <aside className="app-sidebar fixed top-4 left-4 bottom-4 z-30 hidden h-[calc(100vh-32px)] w-64 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-lg shadow-slate-900/5 lg:flex">
       <Link to="/home" className="flex items-center gap-3 px-2">
         <LogoMark className="size-9" />
         <Wordmark className="text-lg" />
@@ -106,7 +105,7 @@ export function SideNav() {
         Workspace
       </p>
 
-      <nav className="mt-2 space-y-1">
+      <nav className="mt-2 space-y-2">
         {nav.map(({ to, icon: Icon, key }) => {
           const active = isActive(to);
 
@@ -114,23 +113,13 @@ export function SideNav() {
             <Link
               key={to}
               to={to}
-              className={`press relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-bold transition-colors ${
+              className={`press group relative flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-bold transition-all duration-200 ${
                 active
-                  ? "text-primary"
-                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  ? "border border-primary/25 bg-primary/10 text-primary shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]"
+                  : "border border-transparent bg-transparent text-muted-foreground hover:-translate-y-0.5 hover:border-slate-200/90 hover:bg-slate-50/80 hover:text-foreground hover:shadow-[0_4px_10px_-2px_rgba(0,0,0,0.08),0_2px_4px_-1px_rgba(0,0,0,0.04)]"
               }`}
             >
-              {active &&
-                (simplifyMotion ? (
-                  <span className="absolute inset-0 -z-10 rounded-xl bg-primary/12" />
-                ) : (
-                  <motion.span
-                    layoutId="sideNavActivePill"
-                    transition={SPRINGS.navPill}
-                    className="absolute inset-0 -z-10 rounded-xl bg-primary/12"
-                  />
-                ))}
-              <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} />
+              <Icon className="size-5 transition-transform duration-200 group-hover:scale-105" strokeWidth={active ? 2.4 : 1.9} />
               {t(key)}
             </Link>
           );
@@ -139,9 +128,9 @@ export function SideNav() {
 
       <Link
         to="/about"
-        className="press mt-auto flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="press group mt-auto flex items-center gap-3 rounded-2xl border border-transparent px-3.5 py-3 text-sm font-bold text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200/90 hover:bg-slate-50/80 hover:text-foreground hover:shadow-[0_4px_10px_-2px_rgba(0,0,0,0.08),0_2px_4px_-1px_rgba(0,0,0,0.04)]"
       >
-        <Info className="size-5" strokeWidth={1.9} />
+        <Info className="size-5 transition-transform duration-200 group-hover:scale-105" strokeWidth={1.9} />
         About MarketMitra
       </Link>
 
@@ -169,18 +158,21 @@ export function Screen({
   const disabled = flag && !flag.enabled ? flag : null;
 
   return (
-    <div className="app-canvas min-h-screen bg-background lg:flex">
+    <div className="app-canvas min-h-screen bg-[#f9fafb]">
       {withNav && <SideNav />}
 
-      <div className="min-w-0 flex-1">
+      <div
+        className={`min-w-0 flex-1 bg-transparent ${
+          withNav ? "lg:pl-[18rem]" : ""
+        } lg:py-4 lg:pr-4`}
+      >
         <div
           data-route={pathname}
-          className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-8 ${
+          className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-4 ${
             withNav ? "pb-28 lg:pb-0" : ""
           } ${className}`}
         >
-          {withNav && <SystemNotices />}
-          <div key={pathname} className="animate-page">
+          <div key={pathname} className="animate-page will-change-[opacity]">
             {disabled ? <MaintenanceNotice flag={disabled} /> : children}
           </div>
 
@@ -199,14 +191,14 @@ export function TopBar({
   subtitle,
   back,
   action,
-  settings = true,
+  settings = false,
   className = "",
 }: {
   title: string;
   subtitle?: string;
   back?: string;
   action?: ReactNode;
-  /** Show the top-right settings shortcut (hidden on the settings screen). */
+  /** Show the top-right settings shortcut. */
   settings?: boolean;
   className?: string;
 }) {

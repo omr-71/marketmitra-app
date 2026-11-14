@@ -35,6 +35,7 @@ export async function getWeather(latitude: number, longitude: number): Promise<W
   try {
     const response = await fetch(url.toString(), {
       headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!response.ok) {

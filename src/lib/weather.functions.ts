@@ -1,5 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import {
+  fetchMetNorwayForecast,
+  fetchWeatherFromProviders,
+  mapMetNorwayForecast,
+} from "./met-norway.server";
+import { fetchWeatherResponse } from "./weather-provider";
 
 const schema = z.object({
   latitude: z.number().min(-90).max(90),
@@ -8,21 +14,21 @@ const schema = z.object({
 
 export type WeatherDay = {
   date: string;
-  max: number;
-  min: number;
-  rainChance: number;
-  rainMm: number;
-  code: number;
-  uvIndex: number;
-  windMax: number;
+  max: number | null;
+  min: number | null;
+  rainChance: number | null;
+  rainMm: number | null;
+  code: number | null;
+  uvIndex: number | null;
+  windMax: number | null;
 };
 
 export type HourlyForecast = {
   time: string;
   temperature: number;
-  code: number;
-  rainChance: number;
-  isDay: boolean;
+  code: number | null;
+  rainChance: number | null;
+  isDay: boolean | null;
 };
 
 export type WeatherResult =
@@ -31,21 +37,21 @@ export type WeatherResult =
       updatedAt: string;
       current: {
         temperature: number;
-        apparent: number;
-        humidity: number;
-        wind: number;
-        rainChance: number;
-        code: number;
-        isDay: boolean;
-        pressure: number;
-        uvIndex: number;
-        precipitation: number;
-        windGust: number;
-        visibility: number;
+        apparent: number | null;
+        humidity: number | null;
+        wind: number | null;
+        rainChance: number | null;
+        code: number | null;
+        isDay: boolean | null;
+        pressure: number | null;
+        uvIndex: number | null;
+        precipitation: number | null;
+        windGust: number | null;
+        visibility: number | null;
       };
       observedAt: string;
-      sunrise: string;
-      sunset: string;
+      sunrise: string | null;
+      sunset: string | null;
       days: WeatherDay[];
       hourly: HourlyForecast[];
       source: string;
@@ -76,33 +82,21 @@ export const fetchWeather = createServerFn({ method: "POST" })
     url.searchParams.set("forecast_days", "7");
 
     try {
-      const response = await fetch(url, {
-        headers: {
-          accept: "application/json",
+      const { source, payload } = await fetchWeatherFromProviders(
+        url,
+        data.latitude,
+        data.longitude,
+        {
+          fetchPrimary: fetchWeatherResponse,
+          fetchFallback: fetchMetNorwayForecast,
         },
-        signal: AbortSignal.timeout(10000),
-      });
+      );
 
-      if (!response.ok) {
-        console.error(
-          `Open-Meteo failed [${response.status}]: ${(await response.text()).slice(0, 300)}`,
-        );
-        const { logApplicationError } = await import("./error-logging.server");
-        await logApplicationError({
-          service: "weather",
-          requestId: crypto.randomUUID(),
-          provider: "Open-Meteo",
-          errorType: `http_${response.status}`,
-          message: `Weather provider returned HTTP ${response.status}.`,
-        });
-
-        return {
-          ok: false,
-          error: "The weather service is temporarily unavailable.",
-        };
+      if (source === "MET Norway") {
+        console.warn("Open-Meteo is temporarily unavailable; serving the MET Norway forecast.");
+        return mapMetNorwayForecast(payload);
       }
-
-      const json = (await response.json()) as {
+      const json = payload as {
         current: Record<string, number | string>;
         hourly: {
           time: string[];
@@ -183,7 +177,7 @@ export const fetchWeather = createServerFn({ method: "POST" })
         days,
         hourly,
 
-        source: "Open-Meteo",
+        source,
       };
     } catch (error) {
       console.error("Open-Meteo network error", error);

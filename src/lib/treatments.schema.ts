@@ -90,7 +90,16 @@ export type OrganicManagementRecommendation = z.infer<typeof organicManagementSc
   verificationStatus: "source_supported";
 };
 
+export type SprayItem = {
+  name: string;
+  dosage: string;
+};
+
 export type TreatmentGuidance = {
+  disease?: string | undefined;
+  organic_sprays: SprayItem[];
+  inorganic_sprays: SprayItem[];
+  non_chemical_steps: string[];
   generalCare: string[];
   organicManagement: OrganicManagementRecommendation[];
   organicBiological: TreatmentRecommendation[];
@@ -597,11 +606,128 @@ export function buildTreatmentGuidance(
 
   return {
     generalCare: parsed.generalCare,
+    organic_sprays: [],
+    inorganic_sprays: [],
+    non_chemical_steps: parsed.generalCare,
     organicManagement,
     organicBiological,
     chemical,
     sources: sources.map(({ name, url }) => ({ name, url })),
     retrievedAt,
     sourceStatus: sources.length > 0 ? "sources_found" : "no_authoritative_sources",
+  };
+}
+
+export function normalizeSprayItem(raw: unknown): SprayItem | null {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    const parts = raw.split(/[-–—:]\s*/);
+    const firstPart = parts[0]?.trim();
+    if (parts.length > 1 && firstPart) {
+      return { name: firstPart, dosage: parts.slice(1).join(" - ").trim() };
+    }
+    return { name: raw.trim(), dosage: "As per label instructions" };
+  }
+  if (typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    const name = String(
+      obj["name"] ?? obj["spray_name"] ?? obj["chemical_name"] ?? obj["product"] ?? obj["productName"] ?? "",
+    ).trim();
+    const dosage = String(
+      obj["dosage"] ?? obj["dose"] ?? obj["amount"] ?? obj["rate"] ?? "As per label instructions",
+    ).trim();
+    if (!name) return null;
+    return { name, dosage: dosage || "As per label instructions" };
+  }
+  return null;
+}
+
+export function normalizeNonChemicalSteps(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => (typeof item === "string" ? item.trim() : String(item ?? "").trim()))
+      .filter((step) => step.length > 0);
+  }
+  if (typeof raw === "string") {
+    return [raw.trim()].filter((step) => step.length > 0);
+  }
+  return [];
+}
+
+export function validateGroqStructuredOutput(parsed: unknown): boolean {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  // Legacy test support
+  if (Array.isArray(obj["organicBiological"]) || Array.isArray(obj["chemical"])) return true;
+  // New Groq structured format must have organic_sprays, inorganic_sprays, or non_chemical_steps
+  return (
+    Array.isArray(obj["organic_sprays"]) ||
+    Array.isArray(obj["inorganic_sprays"]) ||
+    Array.isArray(obj["non_chemical_steps"])
+  );
+}
+
+export function buildGroqTreatmentGuidance(
+  parsed: unknown,
+  retrievedAt: string = new Date().toISOString(),
+  targetCrop = "",
+  targetCondition = "",
+): TreatmentGuidance {
+  const obj = parsed !== null && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+
+  // Check if legacy model output with organicBiological / chemical
+  if (
+    !Array.isArray(obj["organic_sprays"]) &&
+    !Array.isArray(obj["inorganic_sprays"]) &&
+    (Array.isArray(obj["organicBiological"]) || Array.isArray(obj["chemical"]))
+  ) {
+    try {
+      const modelResponse = normalizeTreatmentModelResponse(parsed);
+      const legacyGuidance = buildTreatmentGuidance(modelResponse, [], retrievedAt, targetCrop, targetCondition);
+      return {
+        ...legacyGuidance,
+        organic_sprays: [],
+        inorganic_sprays: [],
+        non_chemical_steps: legacyGuidance.generalCare,
+      };
+    } catch {
+      // Fall through to general normalization
+    }
+  }
+
+  const rawOrganic = Array.isArray(obj["organic_sprays"])
+    ? (obj["organic_sprays"] as unknown[])
+    : Array.isArray(obj["organicSprays"])
+      ? (obj["organicSprays"] as unknown[])
+      : [];
+  const rawInorganic = Array.isArray(obj["inorganic_sprays"])
+    ? (obj["inorganic_sprays"] as unknown[])
+    : Array.isArray(obj["inorganicSprays"])
+      ? (obj["inorganicSprays"] as unknown[])
+      : [];
+  const rawSteps = obj["non_chemical_steps"] ?? obj["nonChemicalSteps"] ?? obj["generalCare"];
+
+  const organicSprays: SprayItem[] = rawOrganic
+    .map(normalizeSprayItem)
+    .filter((s): s is SprayItem => s !== null);
+  const inorganicSprays: SprayItem[] = rawInorganic
+    .map(normalizeSprayItem)
+    .filter((s): s is SprayItem => s !== null);
+  const nonChemicalSteps: string[] = normalizeNonChemicalSteps(rawSteps);
+  const disease = typeof obj["disease"] === "string" ? (obj["disease"] as string).trim() : undefined;
+
+  return {
+    disease,
+    organic_sprays: organicSprays,
+    inorganic_sprays: inorganicSprays,
+    non_chemical_steps: nonChemicalSteps,
+    generalCare: nonChemicalSteps,
+    organicManagement: [],
+    organicBiological: [],
+    chemical: [],
+    sources: [],
+    retrievedAt,
+    sourceStatus: "sources_found",
   };
 }

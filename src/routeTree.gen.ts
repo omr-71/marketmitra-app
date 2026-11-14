@@ -16,11 +16,13 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as DotwellKnownAssetlinksDotjsonRouteImport } from './routes/[.]well-known/assetlinks[.]json'
 import { Route as AuthenticatedCropsRouteImport } from './routes/_authenticated/crops'
 import { Route as AuthenticatedDiagnoseRouteImport } from './routes/_authenticated/diagnose'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedLinkRouteImport } from './routes/_authenticated/link'
 import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedPredictRouteImport } from './routes/_authenticated/predict'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSchemesRouteImport } from './routes/_authenticated/schemes'
@@ -30,6 +32,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedMarketMarketIdRouteImport } from './routes/_authenticated/market.$marketId'
 import { Route as AuthenticatedSchemesIndexRouteImport } from './routes/_authenticated/schemes.index'
 import { Route as AuthenticatedSchemesSchemeIdRouteImport } from './routes/_authenticated/schemes.$schemeId'
+import { Route as ApiNotificationsRunRouteImport } from './routes/api/notifications/run'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,6 +69,12 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownAssetlinksDotjsonRoute =
+  DotwellKnownAssetlinksDotjsonRouteImport.update({
+    id: '/.well-known/assetlinks.json',
+    path: '/.well-known/assetlinks.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedCropsRoute = AuthenticatedCropsRouteImport.update({
   id: '/crops',
   path: '/crops',
@@ -91,6 +100,12 @@ const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
   path: '/markets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPredictRoute = AuthenticatedPredictRouteImport.update({
   id: '/predict',
   path: '/predict',
@@ -139,6 +154,11 @@ const AuthenticatedSchemesSchemeIdRoute =
     path: '/$schemeId',
     getParentRoute: () => AuthenticatedSchemesRoute,
   } as any)
+const ApiNotificationsRunRoute = ApiNotificationsRunRouteImport.update({
+  id: '/api/notifications/run',
+  path: '/api/notifications/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -153,11 +173,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/.well-known/assetlinks.json': typeof DotwellKnownAssetlinksDotjsonRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
   '/link': typeof AuthenticatedLinkRoute
   '/markets': typeof AuthenticatedMarketsRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/schemes': typeof AuthenticatedSchemesRouteWithChildren
@@ -166,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
+  '/api/notifications/run': typeof ApiNotificationsRunRoute
   '/schemes/': typeof AuthenticatedSchemesIndexRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -176,11 +199,13 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/.well-known/assetlinks.json': typeof DotwellKnownAssetlinksDotjsonRoute
   '/crops': typeof AuthenticatedCropsRoute
   '/diagnose': typeof AuthenticatedDiagnoseRoute
   '/home': typeof AuthenticatedHomeRoute
   '/link': typeof AuthenticatedLinkRoute
   '/markets': typeof AuthenticatedMarketsRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/predict': typeof AuthenticatedPredictRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -188,6 +213,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
+  '/api/notifications/run': typeof ApiNotificationsRunRoute
   '/schemes': typeof AuthenticatedSchemesIndexRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -200,11 +226,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/.well-known/assetlinks.json': typeof DotwellKnownAssetlinksDotjsonRoute
   '/_authenticated/crops': typeof AuthenticatedCropsRoute
   '/_authenticated/diagnose': typeof AuthenticatedDiagnoseRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/link': typeof AuthenticatedLinkRoute
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/predict': typeof AuthenticatedPredictRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/schemes': typeof AuthenticatedSchemesRouteWithChildren
@@ -213,6 +241,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/market/$marketId': typeof AuthenticatedMarketMarketIdRoute
   '/_authenticated/schemes/$schemeId': typeof AuthenticatedSchemesSchemeIdRoute
+  '/api/notifications/run': typeof ApiNotificationsRunRoute
   '/_authenticated/schemes/': typeof AuthenticatedSchemesIndexRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -225,11 +254,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/terms'
+    | '/.well-known/assetlinks.json'
     | '/crops'
     | '/diagnose'
     | '/home'
     | '/link'
     | '/markets'
+    | '/notifications'
     | '/predict'
     | '/profile'
     | '/schemes'
@@ -238,6 +269,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/market/$marketId'
     | '/schemes/$schemeId'
+    | '/api/notifications/run'
     | '/schemes/'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -248,11 +280,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/terms'
+    | '/.well-known/assetlinks.json'
     | '/crops'
     | '/diagnose'
     | '/home'
     | '/link'
     | '/markets'
+    | '/notifications'
     | '/predict'
     | '/profile'
     | '/settings'
@@ -260,6 +294,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/market/$marketId'
     | '/schemes/$schemeId'
+    | '/api/notifications/run'
     | '/schemes'
     | '/lovable/email/transactional/preview'
   id:
@@ -271,11 +306,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/terms'
+    | '/.well-known/assetlinks.json'
     | '/_authenticated/crops'
     | '/_authenticated/diagnose'
     | '/_authenticated/home'
     | '/_authenticated/link'
     | '/_authenticated/markets'
+    | '/_authenticated/notifications'
     | '/_authenticated/predict'
     | '/_authenticated/profile'
     | '/_authenticated/schemes'
@@ -284,6 +321,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/_authenticated/market/$marketId'
     | '/_authenticated/schemes/$schemeId'
+    | '/api/notifications/run'
     | '/_authenticated/schemes/'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -296,7 +334,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  DotwellKnownAssetlinksDotjsonRoute: typeof DotwellKnownAssetlinksDotjsonRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiNotificationsRunRoute: typeof ApiNotificationsRunRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
@@ -351,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/assetlinks.json': {
+      id: '/.well-known/assetlinks.json'
+      path: '/.well-known/assetlinks.json'
+      fullPath: '/.well-known/assetlinks.json'
+      preLoaderRoute: typeof DotwellKnownAssetlinksDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/crops': {
       id: '/_authenticated/crops'
       path: '/crops'
@@ -384,6 +431,13 @@ declare module '@tanstack/react-router' {
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof AuthenticatedMarketsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/predict': {
@@ -449,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSchemesSchemeIdRouteImport
       parentRoute: typeof AuthenticatedSchemesRoute
     }
+    '/api/notifications/run': {
+      id: '/api/notifications/run'
+      path: '/api/notifications/run'
+      fullPath: '/api/notifications/run'
+      preLoaderRoute: typeof ApiNotificationsRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
       path: '/lovable/email/transactional/preview'
@@ -478,6 +539,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedLinkRoute: typeof AuthenticatedLinkRoute
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPredictRoute: typeof AuthenticatedPredictRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSchemesRoute: typeof AuthenticatedSchemesRouteWithChildren
@@ -492,6 +554,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedLinkRoute: AuthenticatedLinkRoute,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPredictRoute: AuthenticatedPredictRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSchemesRoute: AuthenticatedSchemesRouteWithChildren,
@@ -511,7 +574,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  DotwellKnownAssetlinksDotjsonRoute: DotwellKnownAssetlinksDotjsonRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiNotificationsRunRoute: ApiNotificationsRunRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport

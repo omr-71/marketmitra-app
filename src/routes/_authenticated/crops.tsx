@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Screen, TopBar } from "@/components/app-shell";
+import { BrandLoader } from "@/components/brand-loader";
 import { LocationCard } from "@/components/location-card";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
@@ -9,7 +10,7 @@ import { crops } from "@/lib/crops";
 import { useLocationContext } from "@/lib/location";
 import { marketPricesQuery } from "@/lib/market-queries";
 import { inr } from "@/lib/format";
-import { ArrowRight, Check, Loader2, Minus, Plus } from "lucide-react";
+import { ArrowRight, Check, Minus, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/crops")({
   head: () => ({
@@ -128,9 +129,7 @@ function CropsPage() {
                 Select your district to see matching prices.
               </p>
             ) : priceQuery.isPending ? (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" /> {t("loading")}
-              </p>
+              <BrandLoader variant="inline" message="Gathering the latest mandi updates" />
             ) : best ? (
               <div className="grid grid-cols-2 gap-3">
                 <div>

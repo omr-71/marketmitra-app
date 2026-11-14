@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
+import { BrandLoader } from "@/components/brand-loader";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -16,12 +17,5 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthPending() {
-  return (
-    <div className="grid min-h-screen place-items-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <span className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-xs font-semibold text-muted-foreground">Checking your session…</p>
-      </div>
-    </div>
-  );
+  return <BrandLoader message="Verifying your secure connection" />;
 }

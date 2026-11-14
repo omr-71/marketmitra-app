@@ -2,15 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Screen, TopBar } from "@/components/app-shell";
-import { LocationCard } from "@/components/location-card";
+import { FeedbackCentre } from "@/components/feedback-centre";
+import { LocationDialog } from "@/components/location-dialog";
+import { Button } from "@/components/ui/button";
 import { useLang } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import { useLocationContext } from "@/lib/location";
 import {
   ArrowRight,
-  BarChart3,
-  CloudSun,
-  Leaf,
+  Crosshair,
   Loader2,
   MapPin,
   PenLine,
@@ -63,9 +63,10 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const { t } = useLang();
   const { profile, loading, updateProfile } = useSession();
-  const { location } = useLocationContext();
+  const { location, status, detect, setManual } = useLocationContext();
 
   const [editing, setEditing] = useState(false);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [village, setVillage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -120,7 +121,7 @@ function ProfilePage() {
   if (loading) {
     return (
       <Screen>
-        <TopBar title={t("profile")} back="/home" />
+        <TopBar title={t("profile")} back="/home" settings />
 
         <div className="flex items-center justify-center gap-2 px-5 pt-12 text-xs text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -133,7 +134,7 @@ function ProfilePage() {
   return (
     <Screen>
       <div className="page-enter">
-        <TopBar title={t("profile")} back="/home" />
+        <TopBar title={t("profile")} back="/home" settings />
 
         <div className="mx-auto w-full max-w-5xl space-y-8 px-5 pb-10 pt-6 lg:space-y-10 lg:pt-8">
           {/* PROFILE HERO */}
@@ -202,163 +203,118 @@ function ProfilePage() {
 
           {/* YOUR PROFILE */}
           <section>
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                  Your profile
-                </p>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                Your profile
+              </p>
 
-                <h2 className="mt-2 font-display text-2xl font-extrabold lg:text-3xl">
-                  Your information
-                </h2>
-              </div>
-
-              <button
-                onClick={() => setEditing(true)}
-                className="press hidden items-center gap-1.5 text-xs font-bold text-primary sm:flex"
-              >
-                Edit
-                <ArrowRight className="size-3.5" />
-              </button>
+              <h2 className="mt-2 font-display text-2xl font-extrabold lg:text-3xl">
+                Your information
+              </h2>
             </div>
 
-            <div className="mt-5 flex flex-col gap-4 lg:flex-row">
+            <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
               {/* NAME */}
-              <div className="card-surface hover-lift flex flex-1 items-center gap-4 p-5">
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <User className="size-5 text-primary" />
-                </span>
+              <div className="card-surface hover-lift flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] sm:flex-row sm:items-center">
+                <div className="flex items-center gap-4 min-w-0">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                    <User className="size-5 text-primary" />
+                  </span>
 
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Full name
-                  </p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      Full name
+                    </p>
 
-                  <p className="mt-1 truncate text-sm font-extrabold">
-                    {displayName || "Not added yet"}
-                  </p>
+                    <p className="mt-1 truncate text-sm font-extrabold text-foreground">
+                      {displayName || "Not added yet"}
+                    </p>
+                  </div>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditing(true)}
+                  className="h-9 shrink-0 self-end sm:self-center rounded-xl text-xs font-bold gap-1.5 border-border bg-background hover:bg-muted hover:border-primary/40 transition-all shadow-xs"
+                >
+                  <PenLine className="size-3.5 text-primary" />
+                  <span>Edit</span>
+                </Button>
               </div>
 
               {/* LOCATION */}
-              <div className="card-surface hover-lift flex flex-1 items-center gap-4 p-5">
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <MapPin className="size-5 text-primary" />
-                </span>
+              <div className="card-surface hover-lift flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.07),0_2px_4px_-1px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.08),0_4px_6px_-2px_rgba(0,0,0,0.04)] sm:flex-row sm:items-center">
+                <div className="flex items-center gap-4 min-w-0">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
+                    <MapPin className="size-5 text-primary" />
+                  </span>
 
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Farming location
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        Farming location
+                      </p>
+                      {location && (
+                        <span className="rounded-md border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[9px] font-bold text-muted-foreground">
+                          {location.source === "gps" ? t("autoLocation") : t("manualLocation")}
+                        </span>
+                      )}
+                    </div>
 
-                  <p className="mt-1 truncate text-sm font-extrabold">
-                    {locationText || "Not added yet"}
-                  </p>
+                    <p
+                      className="mt-1 truncate text-sm font-extrabold text-foreground"
+                      title={locationText}
+                    >
+                      {locationText || "Not added yet"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => void detect()}
+                    disabled={status === "locating"}
+                    className="press grid size-9 shrink-0 place-items-center rounded-xl border border-border/80 bg-background text-foreground transition-all hover:border-primary/40 hover:bg-muted disabled:opacity-60 shadow-xs"
+                    aria-label={t("useMyLocation")}
+                    title="Auto-detect current GPS location"
+                  >
+                    {status === "locating" ? (
+                      <Loader2 className="size-4 animate-spin text-primary" />
+                    ) : (
+                      <Crosshair className="size-4 text-primary" />
+                    )}
+                  </button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="h-9 rounded-xl text-xs font-bold gap-1.5 border-border bg-background hover:bg-muted hover:border-primary/40 transition-all shadow-xs"
+                  >
+                    <MapPin className="size-3.5 text-primary" />
+                    <span>Change location</span>
+                  </Button>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* MARKET MITRA EXPERIENCE */}
-          <section>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                MarketMitra
-              </p>
+          {/* FEEDBACK CENTRE */}
+          <FeedbackCentre />
 
-              <h2 className="mt-2 font-display text-2xl font-extrabold lg:text-3xl">
-                Everything you need, closer to the decision.
-              </h2>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-4 lg:flex-row">
-              <Link
-                to="/crops"
-                className="card-surface hover-lift group flex flex-1 items-center gap-4 p-5"
-              >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <BarChart3 className="size-5 text-primary" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold">Markets</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Compare market information before you travel.
-                  </p>
-                </div>
-
-                <ArrowRight className="mm-row-arrow size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-              </Link>
-
-              <Link
-                to="/diagnose"
-                className="card-surface hover-lift group flex flex-1 items-center gap-4 p-5"
-              >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <Leaf className="size-5 text-primary" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold">Diagnose</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Check crop problems when something looks wrong.
-                  </p>
-                </div>
-
-                <ArrowRight className="mm-row-arrow size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-              </Link>
-
-              <Link
-                to="/weather"
-                className="card-surface hover-lift group flex flex-1 items-center gap-4 p-5"
-              >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10">
-                  <CloudSun className="size-5 text-primary" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-extrabold">Weather</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Check today's conditions around your location.
-                  </p>
-                </div>
-
-                <ArrowRight className="mm-row-arrow size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-              </Link>
-            </div>
-          </section>
-
-          {/* LOCATION */}
-          <section>
-            <div className="mb-5">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                Your location
-              </p>
-
-              <h2 className="mt-2 font-display text-2xl font-extrabold lg:text-3xl">
-                Keep your area accurate.
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Your location helps MarketMitra show information relevant to
-                your area.
-              </p>
-            </div>
-
-            <LocationCard />
-          </section>
-
-          {/* PRIVACY / SETTINGS */}
-          <section className="flex flex-col gap-4 rounded-[2rem] border border-border/70 bg-muted/30 p-6 sm:flex-row sm:items-center sm:justify-between lg:p-7">
+          {/* SETTINGS CARD */}
+          <section className="card-surface hover-lift flex flex-col gap-4 rounded-[2rem] border border-slate-200/80 bg-white p-6 shadow-md shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between lg:p-7">
             <div className="flex items-start gap-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10">
                 <ShieldCheck className="size-5 text-primary" />
               </span>
 
               <div>
-                <p className="text-sm font-extrabold">
-                  Your profile, your control.
-                </p>
+                <p className="text-sm font-extrabold">Your profile, your control.</p>
 
                 <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
                   Manage your preferences and account options from Settings.
@@ -368,15 +324,41 @@ function ProfilePage() {
 
             <Link
               to="/settings"
-              className="press inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 text-xs font-bold"
+              className="press inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/80 px-5 text-xs font-bold text-foreground transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary shadow-xs"
             >
               <SettingsIcon className="size-4 text-primary" />
               Settings
               <ArrowRight className="size-3.5" />
             </Link>
           </section>
-
         </div>
+
+        {/* CHANGE LOCATION DIALOG */}
+        <LocationDialog
+          open={locationDialogOpen}
+          onOpenChange={setLocationDialogOpen}
+          currentLocation={location}
+          onSave={async (sel) => {
+            await setManual({
+              state: sel.state,
+              district: sel.district,
+              city: sel.village || sel.taluka,
+              taluka: sel.taluka,
+              village: sel.village,
+            });
+
+            try {
+              await updateProfile({
+                village: sel.village || sel.taluka || null,
+                district: sel.district || null,
+                state: sel.state || null,
+              });
+              toast.success(t("save"));
+            } catch {
+              // Location state updated locally
+            }
+          }}
+        />
 
         {/* EDIT PROFILE SHEET */}
         {editing && (
