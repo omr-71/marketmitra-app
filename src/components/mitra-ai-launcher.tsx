@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
 import { useFeature } from "@/lib/features";
+import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { track } from "@/lib/analytics";
 import { MitraAiLogo } from "@/components/mitra-ai-logo";
@@ -137,6 +138,7 @@ function LauncherOrb({
 }
 
 export function MitraAILauncher() {
+  const { session, user } = useAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const flag = useFeature("mitra_ai");
   const [activated, setActivated] = useState(false);
@@ -211,7 +213,7 @@ export function MitraAILauncher() {
     return () => window.removeEventListener("resize", handleResize);
   }, [isDesktop]);
 
-  if (pathname.startsWith("/admin") || flag?.enabled === false) return null;
+  if (!session || !user || pathname.startsWith("/admin") || flag?.enabled === false) return null;
 
   if (activated) {
     return (

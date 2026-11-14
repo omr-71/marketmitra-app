@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { BrandLoader } from "@/components/brand-loader";
+import { MitraAILauncher } from "@/components/mitra-ai-launcher";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -12,9 +13,18 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: AuthenticatedLayout,
   pendingComponent: AuthPending,
 });
+
+function AuthenticatedLayout() {
+  return (
+    <>
+      <Outlet />
+      <MitraAILauncher />
+    </>
+  );
+}
 
 function AuthPending() {
   return <BrandLoader message="Verifying your secure connection" />;
