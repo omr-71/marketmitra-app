@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 
 export const IST_TIME_ZONE = "Asia/Kolkata";
 
-export const inr = (n: number) =>
-  "₹" + Math.round(n).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+export const inr = (n: number | null | undefined) => {
+  if (n == null || !Number.isFinite(Number(n))) return "—";
+  return "₹" + Math.round(Number(n)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+};
 
 /** dd MMM yyyy, hh:mm am/pm in IST */
 export function formatIstDateTime(value: string | number | Date) {

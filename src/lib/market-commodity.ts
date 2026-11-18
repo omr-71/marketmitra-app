@@ -1,13 +1,20 @@
-import { crops } from "./crops.ts";
+import { crops, findCrop } from "./crops.ts";
 
 const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-function cropForCommodity(commodity: string) {
+export function cropForCommodity(commodity: string) {
+  if (!commodity) return undefined;
   const normalized = normalizeName(commodity);
+  const byFind = findCrop(commodity);
+  if (byFind) return byFind;
   return crops.find(
     (crop) =>
+      crop.id.toLowerCase() === normalized ||
       normalizeName(crop.commodity) === normalized ||
-      crop.commodityAliases?.some((alias) => normalizeName(alias) === normalized),
+      crop.commodityAliases?.some((alias) => normalizeName(alias) === normalized) ||
+      normalizeName(crop.name.en) === normalized ||
+      normalizeName(crop.name.mr) === normalized ||
+      normalizeName(crop.name.hi) === normalized,
   );
 }
 
@@ -15,7 +22,7 @@ function cropForCommodity(commodity: string) {
 export function marketCommodityVariants(commodity: string): string[] {
   const crop = cropForCommodity(commodity);
   const candidates = crop
-    ? [commodity, crop.commodity, ...(crop.commodityAliases ?? [])]
+    ? [crop.commodity, commodity, ...(crop.commodityAliases ?? [])]
     : [commodity];
   const seen = new Set<string>();
 

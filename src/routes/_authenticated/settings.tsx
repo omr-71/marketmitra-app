@@ -28,6 +28,7 @@ import { useSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { MITRA_VOICES } from "@/lib/voices";
 import { useMitraSpeech } from "@/lib/mitra-speech";
+import { useTheme } from "@/lib/theme";
 import { langNames, useLang } from "@/lib/i18n";
 import { crops, type Lang } from "@/lib/crops";
 import { toast } from "sonner";
@@ -248,6 +249,7 @@ function SettingsPage() {
   const { signOut } = useAuth();
 
   const { t, lang, setLang } = useLang();
+  const { setTheme } = useTheme();
 
   const {
     settings,
