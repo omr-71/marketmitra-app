@@ -593,6 +593,14 @@ function ConfidenceDial({ value, label, note }: { value: number; label: string; 
   );
 }
 
+const cachedDiagnoseState = {
+  preview: null as string | null,
+  cropHint: "",
+  result: null as DiagnosisResult | null,
+  tab: "overview" as TabId,
+  treatmentCategory: "organic" as "organic" | "inorganic",
+};
+
 function DiagnosePage() {
   const { lang } = useLang();
   const s = <K extends keyof typeof L>(k: K) => L[k][lang];
@@ -604,16 +612,58 @@ function DiagnosePage() {
   const analysisInFlightRef = useRef(false);
   const refreshedPhotoIdsRef = useRef(new Set<string>());
 
-  const [preview, setPreview] = useState<string | null>(null);
-  const [cropHint, setCropHint] = useState("");
+  const [preview, setPreviewState] = useState<string | null>(() => cachedDiagnoseState.preview);
+  const [cropHint, setCropHintState] = useState(() => cachedDiagnoseState.cropHint);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<DiagnosisResult | null>(null);
+  const [result, setResultState] = useState<DiagnosisResult | null>(() => cachedDiagnoseState.result);
   const [error, setError] = useState<string | null>(null);
   const [canRetry, setCanRetry] = useState(true);
   const [photoRefreshError, setPhotoRefreshError] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [tab, setTab] = useState<TabId>("overview");
-  const [treatmentCategory, setTreatmentCategory] = useState<"organic" | "inorganic">("organic");
+  const [tab, setTabState] = useState<TabId>(() => cachedDiagnoseState.tab);
+  const [treatmentCategory, setTreatmentCategoryState] = useState<"organic" | "inorganic">(
+    () => cachedDiagnoseState.treatmentCategory,
+  );
+
+  const setPreview = (v: string | null | ((prev: string | null) => string | null)) => {
+    setPreviewState((prev) => {
+      const next = typeof v === "function" ? v(prev) : v;
+      cachedDiagnoseState.preview = next;
+      return next;
+    });
+  };
+
+  const setCropHint = (v: string | ((prev: string) => string)) => {
+    setCropHintState((prev) => {
+      const next = typeof v === "function" ? v(prev) : v;
+      cachedDiagnoseState.cropHint = next;
+      return next;
+    });
+  };
+
+  const setResult = (v: DiagnosisResult | null | ((prev: DiagnosisResult | null) => DiagnosisResult | null)) => {
+    setResultState((prev) => {
+      const next = typeof v === "function" ? v(prev) : v;
+      cachedDiagnoseState.result = next;
+      return next;
+    });
+  };
+
+  const setTab = (v: TabId | ((prev: TabId) => TabId)) => {
+    setTabState((prev) => {
+      const next = typeof v === "function" ? v(prev) : v;
+      cachedDiagnoseState.tab = next;
+      return next;
+    });
+  };
+
+  const setTreatmentCategory = (v: "organic" | "inorganic" | ((prev: "organic" | "inorganic") => "organic" | "inorganic")) => {
+    setTreatmentCategoryState((prev) => {
+      const next = typeof v === "function" ? v(prev) : v;
+      cachedDiagnoseState.treatmentCategory = next;
+      return next;
+    });
+  };
   const [loadStep, setLoadStep] = useState(0);
   const diagnosis: DiagnosisOk | null = result?.ok && result.usable ? result : null;
 

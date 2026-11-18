@@ -32,12 +32,27 @@ export const Route = createFileRoute("/_authenticated/crops")({
   component: CropsPage,
 });
 
+const cachedCropState = { selected: "onion", qty: 20 };
+
 function CropsPage() {
   const { t, lang } = useLang();
   const navigate = useNavigate();
   const { location } = useLocationContext();
-  const [selected, setSelected] = useState("onion");
-  const [qty, setQty] = useState(20);
+  const [selected, setSelectedState] = useState(() => cachedCropState.selected);
+  const [qty, setQtyState] = useState(() => cachedCropState.qty);
+
+  const setSelected = (val: string) => {
+    cachedCropState.selected = val;
+    setSelectedState(val);
+  };
+
+  const setQty = (val: number | ((prev: number) => number)) => {
+    setQtyState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      cachedCropState.qty = next;
+      return next;
+    });
+  };
 
   const crop = crops.find((c) => c.id === selected) ?? crops[0]!;
 

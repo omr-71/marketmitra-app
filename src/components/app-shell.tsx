@@ -12,10 +12,21 @@ import {
   Settings,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { createContext, useContext, memo } from "react";
 import { useLang } from "@/lib/i18n";
 import { usePageTracking } from "@/lib/analytics";
 import { featureKeyForPath, MaintenanceNotice, useFeature } from "@/lib/features";
 import { BrandLockup, LogoMark, Wordmark } from "./brand";
+
+type ShellContextValue = {
+  hasOuterShell: boolean;
+};
+
+export const ShellContext = createContext<ShellContextValue>({
+  hasOuterShell: false,
+});
+
+export const useShell = () => useContext(ShellContext);
 
 const nav = [
   { to: "/home", icon: Home, key: "home" as const },
@@ -36,7 +47,7 @@ function useActive() {
 import { motion } from "motion/react";
 import { SPRINGS, useReducedMotion } from "@/lib/motion";
 
-export function BottomNav() {
+export const BottomNav = memo(function BottomNav() {
   const { t } = useLang();
   const isActive = useActive();
 
@@ -83,10 +94,10 @@ export function BottomNav() {
       </div>
     </nav>
   );
-}
+});
 
 /** Desktop-only left rail: makes the app read like a professional web platform. */
-export function SideNav() {
+export const SideNav = memo(function SideNav() {
   const { t } = useLang();
   const isActive = useActive();
   const reducedMotion = useReducedMotion();
@@ -141,7 +152,7 @@ export function SideNav() {
       </p>
     </aside>
   );
-}
+});
 
 export function Screen({
   children,
@@ -152,10 +163,30 @@ export function Screen({
   nav?: boolean;
   className?: string;
 }) {
+  const { hasOuterShell } = useShell();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   usePageTracking();
   const flag = useFeature(featureKeyForPath(pathname));
   const disabled = flag && !flag.enabled ? flag : null;
+
+  const content = (
+    <div
+      data-route={pathname}
+      className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-4 ${
+        withNav ? "pb-28 lg:pb-0" : ""
+      } ${className}`}
+    >
+      <div className="will-change-transform">
+        {disabled ? <MaintenanceNotice flag={disabled} /> : children}
+      </div>
+
+      {withNav && <SiteFooter />}
+    </div>
+  );
+
+  if (hasOuterShell) {
+    return content;
+  }
 
   return (
     <div className="app-canvas min-h-screen bg-[#f9fafb]">
@@ -166,18 +197,7 @@ export function Screen({
           withNav ? "lg:pl-[18rem]" : ""
         } lg:py-4 lg:pr-4`}
       >
-        <div
-          data-route={pathname}
-          className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-4 ${
-            withNav ? "pb-28 lg:pb-0" : ""
-          } ${className}`}
-        >
-          <div key={pathname} className="animate-page will-change-[opacity]">
-            {disabled ? <MaintenanceNotice flag={disabled} /> : children}
-          </div>
-
-          {withNav && <SiteFooter />}
-        </div>
+        {content}
       </div>
 
       {withNav && <div aria-hidden="true" className="bottom-nav-scroll-glass" />}

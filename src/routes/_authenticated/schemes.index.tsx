@@ -43,13 +43,44 @@ export const Route = createFileRoute("/_authenticated/schemes/")({
   component: SchemesPage,
 });
 
+const cachedSchemesFilter = {
+  query: "",
+  category: "All Schemes" as (typeof categories)[number],
+  level: "All",
+  state: "All States",
+  sort: "relevance",
+};
+
 function SchemesPage() {
   const { t } = useLang();
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<(typeof categories)[number]>("All Schemes");
-  const [level, setLevel] = useState("All");
-  const [state, setState] = useState("All States");
-  const [sort, setSort] = useState("relevance");
+  const [query, setQueryState] = useState(() => cachedSchemesFilter.query);
+  const [category, setCategoryState] = useState<(typeof categories)[number]>(
+    () => cachedSchemesFilter.category,
+  );
+  const [level, setLevelState] = useState(() => cachedSchemesFilter.level);
+  const [state, setStateState] = useState(() => cachedSchemesFilter.state);
+  const [sort, setSortState] = useState(() => cachedSchemesFilter.sort);
+
+  const setQuery = (v: string) => {
+    cachedSchemesFilter.query = v;
+    setQueryState(v);
+  };
+  const setCategory = (v: (typeof categories)[number]) => {
+    cachedSchemesFilter.category = v;
+    setCategoryState(v);
+  };
+  const setLevel = (v: string) => {
+    cachedSchemesFilter.level = v;
+    setLevelState(v);
+  };
+  const setState = (v: string) => {
+    cachedSchemesFilter.state = v;
+    setStateState(v);
+  };
+  const setSort = (v: string) => {
+    cachedSchemesFilter.sort = v;
+    setSortState(v);
+  };
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
