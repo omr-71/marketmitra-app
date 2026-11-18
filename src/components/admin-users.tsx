@@ -13,8 +13,8 @@ import {
 
 type SortKey = "created_at" | "name" | "email";
 
-const panelClass = "rounded-3xl border border-[oklch(1_0_0/0.09)] bg-[oklch(1_0_0/0.04)] p-5";
-const mutedClass = "text-[oklch(0.72_0.02_150)]";
+const panelClass = "rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-emerald-400/25 before:to-transparent";
+const mutedClass = "text-white/50";
 
 export function AdminUsers() {
   const listUsers = useServerFn(getAdminUsers);

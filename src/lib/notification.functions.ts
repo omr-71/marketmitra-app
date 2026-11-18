@@ -22,3 +22,19 @@ export const sendAdminFcmTest = createServerFn({ method: "POST" })
     const { sendAdminFcmTestHandler } = await import("./notification.server");
     return sendAdminFcmTestHandler(context.userId);
   });
+
+export const sendUserPriceAlertTest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      crop: z.string().optional(),
+      mandi: z.string().optional(),
+      priceChangePercent: z.number().optional(),
+      currentPrice: z.number().optional(),
+      previousPrice: z.number().optional(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { sendUserPriceAlertTestHandler } = await import("./notification.server");
+    return sendUserPriceAlertTestHandler(context.userId, data);
+  });

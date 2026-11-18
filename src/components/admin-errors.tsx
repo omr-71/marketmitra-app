@@ -44,7 +44,7 @@ export function AdminErrors() {
   return (
     <section
       id="admin-errors"
-      className="scroll-mt-20 rounded-3xl border border-[oklch(1_0_0/0.09)] bg-[oklch(1_0_0/0.04)] p-5"
+      className="scroll-mt-24 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-rose-400/25 before:to-transparent"
     >
       <div>
         <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[oklch(0.84_0.02_150)]">

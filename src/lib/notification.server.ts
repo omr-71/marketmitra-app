@@ -324,6 +324,17 @@ export async function dispatchNotificationUnchecked(data: DispatchData) {
         android: {
           priority: "high",
         },
+        webpush: {
+          notification: {
+            title: data.title,
+            body: data.body,
+            icon: "/icon-192.png",
+            badge: "/favicon.png",
+          },
+          fcmOptions: {
+            link: data.url,
+          },
+        },
       });
     } catch (error) {
       const code = getFirebaseErrorCode(error);
@@ -416,6 +427,58 @@ export async function sendAdminFcmTestHandler(adminUserId: string) {
       details?.stage ??
       (code === "DATABASE_ERROR" ? "database_operation" : "configure_firebase_admin");
     console.error(`[FCM diagnostic] ${code} stage=${stage} error=${rawDetails.errorCode}`);
+    return {
+      sent: 0,
+      accepted: 0,
+      status: "diagnostic_error" as const,
+      diagnosticCode: code,
+      stage,
+      errorCode: details?.errorCode ?? rawDetails.errorCode,
+      safeMessage: details?.safeMessage ?? rawDetails.safeMessage,
+      ...(details ?? {}),
+    };
+  }
+}
+
+export async function sendUserPriceAlertTestHandler(
+  userId: string,
+  options?: {
+    crop?: string | undefined;
+    mandi?: string | undefined;
+    priceChangePercent?: number | undefined;
+    currentPrice?: number | undefined;
+    previousPrice?: number | undefined;
+  },
+) {
+  const crop = options?.crop || "Onion";
+  const mandi = options?.mandi || "Lasalgaon APMC";
+  const percent = options?.priceChangePercent ?? 18.5;
+  const currentPrice = options?.currentPrice ?? 2450;
+  const previousPrice = options?.previousPrice ?? 2065;
+  const direction = percent >= 0 ? "increased" : "decreased";
+  const dateStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+
+  try {
+    return await dispatchNotificationUnchecked({
+      category: "market",
+      title: `Price Alert: ${crop} ${direction} ${Math.abs(percent)}%`,
+      body: `${crop} modal price at ${mandi} surged to ₹${currentPrice}/q (was ₹${previousPrice}/q on ${dateStr}). Tap to inspect buyers.`,
+      url: `/markets?crop=${encodeURIComponent(crop.toLowerCase())}&market=${encodeURIComponent(mandi)}`,
+      userId,
+      dedupeKey: `price-alert-test:${userId}:${Date.now()}`,
+    });
+  } catch (error) {
+    const code =
+      error instanceof NotificationDiagnosticError
+        ? error.code
+        : "FIREBASE_ADMIN_INIT_FAILED";
+    const details =
+      error instanceof NotificationDiagnosticError ? error.details : undefined;
+    const rawDetails = getSafeExceptionDetails(error);
+    const stage =
+      details?.stage ??
+      (code === "DATABASE_ERROR" ? "database_operation" : "configure_firebase_admin");
+    console.error(`[FCM user test diagnostic] ${code} stage=${stage} error=${rawDetails.errorCode}`);
     return {
       sent: 0,
       accepted: 0,

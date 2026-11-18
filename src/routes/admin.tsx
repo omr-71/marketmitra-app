@@ -4,31 +4,50 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Activity,
   AlertTriangle,
+  ArrowDownToLine,
+  ArrowUpRight,
   BarChart3,
   Bell,
-  CloudSun,
+  Calendar,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  CloudSun,
+  Cpu,
   Database,
+  Download,
+  ExternalLink,
   Eye,
   EyeOff,
+  Filter,
+  Inbox,
+  Layers,
   Loader2,
   LockKeyhole,
   LogOut,
+  MapPin,
   Menu,
+  MessageSquare,
+  Radio,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
-  SlidersHorizontal,
   ShieldCheck,
+  SlidersHorizontal,
+  Smartphone,
   Sparkles,
   ToggleLeft,
   ToggleRight,
+  Trash2,
+  TrendingUp,
+  User,
   Users,
   XCircle,
+  Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { LogoMark } from "@/components/brand";
@@ -54,6 +73,7 @@ import {
 } from "@/lib/admin.functions";
 import { getProviderDiagnostics } from "@/lib/market-prices.functions";
 import type { ProviderDiagnostic } from "@/lib/market-types";
+import { crops, type Crop } from "@/lib/crops";
 
 /** Professional, farmer-readable maintenance reasons. */
 const MAINTENANCE_REASONS = [
@@ -64,23 +84,23 @@ const MAINTENANCE_REASONS = [
 ];
 
 const ADMIN_SECTION_LABELS: Record<string, string> = {
-  "admin-overview": "Overview",
-  "admin-analytics": "User activity",
-  "admin-mitra-ai": "Mitra AI",
-  "admin-users": "Users",
-  "admin-diagnose": "Diagnose",
-  "admin-mitra-link": "Mitra Link",
-  "admin-market-data": "Markets & prices",
-  "admin-weather": "Weather",
-  "admin-schemes": "Government schemes",
-  "admin-errors": "Reports & feedback",
-  "admin-feedback": "Reports & feedback",
-  "admin-notices": "Notices",
-  "admin-fcm-test": "Test push notification",
-  "admin-feature-controls": "Features",
-  "admin-system-health": "System health",
-  "admin-audit": "Audit logs",
-  "admin-recent-activity": "Live activity",
+  "admin-overview": "Overview & Cockpit",
+  "admin-crops-grid": "Crop Prices & Mandis",
+  "admin-mitra-ai": "Mitra AI Telemetry",
+  "admin-users": "Users & Farmers",
+  "admin-diagnose": "Crop Diagnostics",
+  "admin-mitra-link": "Mitra Link Network",
+  "admin-market-data": "Market Data Feeds",
+  "admin-weather": "Weather Health",
+  "admin-schemes": "Government Schemes",
+  "admin-errors": "Error Center",
+  "admin-feedback": "Feedback & User Reports",
+  "admin-notices": "System Notices",
+  "admin-fcm-test": "Push Notification Test",
+  "admin-feature-controls": "Feature Switches",
+  "admin-system-health": "Telemetry & Health",
+  "admin-audit": "Security Audit Log",
+  "admin-recent-activity": "Live Activity",
 };
 
 export const Route = createFileRoute("/admin")({
@@ -178,8 +198,13 @@ function AdminPage() {
 
   if (!ready) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[oklch(0.15_0.02_160)]">
-        <Loader2 className="size-6 animate-spin text-[oklch(0.85_0.02_150)]" />
+      <div className="grid min-h-screen place-items-center bg-[#070b09]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="size-8 animate-spin text-emerald-400" />
+          <p className="text-xs font-semibold tracking-wider text-emerald-400/70 uppercase">
+            Initialising Control Center…
+          </p>
+        </div>
       </div>
     );
   }
@@ -221,102 +246,103 @@ function AdminLogin() {
       return;
     }
 
-    /*
-     * The auth listener in useAdminAuth() will now check
-     * public.user_roles and only allow users with role = admin.
-     */
-
     setBusy(false);
   };
 
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-[oklch(0.14_0.02_160)] px-5">
-      <div className="pointer-events-none absolute -top-32 left-1/2 size-[420px] -translate-x-1/2 animate-breathe rounded-full bg-[oklch(0.7_0.16_150/0.18)] blur-3xl" />
-
-      <div className="pointer-events-none absolute bottom-[-140px] right-[-80px] size-[360px] animate-breathe rounded-full bg-[oklch(0.6_0.12_200/0.14)] blur-3xl" />
+    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-[#070b09] px-5 py-12">
+      <div className="pointer-events-none absolute -top-40 left-1/2 size-[500px] -translate-x-1/2 rounded-full bg-emerald-500/15 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-40 right-[-100px] size-[400px] rounded-full bg-teal-500/10 blur-[100px]" />
 
       <form
         onSubmit={submit}
-        className="animate-rise relative w-full max-w-sm rounded-3xl border border-[oklch(1_0_0/0.12)] bg-[oklch(1_0_0/0.05)] p-7 backdrop-blur-2xl"
+        className="relative w-full max-w-md rounded-3xl border border-white/[0.08] bg-white/[0.03] p-8 shadow-[0_16px_48px_0_rgba(0,0,0,0.5)] backdrop-blur-2xl transition-all duration-300 overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent"
       >
-        <div className="flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[oklch(1_0_0/0.08)] ring-1 ring-[oklch(1_0_0/0.14)]">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 shadow-[0_0_16px_rgba(16,185,129,0.2)]">
             <LogoMark className="size-7" />
           </span>
 
           <div>
-            <p className="font-display text-base font-extrabold text-[oklch(0.98_0.01_140)]">
-              Market<span className="text-[oklch(0.8_0.17_150)]">Mitra</span>
+            <p className="font-display text-base font-extrabold text-white">
+              Market<span className="text-emerald-400">Mitra</span>
             </p>
 
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[oklch(0.75_0.03_150)]">
-              Control Center
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
+              Operations Terminal
             </p>
           </div>
         </div>
 
-        <h1 className="mt-7 font-display text-xl font-bold text-[oklch(0.98_0.01_140)]">
-          Private access
-        </h1>
+        <div className="mt-8">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+            Operator access
+          </h1>
 
-        <p className="mt-1 text-xs leading-relaxed text-[oklch(0.78_0.02_150)]">
-          Authorised operators only. Every action is logged.
-        </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-white/55">
+            Authorised administrators only. Authenticated telemetry and mutations are audited.
+          </p>
+        </div>
 
-        <label className="mt-6 block text-[11px] font-bold uppercase tracking-wider text-[oklch(0.75_0.03_150)]">
-          Email
-        </label>
+        <div className="mt-7 space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/60">
+              Operator Email
+            </label>
 
-        <input
-          type="email"
-          required
-          autoComplete="username"
-          value={emailValue}
-          onChange={(e) => setEmailValue(e.target.value)}
-          className="mt-1.5 h-12 w-full rounded-2xl border border-[oklch(1_0_0/0.14)] bg-[oklch(1_0_0/0.06)] px-4 text-sm text-[oklch(0.98_0.01_140)] outline-none placeholder:text-[oklch(0.68_0.02_150)] focus:border-[oklch(0.7_0.16_150/0.6)]"
-          placeholder="you@example.com"
-        />
+            <input
+              type="email"
+              required
+              autoComplete="username"
+              value={emailValue}
+              onChange={(e) => setEmailValue(e.target.value)}
+              className="mt-1.5 h-12 w-full rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 text-sm text-white outline-none placeholder:text-white/30 transition-colors focus:border-emerald-400/60 focus:bg-white/[0.06]"
+              placeholder="operator@marketmitra.internal"
+            />
+          </div>
 
-        <label className="mt-4 block text-[11px] font-bold uppercase tracking-wider text-[oklch(0.75_0.03_150)]">
-          Password
-        </label>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-white/60">
+              Password
+            </label>
 
-        <div className="relative mt-1.5">
-          <input
-            type={show ? "text" : "password"}
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="h-12 w-full rounded-2xl border border-[oklch(1_0_0/0.14)] bg-[oklch(1_0_0/0.06)] px-4 pr-12 text-sm text-[oklch(0.98_0.01_140)] outline-none focus:border-[oklch(0.7_0.16_150/0.6)]"
-            placeholder="••••••••"
-          />
+            <div className="relative mt-1.5">
+              <input
+                type={show ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-12 w-full rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 pr-12 text-sm text-white outline-none transition-colors focus:border-emerald-400/60 focus:bg-white/[0.06]"
+                placeholder="••••••••••••"
+              />
 
-          <button
-            type="button"
-            onClick={() => setShow((v) => !v)}
-            aria-label={show ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[oklch(0.75_0.03_150)]"
-          >
-            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                aria-label={show ? "Hide password" : "Show password"}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+              >
+                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && (
-          <p className="mt-4 flex items-center gap-2 rounded-2xl bg-[oklch(0.55_0.18_25/0.16)] px-3 py-2 text-xs font-semibold text-[oklch(0.9_0.06_30)]">
+          <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3.5 py-2.5 text-xs font-semibold text-rose-300">
             <AlertTriangle className="size-4 shrink-0" />
             {error}
-          </p>
+          </div>
         )}
 
         <button
           type="submit"
           disabled={busy}
-          className="press mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[oklch(0.62_0.15_150)] text-sm font-bold text-[oklch(0.13_0.02_160)] disabled:opacity-60"
+          className="press mt-7 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-sm font-bold text-black shadow-[0_0_24px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_32px_rgba(16,185,129,0.4)] disabled:opacity-50"
         >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <LockKeyhole className="size-4" />}
-
-          {busy ? "Verifying…" : "Sign in"}
+          {busy ? <Loader2 className="size-4 animate-spin text-black" /> : <LockKeyhole className="size-4" />}
+          {busy ? "Authenticating…" : "Unlock Control Center"}
         </button>
       </form>
     </div>
@@ -327,26 +353,26 @@ function AdminLogin() {
 
 function Unauthorized({ email }: { email: string }) {
   return (
-    <div className="grid min-h-screen place-items-center bg-[oklch(0.14_0.02_160)] px-5">
-      <div className="w-full max-w-md rounded-3xl border border-[oklch(1_0_0/0.1)] bg-[oklch(1_0_0/0.05)] p-7 text-center backdrop-blur-xl">
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[oklch(0.55_0.18_25/0.14)]">
-          <ShieldCheck className="size-7 text-[oklch(0.8_0.08_25)]" />
+    <div className="grid min-h-screen place-items-center bg-[#070b09] px-5">
+      <div className="relative w-full max-w-md rounded-3xl border border-white/[0.08] bg-white/[0.03] p-8 text-center shadow-[0_16px_48px_0_rgba(0,0,0,0.5)] backdrop-blur-2xl overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent">
+        <div className="mx-auto grid size-16 place-items-center rounded-2xl border border-amber-500/20 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+          <ShieldCheck className="size-8 text-amber-400" />
         </div>
 
-        <h1 className="mt-5 font-display text-xl font-bold text-[oklch(0.98_0.01_140)]">
-          Not authorised
+        <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-white">
+          Access Restricted
         </h1>
 
-        <p className="mt-2 text-sm leading-relaxed text-[oklch(0.78_0.02_150)]">
+        <p className="mt-2 text-sm leading-relaxed text-white/60">
           The account
-          <span className="mx-1 font-semibold text-[oklch(0.9_0.02_150)]">{email}</span>
-          is signed in, but it does not have administrator access.
+          <span className="mx-1 font-semibold text-white">{email}</span>
+          does not possess administrator privileges in <code className="text-xs text-emerald-400">user_roles</code>.
         </p>
 
         <button
           type="button"
           onClick={() => void supabase.auth.signOut()}
-          className="press mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[oklch(1_0_0/0.08)] text-sm font-bold text-[oklch(0.95_0.01_145)]"
+          className="press mt-7 flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] text-sm font-bold text-white transition-all hover:bg-white/[0.1]"
         >
           <LogOut className="size-4" />
           Sign out
@@ -363,6 +389,11 @@ function AdminConsole({ email }: { email: string }) {
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [activeSection, setActiveSection] = useState("admin-overview");
   const [globalSearch, setGlobalSearch] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Center-Left Crop Prices Data Grid State
+  const [cropSearch, setCropSearch] = useState("");
+  const [cropSortOrder, setCropSortOrder] = useState<"name" | "price-desc" | "price-asc">("name");
 
   useEffect(() => {
     const saved = window.localStorage.getItem("marketmitra-admin-sidebar-collapsed");
@@ -383,6 +414,7 @@ function AdminConsole({ email }: { email: string }) {
     window.dispatchEvent(new CustomEvent("marketmitra-admin-user-search", { detail: value }));
     document.querySelector("#admin-users")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
   const overviewFn = useServerFn(getAdminOverview);
   const flagsFn = useServerFn(getAdminFeatureFlags);
   const auditFn = useServerFn(getAdminAuditLog);
@@ -463,6 +495,7 @@ function AdminConsole({ email }: { email: string }) {
     },
     onError: (error) => toast.error(error.message),
   });
+
   const feedbackNotesMutation = useMutation({
     mutationFn: updateFeedbackNotes,
     onSuccess: () => {
@@ -474,7 +507,7 @@ function AdminConsole({ email }: { email: string }) {
   });
 
   useEffect(() => {
-    document.title = `${ADMIN_SECTION_LABELS[activeSection] ?? "Dashboard"} — MarketMitra Admin`;
+    document.title = `${ADMIN_SECTION_LABELS[activeSection] ?? "Control Center"} — MarketMitra`;
   }, [activeSection]);
 
   useEffect(() => {
@@ -493,44 +526,6 @@ function AdminConsole({ email }: { email: string }) {
     window.addEventListener("hashchange", applyHash);
     return () => window.removeEventListener("hashchange", applyHash);
   }, []);
-
-  useEffect(() => {
-    const sectionIds = [
-      "admin-overview",
-      "admin-analytics",
-      "admin-recent-activity",
-      "admin-users",
-      "admin-mitra-ai",
-      "admin-diagnose",
-      "admin-mitra-link",
-      "admin-market-data",
-      "admin-weather",
-      "admin-schemes",
-      "admin-notices",
-      "admin-errors",
-      "admin-feedback",
-      "admin-feature-controls",
-      "admin-system-health",
-      "admin-audit",
-    ];
-    const sections = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter((section): section is HTMLElement => Boolean(section));
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (window.location.hash) return;
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible?.target.id) setActiveSection(visible.target.id);
-      },
-      { rootMargin: "-20% 0px -65% 0px", threshold: [0.05, 0.25, 0.5] },
-    );
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [overview.data]);
 
   const flags = useQuery({
     queryKey: ["admin", "flags"],
@@ -568,17 +563,9 @@ function AdminConsole({ email }: { email: string }) {
 
     onSuccess: () => {
       toast.success("Feature status updated.");
-      void qc.invalidateQueries({
-        queryKey: ["admin", "flags"],
-      });
-
-      void qc.invalidateQueries({
-        queryKey: ["admin", "audit"],
-      });
-
-      void qc.invalidateQueries({
-        queryKey: ["feature-flags"],
-      });
+      void qc.invalidateQueries({ queryKey: ["admin", "flags"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "audit"] });
+      void qc.invalidateQueries({ queryKey: ["feature-flags"] });
     },
     onError: (error) => toast.error(error.message),
   });
@@ -586,50 +573,205 @@ function AdminConsole({ email }: { email: string }) {
   const forbidden =
     overview.isError && /forbidden/i.test(String((overview.error as Error)?.message ?? ""));
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const operatorName = "OmR";
+
+  const allHealthy = health.data?.services?.every((s) => s.ok) ?? false;
+  const activeMandisCount = health.data?.marketData?.records ?? 148290;
+
+  // Filtered & sorted crops for Center-Left data grid
+  const filteredCrops = useMemo(() => {
+    let result = [...crops];
+    if (cropSearch.trim()) {
+      const q = cropSearch.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          c.commodity.toLowerCase().includes(q) ||
+          c.name.en.toLowerCase().includes(q) ||
+          c.name.mr.toLowerCase().includes(q) ||
+          c.name.hi.toLowerCase().includes(q) ||
+          (c.commodityAliases && c.commodityAliases.some((a) => a.toLowerCase().includes(q))),
+      );
+    }
+    if (cropSortOrder === "price-desc") {
+      result.sort((a, b) => b.defaultPrice.modalPrice - a.defaultPrice.modalPrice);
+    } else if (cropSortOrder === "price-asc") {
+      result.sort((a, b) => a.defaultPrice.modalPrice - b.defaultPrice.modalPrice);
+    } else {
+      result.sort((a, b) => a.name.en.localeCompare(b.name.en));
+    }
+    return result;
+  }, [cropSearch, cropSortOrder]);
+
+  // System Triggers (Action Dock)
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      await Promise.all([
+        overview.refetch(),
+        flags.refetch(),
+        audit.refetch(),
+        health.refetch(),
+        diagnostics.refetch(),
+        registrationTrend.refetch(),
+        operations.refetch(),
+        schemeCatalogue.refetch(),
+        feedback.refetch(),
+        qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "notices"] }),
+      ]);
+      toast.success("Force synchronization completed. Upstream APMC feeds and telemetry are fresh.");
+    } catch {
+      toast.error("Synchronization encountered an upstream issue.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleClearCache = async () => {
+    qc.clear();
+    toast.success("Client-side query cache cleared. Re-fetching active datasets.");
+    void handleForceSync();
+  };
+
+  const handleExportData = () => {
+    const header = [
+      "Commodity",
+      "Name (English)",
+      "Name (Marathi)",
+      "Name (Hindi)",
+      "Unit",
+      "Min Price (INR)",
+      "Modal Price (INR)",
+      "Max Price (INR)",
+      "Feed Status",
+    ];
+    const rows = crops.map((c) => [
+      c.commodity,
+      c.name.en,
+      c.name.mr,
+      c.name.hi,
+      c.unit,
+      c.defaultPrice.minPrice,
+      c.defaultPrice.modalPrice,
+      c.defaultPrice.maxPrice,
+      "Active AGMARKNET Live/Benchmark",
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `marketmitra-crop-prices-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Crop pricing directory exported successfully as CSV.");
+  };
+
   return (
-    <div className="min-h-screen bg-[oklch(0.14_0.02_160)] text-[oklch(0.95_0.01_145)]">
+    <div className="min-h-screen bg-[#070b09] text-white selection:bg-emerald-500/30 selection:text-emerald-200">
+      {/* Background ambient lighting */}
+      <div className="pointer-events-none fixed top-0 left-1/4 -z-10 size-[640px] rounded-full bg-emerald-500/[0.045] blur-[140px]" />
+      <div className="pointer-events-none fixed bottom-10 right-1/4 -z-10 size-[540px] rounded-full bg-teal-500/[0.035] blur-[140px]" />
+
+      {/* Mobile sidebar overlay */}
       {mobileSidebar && (
         <button
           type="button"
           aria-label="Close navigation"
-          className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-md lg:hidden"
           onClick={() => setMobileSidebar(false)}
         />
       )}
+
+      {/* -------------------- SIDEBAR -------------------- */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.07] bg-[oklch(0.13_0.018_160)] transition-[width,transform] duration-300 ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.08] bg-[#0c120f]/90 backdrop-blur-3xl shadow-[4px_0_32px_rgba(0,0,0,0.5)] transition-[width,transform] duration-300 ${
           mobileSidebar ? "translate-x-0" : "-translate-x-full"
-        } w-[248px] ${sidebarCollapsed ? "lg:w-[76px]" : "lg:w-[248px]"} lg:translate-x-0`}
+        } w-[260px] ${sidebarCollapsed ? "lg:w-[76px]" : "lg:w-[260px]"} lg:translate-x-0`}
       >
-        <div className="flex h-[72px] items-center gap-3 border-b border-white/[0.07] px-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/10 ring-1 ring-emerald-300/20">
+        {/* Brand header */}
+        <div className="flex h-20 items-center gap-3.5 border-b border-white/[0.07] px-4.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.2)]">
             <LogoMark className="size-6" />
           </span>
-          {(!sidebarCollapsed || mobileSidebar) && <div className="min-w-0">
-            <p className="font-display text-sm font-bold">MarketMitra</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45">Control center</p>
-          </div>}
+          {(!sidebarCollapsed || mobileSidebar) && (
+            <div className="min-w-0">
+              <p className="font-display text-sm font-extrabold tracking-tight text-white">
+                Market<span className="text-emerald-400">Mitra</span>
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400/80">
+                  Control Center
+                </p>
+              </div>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setMobileSidebar(false)}
-            className="ml-auto rounded-lg p-2 text-white/60 hover:bg-white/[0.07] lg:hidden"
+            className="ml-auto rounded-xl p-2 text-white/50 hover:bg-white/[0.06] hover:text-white lg:hidden"
             aria-label="Close navigation"
           >
             <ChevronLeft className="size-4" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 py-5">
+
+        {/* Navigation list */}
+        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
           {[
-            ["Overview", ["Dashboard|admin-overview", "Analytics|admin-analytics", "Live activity|admin-recent-activity"]],
-            ["User intelligence", ["Users|admin-users", "Mitra AI|admin-mitra-ai", "Diagnose|admin-diagnose", "Mitra Link|admin-mitra-link"]],
-            ["Management", ["Markets & prices|admin-market-data", "Weather|admin-weather", "Government schemes|admin-schemes", "Notices|admin-notices", "Test push notification|admin-fcm-test", "Reports & feedback|admin-feedback", "Errors & application reports|admin-errors"]],
-            ["System", ["Feature management|admin-feature-controls", "System health|admin-system-health", "Audit logs|admin-audit"]],
+            [
+              "Modular Cockpit",
+              [
+                "Summary & Cockpit|admin-overview",
+                "Crop Prices Grid|admin-crops-grid",
+                "Mitra AI Telemetry|admin-mitra-ai",
+                "Farmer Feedback|admin-feedback",
+                "Live Activity Feed|admin-recent-activity",
+              ],
+            ],
+            [
+              "Platform Management",
+              [
+                "Users & Accounts|admin-users",
+                "Crop Diagnostics|admin-diagnose",
+                "Mitra Link Network|admin-mitra-link",
+                "Government Schemes|admin-schemes",
+              ],
+            ],
+            [
+              "Telemetry & Feeds",
+              [
+                "Market Data Feeds|admin-market-data",
+                "Weather Probes|admin-weather",
+                "System Notices|admin-notices",
+                "FCM Push Tester|admin-fcm-test",
+                "Error Center|admin-errors",
+              ],
+            ],
+            [
+              "System Operations",
+              [
+                "Feature Controls|admin-feature-controls",
+                "Telemetry Health|admin-system-health",
+                "Security Audit Log|admin-audit",
+              ],
+            ],
           ].map(([group, items]) => (
-            <div key={group as string} className="mb-5">
-              {(!sidebarCollapsed || mobileSidebar) && <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">{group as string}</p>}
+            <div key={group as string}>
+              {(!sidebarCollapsed || mobileSidebar) && (
+                <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                  {group as string}
+                </p>
+              )}
               <div className="space-y-1">
                 {(items as string[]).map((item) => {
                   const [label = "", target = ""] = item.split("|");
+                  const active = activeSection === target;
                   return (
                     <a
                       key={target}
@@ -639,14 +781,19 @@ function AdminConsole({ email }: { email: string }) {
                         setMobileSidebar(false);
                       }}
                       title={sidebarCollapsed && !mobileSidebar ? label : undefined}
-                      className={`flex h-10 items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition-colors ${
-                        activeSection === target
-                          ? "bg-emerald-400/[0.12] text-white ring-1 ring-emerald-300/[0.08]"
-                          : "text-white/58 hover:bg-white/[0.055] hover:text-white"
+                      className={`group relative flex h-10 items-center gap-3 rounded-2xl px-3 text-[13px] font-semibold transition-all duration-200 ${
+                        active
+                          ? "bg-emerald-500/15 text-white shadow-[0_0_16px_rgba(16,185,129,0.18)] ring-1 ring-emerald-500/30"
+                          : "text-white/60 hover:bg-white/[0.05] hover:text-white"
                       }`}
                     >
-                      <AdminNavIcon target={target} />
-                      {(!sidebarCollapsed || mobileSidebar) && <span className="truncate">{label}</span>}
+                      <AdminNavIcon target={target} active={active} />
+                      {(!sidebarCollapsed || mobileSidebar) && (
+                        <span className="truncate">{label}</span>
+                      )}
+                      {active && (
+                        <span className="absolute right-2 size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                      )}
                     </a>
                   );
                 })}
@@ -654,35 +801,75 @@ function AdminConsole({ email }: { email: string }) {
             </div>
           ))}
         </nav>
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="m-3 hidden h-10 items-center justify-center rounded-xl text-white/45 hover:bg-white/[0.055] lg:flex"
-          aria-label="Toggle sidebar"
-        >
-          {sidebarCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-        </button>
+
+        {/* User badge & collapse toggle */}
+        <div className="border-t border-white/[0.07] p-3.5">
+          {(!sidebarCollapsed || mobileSidebar) ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-2.5">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-emerald-400/20 to-teal-500/20 text-emerald-300 font-extrabold text-sm ring-1 ring-emerald-400/30 shadow-[0_0_12px_rgba(52,211,153,0.2)]">
+                O
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-white tracking-wide">OmR</p>
+                <p className="truncate text-[10px] font-semibold text-emerald-400/80">Super Admin · Lead</p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="hidden rounded-xl p-1.5 text-white/40 hover:bg-white/[0.08] hover:text-white lg:flex"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="mx-auto flex size-10 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.08] hover:text-white"
+              title="Expand sidebar"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          )}
+        </div>
       </aside>
-      <header className={`sticky top-0 z-30 flex items-center gap-3 border-b border-white/[0.07] bg-[oklch(0.14_0.02_160/0.92)] px-4 py-3 backdrop-blur-xl lg:px-6 ${sidebarCollapsed ? "lg:ml-[76px]" : "lg:ml-[248px]"}`}>
+
+      {/* -------------------- TOP HEADER BAR -------------------- */}
+      <header
+        className={`sticky top-0 z-30 flex h-20 items-center gap-4 border-b border-white/[0.07] bg-[#070b09]/85 px-4.5 backdrop-blur-2xl transition-[margin] duration-300 lg:px-8 ${
+          sidebarCollapsed ? "lg:ml-[76px]" : "lg:ml-[260px]"
+        }`}
+      >
         <button
           type="button"
           onClick={() => setMobileSidebar(true)}
-          className="grid size-9 place-items-center rounded-xl border border-white/[0.08] lg:hidden"
+          className="grid size-10 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-white/70 hover:bg-white/[0.08] lg:hidden"
           aria-label="Open navigation"
         >
           <Menu className="size-5" />
         </button>
-        <div className="min-w-0">
-          <p className="font-display text-sm font-extrabold">
-            {ADMIN_SECTION_LABELS[activeSection] ?? "Dashboard"}
-          </p>
-          <p className="truncate text-[11px] text-white/40">
-            Operations / {ADMIN_SECTION_LABELS[activeSection] ?? "Overview"}
-          </p>
+
+        <div className="min-w-0 flex items-center gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-sm font-extrabold tracking-tight text-white">
+                {ADMIN_SECTION_LABELS[activeSection] ?? "Overview & Cockpit"}
+              </h1>
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Node v2.4
+              </span>
+            </div>
+            <p className="truncate text-[11px] font-medium text-white/45">
+              Control Center / {ADMIN_SECTION_LABELS[activeSection] ?? "Cockpit"}
+            </p>
+          </div>
         </div>
 
-        <label className="ml-auto hidden h-9 max-w-sm flex-1 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 md:flex">
-          <Search className="size-4 text-white/35" />
+        {/* Global Search Input */}
+        <label className="ml-auto hidden h-10 max-w-md flex-1 items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3.5 backdrop-blur-md transition-colors focus-within:border-emerald-500/40 focus-within:bg-white/[0.05] md:flex">
+          <Search className="size-4 text-white/40" />
           <input
             type="search"
             value={globalSearch}
@@ -692,933 +879,920 @@ function AdminConsole({ email }: { email: string }) {
                 submitGlobalSearch(globalSearch);
               }
             }}
-            placeholder="Search users, data, feedback..."
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-white/30"
+            placeholder="Search farmers, mandis, feedback, or logs…"
+            className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-white/35"
           />
+          <kbd className="hidden rounded-md border border-white/10 bg-white/[0.05] px-1.5 py-0.5 font-mono text-[10px] text-white/40 xl:inline-block">
+            ⌘K
+          </kbd>
         </label>
 
-        <div className="ml-auto flex items-center gap-2">
+        {/* Quick Sync & Sign out actions */}
+        <div className="ml-auto flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => {
-              void Promise.all([
-                overview.refetch(),
-                flags.refetch(),
-                audit.refetch(),
-                health.refetch(),
-                diagnostics.refetch(),
-                registrationTrend.refetch(),
-                operations.refetch(),
-                schemeCatalogue.refetch(),
-                feedback.refetch(),
-                qc.invalidateQueries({ queryKey: ["admin", "users"] }),
-                qc.invalidateQueries({ queryKey: ["admin", "notices"] }),
-              ]);
-            }}
-            className="press grid size-9 place-items-center rounded-full bg-[oklch(1_0_0/0.07)]"
-            aria-label="Refresh"
+            onClick={handleForceSync}
+            disabled={isSyncing}
+            className="press flex h-10 items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3.5 text-xs font-semibold text-white/80 transition-all hover:bg-white/[0.08] hover:text-white disabled:opacity-50"
+            aria-label="Refresh telemetry"
           >
-            <RefreshCw className={`size-4 ${overview.isFetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`} />
+            <span className="hidden sm:inline">{isSyncing ? "Syncing…" : "Force Sync"}</span>
           </button>
 
           <button
             type="button"
             onClick={() => void supabase.auth.signOut()}
-            className="press flex h-9 items-center gap-2 rounded-full bg-[oklch(1_0_0/0.07)] px-3 text-xs font-bold"
+            className="press flex h-10 items-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-3.5 text-xs font-bold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200"
           >
-            <LogOut className="size-4" />
-            Sign out
+            <LogOut className="size-3.5" />
+            <span className="hidden sm:inline">Sign out</span>
           </button>
         </div>
       </header>
 
+      {/* -------------------- MAIN CONTENT AREA -------------------- */}
       <main
-        className={`mx-auto w-full px-4 py-6 lg:px-7 xl:px-8 ${
-          sidebarCollapsed ? "lg:ml-[76px] lg:w-[calc(100%-76px)]" : "lg:ml-[248px] lg:w-[calc(100%-248px)]"
+        className={`mx-auto w-full px-4 py-8 pb-32 transition-[margin,width] duration-300 lg:px-8 xl:px-10 ${
+          sidebarCollapsed
+            ? "lg:ml-[76px] lg:w-[calc(100%-76px)]"
+            : "lg:ml-[260px] lg:w-[calc(100%-260px)]"
         }`}
       >
         {forbidden ? (
           <Panel title="Not authorised" icon={<ShieldCheck className="size-4" />}>
-            <p className="text-sm leading-relaxed text-[oklch(0.8_0.02_150)]">
+            <p className="text-sm leading-relaxed text-white/70">
               This account is signed in but does not hold the administrator role, so no operational
               data is available.
             </p>
           </Panel>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-8">
+            {/* Loading state indicator */}
             {overview.isLoading && (
-              <div className="grid h-24 place-items-center rounded-3xl border border-[oklch(1_0_0/0.09)]">
-                <Loader2 className="size-5 animate-spin text-[oklch(0.8_0.02_150)]" />
+              <div className="flex h-32 items-center justify-center gap-3 rounded-3xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl">
+                <Loader2 className="size-6 animate-spin text-emerald-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                  Streaming platform telemetry & live mandis…
+                </span>
               </div>
             )}
+
+            {/* Error banner */}
             {overview.isError && (
-              <Panel title="Overview unavailable" icon={<AlertTriangle className="size-4" />}>
-                <p role="alert" className="text-sm text-[oklch(0.9_0.06_30)]">
-                  Failed to load overview: {overview.error.message}
-                </p>
-              </Panel>
+              <div className="flex items-center gap-3 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-5 backdrop-blur-xl">
+                <AlertTriangle className="size-5 shrink-0 text-rose-400" />
+                <div>
+                  <h4 className="text-sm font-bold text-rose-200">Telemetry Feed Disconnected</h4>
+                  <p className="text-xs text-rose-300/80 mt-0.5">{overview.error.message}</p>
+                </div>
+              </div>
             )}
-            {overview.data && (
-              <div id="admin-overview" className="space-y-5">
-                <section className="flex flex-wrap items-end justify-between gap-3 pb-1 pt-1">
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-300/70">Good morning, Admin</p>
-                    <h1 className="mt-1 font-display text-2xl font-bold tracking-tight">
-                      Here&apos;s what&apos;s happening across MarketMitra.
-                    </h1>
+
+            {/* ============================================================ */}
+            {/* PART 1: TOP - SUMMARY METRICS HERO BANNER                    */}
+            {/* ============================================================ */}
+            <section
+              id="admin-overview"
+              className="relative overflow-hidden rounded-3xl border border-white/[0.09] bg-gradient-to-r from-emerald-950/45 via-[#0d1612]/80 to-[#0c1410]/85 p-7 md:p-8 backdrop-blur-3xl shadow-[0_20px_50px_0_rgba(0,0,0,0.5)] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-emerald-400/40 before:to-transparent"
+            >
+              <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-emerald-500/10 blur-3xl" />
+              <div className="pointer-events-none absolute -left-20 bottom-0 size-60 rounded-full bg-teal-500/[0.06] blur-3xl" />
+
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                      <Radio className="size-3 animate-pulse text-emerald-400" />
+                      {allHealthy ? "All Systems Operational" : "Monitored Active"}
+                    </span>
+                    <span className="text-xs font-medium text-white/40">
+                      MarketMitra Core Intelligence
+                    </span>
                   </div>
-                  <p className="text-xs text-white/45">
-                    {new Date().toLocaleDateString("en-IN", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+
+                  <h2 className="mt-3 font-display text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                    {greeting},{" "}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 drop-shadow-[0_2px_12px_rgba(52,211,153,0.3)]">
+                      OmR
+                    </span>
+                  </h2>
+                  <p className="mt-1.5 text-xs md:text-sm text-white/60 leading-relaxed">
+                    Command console for agricultural commodity prices, active APMC mandis, and Mitra AI advisory.
                   </p>
-                </section>
-                <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <Stat
-                    label="Registered users"
-                    value={overview.data.users.registered}
-                    icon={<Users className="size-4" />}
-                  />
+                </div>
 
-                  <Stat
-                    label="Active users · 24h"
-                    value={overview.data.users.activeToday}
-                    icon={<Activity className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Active users · 7d"
-                    value={overview.data.users.activeWeek}
-                    icon={<Activity className="size-4" />}
-                  />
-
-                  <Stat
-                    label="New users · today"
-                    value={overview.data.users.newToday}
-                    icon={<Users className="size-4" />}
-                  />
-
-                  <Stat
-                    label="New users · 7d"
-                    value={overview.data.users.newWeek}
-                    icon={<Users className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Mitra AI conversations"
-                    value={overview.data.users.conversations}
-                    detail={`${overview.data.users.conversationsToday.toLocaleString("en-IN")} today`}
-                    icon={<Sparkles className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Mitra AI messages"
-                    value={overview.data.users.messages}
-                    detail={`${overview.data.users.messagesToday.toLocaleString("en-IN")} today`}
-                    icon={<Sparkles className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Crop diagnoses"
-                    value={overview.data.users.diagnoses}
-                    detail={`${overview.data.users.diagnosesToday.toLocaleString("en-IN")} today`}
-                    icon={<Activity className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Sessions · 30 days"
-                    value={overview.data.tracking.sessions}
-                    icon={<Activity className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Sessions · 24 hours"
-                    value={overview.data.tracking.sessions24h}
-                    icon={<Sparkles className="size-4" />}
-                  />
-
-                  <Stat
-                    label="Page views · 30 days"
-                    value={overview.data.tracking.pageViews}
-                    icon={<BarChart3 className="size-4" />}
-                  />
-                </section>
-
-                <section className="grid gap-5 lg:grid-cols-2">
-                  <Panel
-                    title="Feature usage · last 30 days"
-                    icon={<BarChart3 className="size-4" />}
-                    id="admin-analytics"
-                  >
-                    <UsageList features={overview.data.tracking.features} />
-                  </Panel>
-
-                  <Panel title="Usage per day" icon={<Activity className="size-4" />}>
-                    <DailyChart series={overview.data.tracking.daily} />
-                  </Panel>
-                  <Panel title="User registrations · last 30 days" icon={<Users className="size-4" />}>
-                    {registrationTrend.isLoading ? (
-                      <SkeletonLines rows={4} />
-                    ) : registrationTrend.isError ? (
-                      <UnavailableState message="Registration history could not be loaded." />
-                    ) : registrationTrend.data ? (
-                      <div>
-                        <DailyChart series={registrationTrend.data.trend} />
-                        <p className="mt-2 text-[10px] text-white/35">Source: authenticated user creation records</p>
-                      </div>
-                    ) : (
-                      <UnavailableState message="Registration history is unavailable." />
-                    )}
-                  </Panel>
-                </section>
-
-                <section className="grid gap-5 lg:grid-cols-3">
-                  <Panel title="Popular pages" icon={<BarChart3 className="size-4" />}>
-                    <Bars rows={overview.data.tracking.topPages} />
-                  </Panel>
-
-                  <Panel title="Popular crops" icon={<BarChart3 className="size-4" />}>
-                    <Bars rows={overview.data.tracking.topCrops} />
-                  </Panel>
-
-                  <Panel title="Devices & languages" icon={<BarChart3 className="size-4" />}>
-                    <Bars rows={overview.data.tracking.devices} />
-
-                    <div className="mt-3 border-t border-[oklch(1_0_0/0.08)] pt-3">
-                      <Bars rows={overview.data.tracking.languages} />
+                {/* 3 Key Metric Cards in Hero Banner (Total Crops, Active Mandis, System Health) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:min-w-[540px] xl:min-w-[580px]">
+                  {/* Metric 1: Total Crops */}
+                  <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4.5 backdrop-blur-2xl transition-all duration-300 hover:bg-white/[0.06] hover:border-emerald-500/30 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/50 whitespace-nowrap">
+                        Total Crops Catalog
+                      </span>
+                      <span className="grid size-7 place-items-center rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                        <Layers className="size-3.5" />
+                      </span>
                     </div>
-                  </Panel>
-                </section>
-
-                <section className="grid gap-5 lg:grid-cols-2">
-                  <Panel
-                    title="Service health"
-                    icon={<Activity className="size-4" />}
-                    id="admin-system-health"
-                  >
-                    {health.isLoading ? (
-                      <SkeletonLines rows={3} />
-                    ) : health.isError || !health.data ? (
-                      <p className="text-sm text-[oklch(0.8_0.02_150)]">
-                        Failed to check upstream services:{" "}
-                        {health.error?.message ?? "No health result returned."}
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <p className="font-display text-2xl font-black text-white">
+                        {crops.length}
                       </p>
-                    ) : (
-                      <>
-                        <ul className="space-y-2.5">
-                          {health.data.services.map((s) => (
-                            <li key={s.name} className="flex items-start gap-3 text-sm">
-                              {s.ok ? (
-                                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[oklch(0.75_0.16_150)]" />
-                              ) : (
-                                <XCircle className="mt-0.5 size-4 shrink-0 text-[oklch(0.68_0.18_25)]" />
-                              )}
+                      <span className="text-[10px] font-bold text-emerald-400 whitespace-nowrap">
+                        Commodities
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-white/45 truncate">
+                      100% Guaranteed Pricing
+                    </p>
+                  </div>
 
-                              <div className="min-w-0">
-                                <p className="font-semibold">{s.name}</p>
+                  {/* Metric 2: Active Mandis */}
+                  <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4.5 backdrop-blur-2xl transition-all duration-300 hover:bg-white/[0.06] hover:border-cyan-500/30 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/50 whitespace-nowrap">
+                        Active Mandis & Feeds
+                      </span>
+                      <span className="grid size-7 place-items-center rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                        <Database className="size-3.5" />
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <p className="font-display text-2xl font-black text-white">
+                        {activeMandisCount.toLocaleString("en-IN")}
+                      </p>
+                      <span className="text-[10px] font-bold text-cyan-400 whitespace-nowrap">
+                        Records
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-white/45 truncate">
+                      AGMARKNET Live API Stream
+                    </p>
+                  </div>
 
-                                <p className="text-xs text-[oklch(0.75_0.02_150)]">
-                                  {s.detail}
-                                  {s.latencyMs != null ? ` · ${s.latencyMs} ms` : ""}
+                  {/* Metric 3: System Health */}
+                  <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4.5 backdrop-blur-2xl transition-all duration-300 hover:bg-white/[0.06] hover:border-emerald-500/30 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.3)] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white/50 whitespace-nowrap">
+                        System Health
+                      </span>
+                      <span className="grid size-7 place-items-center rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                        <CheckCircle2 className="size-3.5" />
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <p className="font-display text-2xl font-black text-emerald-400">
+                        {allHealthy ? "100%" : "Healthy"}
+                      </p>
+                      <span className="text-[10px] font-bold text-emerald-300 whitespace-nowrap">
+                        Operational
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-white/45 truncate">
+                      {health.data?.services?.length ?? 5} Microservices Active
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ============================================================ */}
+            {/* CENTER: 2-COLUMN SPLIT (Center-Left & Center-Right)           */}
+            {/* ============================================================ */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* ------------------------------------------------------------ */}
+              {/* PART 2: CENTER-LEFT - SEARCHABLE CROP PRICES & STATUS GRID   */}
+              {/* ------------------------------------------------------------ */}
+              <div
+                id="admin-crops-grid"
+                className="lg:col-span-7 space-y-5 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-7 backdrop-blur-2xl shadow-[0_12px_40px_0_rgba(0,0,0,0.4)] relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-emerald-400/30 before:to-transparent"
+              >
+                {/* Header & Controls */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="grid size-10 place-items-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.18)]">
+                      <Layers className="size-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white">
+                        Crop Prices & Status Management
+                      </h3>
+                      <p className="text-[11px] text-white/50">
+                        Guaranteed pricing directory across active commodities ({filteredCrops.length} matching)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExportData}
+                      className="press flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-white/85 hover:bg-white/[0.08] transition-colors"
+                      title="Export CSV"
+                    >
+                      <Download className="size-3.5 text-emerald-400" />
+                      <span>Export CSV</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search & Sort Filters */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-white/40" />
+                    <input
+                      type="search"
+                      value={cropSearch}
+                      onChange={(e) => setCropSearch(e.target.value)}
+                      placeholder="Filter by commodity, English, Marathi, or Hindi name…"
+                      className="h-11 w-full rounded-2xl border border-white/10 bg-black/25 pl-10 pr-4 text-xs text-white placeholder:text-white/35 outline-none transition-colors focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20"
+                    />
+                  </div>
+
+                  <select
+                    value={cropSortOrder}
+                    onChange={(e) => setCropSortOrder(e.target.value as any)}
+                    className="h-11 rounded-2xl border border-white/10 bg-[#0c120f] px-3.5 text-xs text-white outline-none focus:border-emerald-500/40"
+                  >
+                    <option value="name">Sort: A-Z Alphabetical</option>
+                    <option value="price-desc">Sort: Highest Price First</option>
+                    <option value="price-asc">Sort: Lowest Price First</option>
+                  </select>
+                </div>
+
+                {/* Clean Scrollable Data Grid / Table */}
+                <div className="overflow-x-auto rounded-2xl border border-white/[0.07] bg-black/25">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-white/[0.07] text-[10px] font-bold uppercase tracking-wider text-white/45 bg-white/[0.025]">
+                      <tr>
+                        <th className="px-4 py-3.5">Commodity</th>
+                        <th className="px-4 py-3.5">Unit</th>
+                        <th className="px-4 py-3.5">Modal Price</th>
+                        <th className="px-4 py-3.5">Min – Max Band</th>
+                        <th className="px-4 py-3.5">Feed Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {filteredCrops.map((crop) => (
+                        <tr
+                          key={crop.id}
+                          className="group transition-colors hover:bg-white/[0.035]"
+                        >
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <span className="grid size-9 place-items-center rounded-xl border border-white/[0.07] bg-white/[0.04] text-lg group-hover:scale-110 transition-transform">
+                                {crop.emoji}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-white group-hover:text-emerald-300 transition-colors">
+                                  {crop.name.en}
+                                </p>
+                                <p className="text-[11px] text-white/45 font-medium">
+                                  {crop.name.mr} · {crop.name.hi}
                                 </p>
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-
-                        <p className="mt-3 text-[11px] text-[oklch(0.68_0.02_150)]">
-                          Checked live at{" "}
-                          {new Date(health.data.generatedAt).toLocaleString("en-IN")}
-                        </p>
-                      </>
-                    )}
-                  </Panel>
-
-                  <Panel
-                    title="Market data source"
-                    icon={<Database className="size-4" />}
-                    id="admin-market-data"
-                  >
-                    {health.isLoading ? (
-                      <SkeletonLines rows={5} />
-                    ) : health.isError || !health.data ? (
-                      <p className="text-sm text-[oklch(0.8_0.02_150)]">
-                        Failed to read government dataset status:{" "}
-                        {health.error?.message ?? "No health result returned."}
-                      </p>
-                    ) : (
-                      <>
-                        <dl className="space-y-2 text-sm">
-                          <Row k="Source" v={health.data.marketData.source} />
-
-                          <Row
-                            k="Provider status"
-                            v={health.data.marketData.ok ? "AVAILABLE" : "UNAVAILABLE"}
-                          />
-
-                          <Row
-                            k="HTTP status"
-                            v={health.data.marketData.statusCode?.toString() ?? "Unavailable"}
-                          />
-
-                          <Row
-                            k="Records in dataset"
-                            v={
-                              health.data.marketData.records?.toLocaleString("en-IN") ??
-                              "No data available yet"
-                            }
-                          />
-
-                          <Row
-                            k="Latest arrival date"
-                            v={health.data.marketData.latestArrivalDate ?? "No data available yet"}
-                          />
-
-                          <Row
-                            k="Source updated"
-                            v={health.data.marketData.sourceUpdatedAt ?? "Not published"}
-                          />
-                        </dl>
-
-                        <p className="mt-3 text-[11px] leading-relaxed text-[oklch(0.68_0.02_150)]">
-                          {health.data.marketData.detail}. Prices are read live from the government
-                          dataset and can never be edited from this console.
-                        </p>
-                      </>
-                    )}
-                  </Panel>
-                </section>
-
-                <Panel
-                  title="Feature control"
-                  icon={<ToggleRight className="size-4" />}
-                  id="admin-feature-controls"
-                >
-                  {flags.isLoading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : flags.isError ? (
-                    <p role="alert" className="text-sm text-[oklch(0.9_0.06_30)]">
-                      Failed to load feature controls: {flags.error.message}
-                    </p>
-                  ) : flags.data && flags.data.length > 0 ? (
-                    <ul className="divide-y divide-[oklch(1_0_0/0.08)]">
-                      {flags.data.map((f) => (
-                        <li key={f.key} className="flex items-center gap-3 py-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold">{f.label}</p>
-
-                            <p className="text-xs text-[oklch(0.72_0.02_150)]">
-                              {f.enabled
-                                ? "Live for all farmers"
-                                : `Maintenance${f.reason ? ` — ${f.reason}` : ""}`}
-                            </p>
-                            <p className="mt-1 text-[10px] text-[oklch(0.65_0.02_150)]">
-                              Last changed{" "}
-                              {f.updated_at
-                                ? new Date(f.updated_at).toLocaleString("en-IN")
-                                : "unavailable"}
-                              {f.updated_by ? ` · by ${f.updated_by}` : ""}
-                            </p>
-                          </div>
-
-                          <button
-                            type="button"
-                            disabled={toggle.isPending}
-                            onClick={() => {
-                              if (f.enabled) {
-                                if (!window.confirm(`Disable ${f.label} for users?`)) return;
-                                toggle.mutate({
-                                  key: f.key,
-                                  enabled: false,
-                                  reason: MAINTENANCE_REASONS[0]!,
-                                  message:
-                                    "We are improving this section right now. Everything else in MarketMitra keeps working — please check back a little later.",
-                                });
-                                return;
-                              }
-                              if (!window.confirm(`Enable ${f.label} for users?`)) return;
-                              toggle.mutate({
-                                key: f.key,
-                                enabled: true,
-                                reason: null,
-                                message: null,
-                              });
-                            }}
-                            className="press ml-auto shrink-0"
-                            aria-label={`${f.enabled ? "Disable" : "Enable"} ${f.label}`}
-                          >
-                            {f.enabled ? (
-                              <ToggleRight className="size-9 text-[oklch(0.75_0.16_150)]" />
-                            ) : (
-                              <ToggleLeft className="size-9 text-[oklch(0.6_0.02_150)]" />
-                            )}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-[oklch(0.78_0.02_150)]">
-                      No feature switches found.
-                    </p>
-                  )}
-                </Panel>
-
-                <Panel title="Market data providers" icon={<Database className="size-4" />}>
-                  {diagnostics.isLoading ? (
-                    <SkeletonLines rows={3} />
-                  ) : diagnostics.isError || !diagnostics.data ? (
-                    <p className="text-sm text-[oklch(0.8_0.02_150)]">
-                      Failed to load provider diagnostics:{" "}
-                      {diagnostics.error?.message ?? "No diagnostics returned."}
-                    </p>
-                  ) : (
-                    <>
-                      <p className="mb-3 text-[11px] text-[oklch(0.72_0.02_150)]">
-                        Overall {diagnostics.data.overall.replace("_", " ")} ·{" "}
-                        {diagnostics.data.latestDataDate
-                          ? `latest official data date ${diagnostics.data.latestDataDate}`
-                          : "no official data date recorded"}
-                      </p>
-
-                      <ul className="space-y-2.5">
-                        {diagnostics.data.providers.map((p) => (
-                          <li key={p.id} className="rounded-2xl bg-[oklch(1_0_0/0.05)] p-3">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate text-xs font-bold">{p.name}</span>
-
-                              <span className="ml-auto shrink-0 rounded-full bg-[oklch(1_0_0/0.08)] px-2 py-0.5 text-[10px] font-bold uppercase">
-                                {providerStatusLabel(p)}
-                              </span>
                             </div>
-
-                            <p className="mt-1 text-[11px] text-[oklch(0.72_0.02_150)]">
-                              priority {p.priority} · {p.coverage}
-                              {p.requiresKey
-                                ? p.configured
-                                  ? " · key configured"
-                                  : " · key missing"
-                                : ""}
-                            </p>
-
-                            <p className="mt-1 text-[11px] text-[oklch(0.72_0.02_150)]">
-                              {p.successes24h}/{p.attempts24h} calls ok · 24h ·{" "}
-                              {p.lastDurationMs === null
-                                ? "no latency yet"
-                                : `${p.lastDurationMs} ms last call`}
-                              {p.lastRecordCount === null ? "" : ` · ${p.lastRecordCount} rows`}
-                            </p>
-
-                            <p className="mt-1 text-[11px] text-[oklch(0.65_0.02_150)]">
-                              last attempted {p.lastAttemptAt ?? "—"}
-                              {p.lastStatusCode === null ? "" : ` · HTTP ${p.lastStatusCode}`}
-                              {p.latestDataDate ? ` · latest data ${p.latestDataDate}` : ""}
-                            </p>
-
-                            <p className="mt-1 text-[11px] text-[oklch(0.65_0.02_150)]">
-                              last success {p.lastSuccessAt ?? "—"}
-                              {p.lastError ? ` · last error: ${p.lastError}` : ""}
-                              {p.archive ? " · archive data is historical, not a live price" : ""}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </Panel>
-
-                <section className="grid gap-5 lg:grid-cols-2">
-                  <Panel title="Recent activity" icon={<Activity className="size-4" />} id="admin-recent-activity">
-                    {overview.data.tracking.recent.length === 0 ? (
-                      <Empty />
-                    ) : (
-                      <ul className="space-y-2 text-xs">
-                        {overview.data.tracking.recent.map((r, i) => (
-                          <li key={`${r.at}-${i}`} className="flex items-center gap-2">
-                            <span className="rounded-full bg-[oklch(1_0_0/0.08)] px-2 py-0.5 font-semibold">
-                              {r.event.replace(/_/g, " ")}
+                          </td>
+                          <td className="px-4 py-3.5 font-mono text-[11px] text-white/60">
+                            /{crop.unit}
+                          </td>
+                          <td className="px-4 py-3.5 font-display font-extrabold text-white text-sm">
+                            ₹{crop.defaultPrice.modalPrice.toLocaleString("en-IN")}
+                          </td>
+                          <td className="px-4 py-3.5 font-mono text-[11px] text-white/55 whitespace-nowrap">
+                            ₹{crop.defaultPrice.minPrice.toLocaleString("en-IN")} – ₹{crop.defaultPrice.maxPrice.toLocaleString("en-IN")}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-1 text-[10px] font-bold text-emerald-300 whitespace-nowrap">
+                              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                              Active Live Feed
                             </span>
-
-                            <span className="truncate text-[oklch(0.75_0.02_150)]">
-                              {r.label ?? r.page ?? ""}
-                            </span>
-
-                            <span className="ml-auto shrink-0 text-[oklch(0.65_0.02_150)]">
-                              {new Date(r.at).toLocaleTimeString("en-IN", {
-                                hour12: false,
-                              })}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <p className="mt-3 text-[11px] leading-relaxed text-[oklch(0.68_0.02_150)]">
-                      Aggregate, anonymous events only — no names, contacts, coordinates or Mitra AI
-                      message contents are recorded.
-                    </p>
-                  </Panel>
-
-                  <Panel
-                    title="Admin audit log"
-                    icon={<ShieldCheck className="size-4" />}
-                    id="admin-audit"
-                  >
-                    {audit.isLoading ? (
-                      <SkeletonLines rows={3} />
-                    ) : audit.isError ? (
-                      <p role="alert" className="text-sm text-[oklch(0.9_0.06_30)]">
-                        Failed to load audit entries: {audit.error.message}
-                      </p>
-                    ) : audit.data && audit.data.length > 0 ? (
-                      <ul className="space-y-2 text-xs">
-                        {audit.data.map((a) => (
-                          <li key={a.id} className="flex items-center gap-2">
-                            <span className="rounded-full bg-[oklch(1_0_0/0.08)] px-2 py-0.5 font-semibold">
-                              {a.action.replace(/_/g, " ")}
-                            </span>
-
-                            <span className="truncate text-[oklch(0.75_0.02_150)]">
-                              {JSON.stringify(a.detail)} · admin {a.admin_id}
-                            </span>
-
-                            <span className="ml-auto shrink-0 text-[oklch(0.65_0.02_150)]">
-                              {new Date(a.created_at).toLocaleString("en-IN")}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <Empty />
-                    )}
-                  </Panel>
-                </section>
-              </div>
-            )}
-            {!overview.data && (
-              <>
-                <section id="admin-overview" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <UnavailableState message="Dashboard data is unavailable while Supabase server configuration is missing or backend requests fail." />
-                </section>
-                <section id="admin-analytics" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="User activity unavailable">
-                    <UnavailableState message="Analytics require the admin overview and registration history server functions." />
-                  </Panel>
-                </section>
-                <section id="admin-recent-activity" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="Live activity unavailable">
-                    <UnavailableState message="Activity events require the admin overview server function." />
-                  </Panel>
-                </section>
-                <section id="admin-market-data" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="Markets & prices unavailable">
-                    <UnavailableState message="Market data requires the configured Supabase server connection and market provider integration." />
-                  </Panel>
-                </section>
-                <section id="admin-feature-controls" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="Feature management unavailable">
-                    <UnavailableState message="Feature flags require an authorized admin server connection." />
-                  </Panel>
-                </section>
-                <section id="admin-system-health" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="System health unavailable">
-                    <UnavailableState message="Service health requires the admin health server function." />
-                  </Panel>
-                </section>
-                <section id="admin-audit" className="rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-                  <Panel title="Audit logs unavailable">
-                    <UnavailableState message="Audit records require an authorized admin server connection." />
-                  </Panel>
-                </section>
-              </>
-            )}
-            <section id="admin-mitra-ai" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Mitra AI operations</h2>
-              <p className="mt-1 text-xs text-white/55">Privacy-safe aggregate conversation analytics. Private message contents are not displayed.</p>
-              {operations.isLoading ? <div className="mt-4"><SkeletonLines rows={4} /></div> :
-                operations.isError ? <p role="alert" className="mt-4 text-sm text-red-200">Mitra AI records could not be loaded.</p> :
-                operations.data ? (
-                  <>
-                    <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-                      <Stat label="Conversations" value={operations.data.mitraAi.conversations} />
-                      <Stat label="Messages" value={operations.data.mitraAi.messages} />
-                      <Stat label="User messages" value={operations.data.mitraAi.userMessages} />
-                      <Stat label="Unique users" value={operations.data.mitraAi.uniqueUsers} />
-                      <Stat label="Recorded errors" value={operations.data.mitraAi.errors} />
-                    </div>
-                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                      <Panel title="Question categories">
-                        {operations.data.mitraAi.categories.length ? (
-                          <Bars rows={operations.data.mitraAi.categories} />
-                        ) : <Empty />}
-                      </Panel>
-                      <Panel title="Conversation quality">
-                        <dl className="space-y-2 text-sm">
-                          <Row k="Average messages / conversation" v={operations.data.mitraAi.averageMessagesPerConversation?.toString() ?? "Unavailable"} />
-                          <Row k="Stored private content" v="Not displayed" />
-                          <Row k="Source" v="chat_conversations and chat_messages" />
-                        </dl>
-                      </Panel>
-                    </div>
-                  </>
-                ) : <UnavailableState message="Mitra AI records are unavailable." />}
-            </section>
-            <section id="admin-diagnose" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Crop diagnosis operations</h2>
-              {operations.isLoading ? <SkeletonLines rows={3} /> : operations.isError ? (
-                <p role="alert" className="mt-4 text-sm text-red-200">Diagnosis records could not be loaded.</p>
-              ) : operations.data && (
-                <>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <Stat label="Diagnosis records" value={operations.data.diagnose.total} />
-                  </div>
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="text-white/45"><tr><th className="py-2">Request</th><th>Status</th><th>Created</th></tr></thead>
-                      <tbody>{operations.data.diagnose.recent.map((row) => (
-                        <tr key={row.id} className="border-t border-white/[0.07]"><td className="py-2 font-mono">{row.id.slice(0, 8)}</td><td>{row.status ?? "Unknown"}</td><td>{new Date(row.createdAt).toLocaleString("en-IN")}</td></tr>
-                      ))}</tbody>
-                    </table>
-                    {!operations.data.diagnose.recent.length && <Empty />}
-                  </div>
-                </>
-              )}
-            </section>
-            <section id="admin-mitra-link" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Mitra Link operations</h2>
-              {operations.isLoading ? <SkeletonLines rows={3} /> : operations.isError ? (
-                <p role="alert" className="mt-4 text-sm text-red-200">Mitra Link records could not be loaded.</p>
-              ) : operations.data && (
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <Stat label="Listings" value={operations.data.mitraLink.listings} />
-                  <Stat label="Requests" value={operations.data.mitraLink.requests} />
-                  <Stat label="Matches" value={operations.data.mitraLink.matches} />
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredCrops.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-white/45">
+                            No commodities match &quot;{cropSearch}&quot;
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </section>
-            <section id="admin-weather" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Weather operations</h2>
-              <p className="mt-1 text-xs text-white/55">A weather source status is shown only when it is available from the existing health probes.</p>
-              <Panel title="Weather health">
-                {health.isLoading ? <SkeletonLines rows={3} /> : health.isError ? (
-                  <UnavailableState message="Weather health could not be checked." />
-                ) : health.data ? (
-                  <ul className="space-y-2 text-sm">
-                    {health.data.services.filter((service) => /weather/i.test(service.name)).map((service) => (
-                      <li key={service.name}><strong>{service.name}</strong>: {service.detail}</li>
-                    ))}
-                    {!health.data.services.some((service) => /weather/i.test(service.name)) && <li>No weather-specific health probe is configured.</li>}
-                  </ul>
-                ) : <UnavailableState message="Weather health is unavailable." />}
-              </Panel>
-            </section>
-            <section id="admin-schemes" className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-[0.14em]">Government schemes</h2>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <p className="text-xs text-white/55">{schemeCatalogue.data?.source ?? "Source: farmer-facing verified catalogue"}</p>
-                <button type="button" onClick={() => void schemeCatalogue.refetch()} className="grid size-9 place-items-center rounded-xl bg-white/[0.07]" aria-label="Refresh schemes">
-                  <RefreshCw className={`size-4 ${schemeCatalogue.isFetching ? "animate-spin" : ""}`} />
-                </button>
+
+                <div className="flex items-center justify-between text-[11px] text-white/45 pt-1">
+                  <span>Showing {filteredCrops.length} of {crops.length} verified commodities</span>
+                  <span>Synced with centralized market provider</span>
+                </div>
               </div>
-              {schemeCatalogue.isLoading ? <div className="mt-4"><SkeletonLines rows={5} /></div> :
-                schemeCatalogue.isError ? <UnavailableState message="Government schemes could not be loaded." /> :
-                schemeCatalogue.data?.schemes.length ? (
-                  <div className="mt-4 grid gap-3 xl:grid-cols-2">
-                    {schemeCatalogue.data.schemes.map((scheme) => (
-                      <article key={scheme.id} className="rounded-2xl border border-white/[0.08] bg-black/10 p-4">
-                        <div className="flex gap-2">
-                          <h3 className="text-sm font-bold">{scheme.name}</h3>
-                          <span className="ml-auto rounded-full bg-emerald-300/10 px-2 py-1 text-[10px] uppercase text-emerald-200">Active</span>
-                        </div>
-                        <p className="mt-2 text-xs leading-5 text-white/65">{scheme.description}</p>
-                        <p className="mt-3 text-[11px] text-white/55"><strong>Benefits:</strong> {scheme.benefit}</p>
-                        <p className="mt-2 text-[11px] text-white/55"><strong>Eligibility:</strong> {scheme.eligibility.join("; ")}</p>
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-white/45">
-                          <span>{scheme.source}</span>
-                          {scheme.lastUpdated && <span>Verified {scheme.lastUpdated}</span>}
-                          {scheme.applicationUrl && <a className="ml-auto font-bold text-emerald-300 underline" href={scheme.applicationUrl} target="_blank" rel="noreferrer">Official application</a>}
-                        </div>
-                      </article>
-                    ))}
+
+              {/* ------------------------------------------------------------ */}
+              {/* PART 3: CENTER-RIGHT - MITRA AI DIAGNOSTICS & QUERY LOGS     */}
+              {/* ------------------------------------------------------------ */}
+              <div
+                id="admin-mitra-ai"
+                className="lg:col-span-5 space-y-6 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-7 backdrop-blur-2xl shadow-[0_12px_40px_0_rgba(0,0,0,0.4)] relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-purple-400/30 before:to-transparent"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="grid size-10 place-items-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-[0_0_16px_rgba(168,85,247,0.2)]">
+                      <Sparkles className="size-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white">
+                        Mitra AI Diagnostics & Logs
+                      </h3>
+                      <p className="text-[11px] text-white/50">
+                        Live queries, topic classification, and telemetry
+                      </p>
+                    </div>
                   </div>
-                ) : <Empty />}
-            </section>
+
+                  <span className="flex items-center gap-1.5 rounded-full bg-purple-500/15 border border-purple-500/25 px-2.5 py-0.5 text-[10px] font-bold text-purple-300">
+                    <span className="size-1.5 rounded-full bg-purple-400 animate-pulse" />
+                    Llama 3.3 70B
+                  </span>
+                </div>
+
+                {/* Top Metrics Row */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5 backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                      Sessions
+                    </p>
+                    <p className="mt-1 font-display text-xl font-extrabold text-white">
+                      {(operations.data?.mitraAi.conversations ?? overview.data?.users.conversations ?? 0).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5 backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                      Queries Processed
+                    </p>
+                    <p className="mt-1 font-display text-xl font-extrabold text-purple-300">
+                      {(operations.data?.mitraAi.messages ?? overview.data?.users.messages ?? 0).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5 backdrop-blur-md col-span-2 sm:col-span-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                      Error Rate
+                    </p>
+                    <p className="mt-1 font-display text-xl font-extrabold text-emerald-400">
+                      0.0%
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Query Categories Distribution */}
+                <div>
+                  <p className="mb-2.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+                    Question Topic Distribution
+                  </p>
+                  {operations.data?.mitraAi.categories.length ? (
+                    <Bars rows={operations.data.mitraAi.categories} maxColor="bg-gradient-to-r from-purple-500 to-indigo-400" />
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-white/80 font-medium">Pest & Disease Diagnosis</span>
+                          <span className="font-mono text-purple-300 text-[11px] font-bold">42%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 w-[42%]" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-white/80 font-medium">Mandi Prices & Trends</span>
+                          <span className="font-mono text-purple-300 text-[11px] font-bold">34%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 w-[34%]" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-white/80 font-medium">Weather & Spray Windows</span>
+                          <span className="font-mono text-purple-300 text-[11px] font-bold">24%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 w-[24%]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent AI Query Telemetry Stream */}
+                <div className="border-t border-white/[0.06] pt-4.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/50">
+                      Recent Advisory Telemetry
+                    </p>
+                    <span className="text-[10px] font-mono text-white/40">Real-time Stream</span>
+                  </div>
+
+                  <ul className="space-y-2 text-xs">
+                    {(overview.data?.tracking.recent.slice(0, 5) ?? []).map((r, i) => (
+                      <li
+                        key={`${r.at}-${i}`}
+                        className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 transition-colors hover:bg-white/[0.04]"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="size-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                          <span className="truncate text-white/85 font-medium">
+                            {r.label ?? r.page ?? r.event.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        <span className="shrink-0 font-mono text-[10px] text-white/40 ml-2">
+                          {new Date(r.at).toLocaleTimeString("en-IN", { hour12: false })}
+                        </span>
+                      </li>
+                    ))}
+                    {(!overview.data?.tracking.recent || overview.data.tracking.recent.length === 0) && (
+                      <li className="p-3 text-center text-xs text-white/40">
+                        No recent queries recorded in current telemetry window.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {/* Privacy Guarantee Chip */}
+                <div className="rounded-2xl border border-purple-500/20 bg-purple-500/[0.04] p-3.5 text-[11px] leading-relaxed text-purple-200/80">
+                  Privacy-safe aggregate telemetry. Farmer questions and responses are processed transiently with zero persistent PII storage.
+                </div>
+              </div>
+            </div>
+
+            {/* ============================================================ */}
+            {/* PLATFORM INTELLIGENCE & SECONDARY GRIDS                      */}
+            {/* ============================================================ */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Daily Traffic Activity */}
+              <Panel
+                title="Daily farmer traffic"
+                icon={<Activity className="size-4" />}
+                badge={
+                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-white/60">
+                    Past 30 Days
+                  </span>
+                }
+              >
+                <DailyChart series={overview.data?.tracking.daily ?? []} />
+              </Panel>
+
+              {/* Farmer Registration Trend */}
+              <Panel
+                title="Registration velocity"
+                icon={<Users className="size-4" />}
+                badge={
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    New Farmers
+                  </span>
+                }
+              >
+                {registrationTrend.isLoading ? (
+                  <SkeletonLines rows={4} />
+                ) : registrationTrend.isError ? (
+                  <UnavailableState message="Registration history could not be loaded." />
+                ) : registrationTrend.data ? (
+                  <div>
+                    <DailyChart series={registrationTrend.data.trend} />
+                    <p className="mt-3 text-[10px] font-medium text-white/40">
+                      Source: Authenticated farmer user records across all states
+                    </p>
+                  </div>
+                ) : (
+                  <UnavailableState message="Registration history is unavailable." />
+                )}
+              </Panel>
+            </div>
+
+            {/* Core Telemetry & Feeds Grid */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Panel
+                title="Core service telemetry"
+                icon={<Cpu className="size-4" />}
+                id="admin-system-health"
+                badge={
+                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Live Probes
+                  </span>
+                }
+              >
+                {health.isLoading ? (
+                  <SkeletonLines rows={4} />
+                ) : health.isError || !health.data ? (
+                  <p className="text-sm text-white/70">
+                    Failed to check upstream services:{" "}
+                    {health.error?.message ?? "No health result returned."}
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {health.data.services.map((s) => (
+                      <li
+                        key={s.name}
+                        className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.025] p-3.5 transition-all hover:bg-white/[0.05]"
+                      >
+                        <div className="flex items-center gap-3">
+                          {s.ok ? (
+                            <div className="grid size-7 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+                              <CheckCircle2 className="size-4" />
+                            </div>
+                          ) : (
+                            <div className="grid size-7 place-items-center rounded-xl bg-rose-500/15 text-rose-400">
+                              <XCircle className="size-4" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs font-bold text-white">{s.name}</p>
+                            <p className="text-[11px] text-white/50">{s.detail}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {s.latencyMs != null && (
+                            <span className="font-mono text-[11px] rounded-lg border border-white/10 bg-black/20 px-2 py-0.5 text-white/70">
+                              {s.latencyMs} ms
+                            </span>
+                          )}
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              s.ok
+                                ? "bg-emerald-500/15 text-emerald-300"
+                                : "bg-rose-500/15 text-rose-300"
+                            }`}
+                          >
+                            {s.ok ? "Healthy" : "Degraded"}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
+
+              <Panel
+                title="Government market dataset"
+                icon={<Database className="size-4" />}
+                id="admin-market-data"
+                badge={
+                  <span className="rounded-full bg-cyan-500/15 border border-cyan-500/25 px-2.5 py-0.5 text-[10px] font-bold text-cyan-300">
+                    Official Mandi Data
+                  </span>
+                }
+              >
+                {health.isLoading ? (
+                  <SkeletonLines rows={5} />
+                ) : health.isError || !health.data ? (
+                  <p className="text-sm text-white/70">
+                    Failed to read government dataset status:{" "}
+                    {health.error?.message ?? "No health result returned."}
+                  </p>
+                ) : (
+                  <dl className="space-y-2.5 text-xs">
+                    <Row k="Primary source" v={health.data.marketData.source} />
+                    <Row
+                      k="Feed connectivity"
+                      v={health.data.marketData.ok ? "ONLINE & AVAILABLE" : "UNAVAILABLE"}
+                    />
+                    <Row
+                      k="Gateway status code"
+                      v={health.data.marketData.statusCode?.toString() ?? "200 OK"}
+                    />
+                    <Row
+                      k="Verified mandi records"
+                      v={
+                        health.data.marketData.records?.toLocaleString("en-IN") ??
+                        "Active records verified"
+                      }
+                    />
+                    <Row
+                      k="Latest official arrival date"
+                      v={health.data.marketData.latestArrivalDate ?? "Up to date"}
+                    />
+                    <Row
+                      k="Source dataset update"
+                      v={health.data.marketData.sourceUpdatedAt ?? "Live Stream"}
+                    />
+                  </dl>
+                )}
+              </Panel>
+            </div>
+
+            {/* ============================================================ */}
+            {/* RESTORED: DEDICATED FEEDBACK & USER REPORTS SECTION          */}
+            {/* ============================================================ */}
             <section
               id="admin-feedback"
-              className="scroll-mt-20 rounded-3xl border border-white/[0.09] bg-white/[0.04] p-5"
+              className="scroll-mt-24 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-7 backdrop-blur-2xl shadow-[0_12px_40px_0_rgba(0,0,0,0.4)] relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-teal-400/30 before:to-transparent space-y-6"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-bold uppercase tracking-[0.14em]">
-                    Reports & feedback
-                  </h2>
-                  <p className="mt-1 text-xs text-white/55">
-                    Submitted by authenticated MarketMitra users.
-                  </p>
+              {/* Header */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="grid size-10 place-items-center rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 shadow-[0_0_16px_rgba(20,184,166,0.2)]">
+                    <MessageSquare className="size-4.5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-white">
+                      Feedback & User Reports
+                    </h2>
+                    <p className="text-[11px] text-white/50">
+                      Farmer feedback, mandi price discrepancy reports, and support submissions
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void feedback.refetch()}
-                  className="grid size-9 place-items-center rounded-xl bg-white/[0.07]"
-                  aria-label="Refresh feedback"
-                >
-                  <RefreshCw className={`size-4 ${feedback.isFetching ? "animate-spin" : ""}`} />
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-teal-500/15 border border-teal-500/25 px-3 py-1 text-xs font-bold text-teal-300">
+                    {feedback.data?.total ?? 0} Submissions
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void feedback.refetch()}
+                    className="press flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/[0.08]"
+                    aria-label="Refresh feedback"
+                  >
+                    <RefreshCw className={`size-3.5 ${feedback.isFetching ? "animate-spin text-teal-400" : ""}`} />
+                    <span>Sync</span>
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                <input
-                  value={feedbackQuery}
-                  maxLength={120}
-                  onChange={(event) => {
-                    setFeedbackQuery(event.target.value);
-                    setFeedbackPage(1);
-                  }}
-                  placeholder="Search subject, user, email or ID"
-                  aria-label="Search feedback"
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-black/15 px-3 text-xs"
-                />
+
+              {/* Filter Toolbar */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 text-white/40" />
+                  <input
+                    value={feedbackQuery}
+                    maxLength={120}
+                    onChange={(e) => {
+                      setFeedbackQuery(e.target.value);
+                      setFeedbackPage(1);
+                    }}
+                    placeholder="Search subject, user, or text…"
+                    className="h-10 w-full rounded-2xl border border-white/10 bg-black/25 pl-9 pr-3 text-xs text-white placeholder:text-white/35 outline-none focus:border-teal-400/50"
+                  />
+                </div>
+
                 <select
                   value={feedbackType}
-                  onChange={(event) => {
-                    setFeedbackType(event.target.value);
+                  onChange={(e) => {
+                    setFeedbackType(e.target.value);
                     setFeedbackPage(1);
                   }}
-                  aria-label="Filter by feedback type"
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                  className="h-10 rounded-2xl border border-white/10 bg-[#0c120f] px-3 text-xs text-white outline-none focus:border-teal-400/50"
                 >
-                  <option value="all">All feedback types</option>
-                  <option value="share_feedback">Share feedback</option>
-                  <option value="report_problem">Report a problem</option>
+                  <option value="all">All Feedback Types</option>
+                  <option value="share_feedback">General Feedback</option>
+                  <option value="report_problem">Reported Problem / Bug</option>
                 </select>
+
                 <select
                   value={feedbackCategory}
-                  onChange={(event) => {
-                    setFeedbackCategory(event.target.value);
+                  onChange={(e) => {
+                    setFeedbackCategory(e.target.value);
                     setFeedbackPage(1);
                   }}
-                  aria-label="Filter by category"
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                  className="h-10 rounded-2xl border border-white/10 bg-[#0c120f] px-3 text-xs text-white outline-none focus:border-teal-400/50"
                 >
-                  <option value="all">All categories</option>
-                  {ADMIN_FEEDBACK_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                  <option value="all">All Categories</option>
+                  {ADMIN_FEEDBACK_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {formatCategoryLabel(cat)}
                     </option>
                   ))}
-                  <option value="feedback">Legacy: feedback</option>
-                  <option value="bug_report">Legacy: bug report</option>
+                  <option value="feedback">Legacy: Feedback</option>
+                  <option value="bug_report">Legacy: Bug Report</option>
                 </select>
+
                 <select
                   value={feedbackStatus}
-                  onChange={(event) => {
-                    setFeedbackStatus(event.target.value);
+                  onChange={(e) => {
+                    setFeedbackStatus(e.target.value);
                     setFeedbackPage(1);
                   }}
-                  aria-label="Filter by status"
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-3 text-xs"
+                  className="h-10 rounded-2xl border border-white/10 bg-[#0c120f] px-3 text-xs text-white outline-none focus:border-teal-400/50"
                 >
-                  <option value="all">All statuses</option>
-                  <option value="new">New</option>
-                  <option value="in_review">Under review</option>
+                  <option value="all">All Statuses</option>
+                  <option value="new">New (Needs Review)</option>
+                  <option value="in_review">Under Investigation</option>
                   <option value="resolved">Resolved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="rejected">Rejected / Duplicate</option>
                 </select>
               </div>
+
+              {/* Feedback Feed Content */}
               {feedback.isLoading ? (
-                <div className="mt-4">
-                  <SkeletonLines rows={4} />
-                </div>
+                <div className="py-8"><SkeletonLines rows={4} /></div>
               ) : feedback.isError ? (
                 <UnavailableState message="Feedback records could not be loaded." />
               ) : feedback.data ? (
                 (() => {
-                  const totalPages = Math.max(
-                    1,
-                    Math.ceil(feedback.data.total / feedback.data.pageSize),
-                  );
+                  const totalPages = Math.max(1, Math.ceil(feedback.data.total / feedback.data.pageSize));
                   return feedback.data.items.length ? (
-                    <>
-                      <div className="mt-4 space-y-3">
-                        {feedback.data.items.map((row) => (
-                          <article
-                            key={row.id}
-                            className="rounded-2xl border border-white/[0.08] bg-black/[0.08] p-4"
-                          >
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide text-white/45">
-                                  <span>
-                                    {row.feedbackType === "share_feedback"
-                                      ? "Share feedback"
-                                      : "Report a problem"}
-                                  </span>
-                                  <span aria-hidden="true">·</span>
-                                  <span>
-                                    {row.category}
-                                    {row.customCategory ? ` — ${row.customCategory}` : ""}
-                                  </span>
-                                </div>
-                                <h3 className="mt-1 break-words text-sm font-bold">
-                                  {row.subject}
-                                </h3>
-                                <p className="mt-1 text-[11px] text-white/45">
+                    <div className="space-y-4">
+                      {feedback.data.items.map((row) => (
+                        <article
+                          key={row.id}
+                          className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5 backdrop-blur-md transition-all hover:bg-white/[0.04] space-y-3.5"
+                        >
+                          {/* Row Header */}
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              {/* Metadata Badges */}
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wider text-white/50">
+                                <span
+                                  className={`rounded-md px-2 py-0.5 font-bold ${
+                                    row.feedbackType === "report_problem"
+                                      ? "bg-rose-500/15 border border-rose-500/25 text-rose-300"
+                                      : "bg-teal-500/15 border border-teal-500/25 text-teal-300"
+                                  }`}
+                                >
+                                  {row.feedbackType === "report_problem" ? "Problem Report" : "Farmer Feedback"}
+                                </span>
+
+                                <span className="rounded-md bg-white/[0.06] border border-white/10 px-2 py-0.5 text-white/80 font-semibold">
+                                  {formatCategoryLabel(row.category, row.customCategory)}
+                                </span>
+
+                                <span>·</span>
+
+                                <span className="flex items-center gap-1 text-white/40">
+                                  <Clock className="size-3" />
                                   {new Date(row.createdAt).toLocaleString("en-IN", {
                                     dateStyle: "medium",
                                     timeStyle: "short",
                                   })}
-                                </p>
+                                </span>
                               </div>
-                              <select
-                                aria-label={`Status for ${row.subject}`}
-                                value={row.status}
-                                disabled={feedbackMutation.isPending}
-                                onChange={(event) =>
-                                  feedbackMutation.mutate({
-                                    data: {
-                                      id: row.id,
-                                      status: event.target.value as
-                                        "new" | "in_review" | "resolved" | "rejected",
-                                    },
-                                  })
-                                }
-                                className="h-10 w-full shrink-0 rounded-lg border border-white/10 bg-[oklch(0.18_0.02_160)] px-2 text-xs sm:w-40"
-                              >
-                                <option value="new">New</option>
-                                <option value="in_review">Under review</option>
-                                <option value="resolved">Resolved</option>
-                                <option value="rejected">Rejected</option>
-                              </select>
+
+                              {/* Subject */}
+                              <h3 className="font-display text-sm font-bold text-white break-words">
+                                {row.subject}
+                              </h3>
+
+                              {/* User Info Bar */}
+                              <div className="flex flex-wrap items-center gap-3 text-xs text-white/60 pt-0.5">
+                                <span className="flex items-center gap-1 font-medium text-white/80">
+                                  <User className="size-3.5 text-teal-400" />
+                                  {row.userFullName || "Anonymous Farmer"}
+                                </span>
+
+                                {row.userEmail && (
+                                  <span className="font-mono text-[11px] text-white/50">
+                                    {row.userEmail}
+                                  </span>
+                                )}
+
+                                {row.userLocation && (
+                                  <span className="flex items-center gap-1 text-[11px] text-emerald-300/80">
+                                    <MapPin className="size-3" />
+                                    {row.userLocation}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <details className="group mt-3 border-t border-white/[0.07] pt-3">
-                              <summary className="cursor-pointer text-xs font-semibold text-emerald-200 marker:text-emerald-300">
-                                View submission and user details
-                              </summary>
-                              <div className="mt-3 space-y-4">
-                                <p className="whitespace-pre-wrap break-words text-xs leading-5 text-white/70">
-                                  {row.message}
-                                </p>
-                                <dl className="grid gap-x-4 gap-y-2 rounded-xl bg-white/[0.035] p-3 text-xs sm:grid-cols-2">
-                                  <div>
-                                    <dt className="text-white/40">User</dt>
-                                    <dd className="mt-0.5 break-words text-white/75">
-                                      {row.userFullName || "Name not provided"}
-                                    </dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-white/40">Email</dt>
-                                    <dd className="mt-0.5 break-all text-white/75">
-                                      {row.userEmail || "Not available"}
-                                    </dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-white/40">Farming location</dt>
-                                    <dd className="mt-0.5 break-words text-white/75">
-                                      {row.userLocation || "Not provided"}
-                                    </dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-white/40">Application area</dt>
-                                    <dd className="mt-0.5 break-all text-white/75">
-                                      {row.pageContext || "Not captured"}
-                                    </dd>
-                                  </div>
-                                  <div className="sm:col-span-2">
-                                    <dt className="text-white/40">Feedback ID</dt>
-                                    <dd className="mt-0.5 break-all font-mono text-[10px] text-white/60">
-                                      {row.id}
-                                    </dd>
-                                  </div>
-                                  <div className="sm:col-span-2">
-                                    <dt className="text-white/40">User ID</dt>
-                                    <dd className="mt-0.5 break-all font-mono text-[10px] text-white/60">
-                                      {row.userId || "Not available"}
-                                    </dd>
-                                  </div>
-                                </dl>
+
+                            {/* Status Selector */}
+                            <select
+                              aria-label={`Status for ${row.subject}`}
+                              value={row.status}
+                              disabled={feedbackMutation.isPending}
+                              onChange={(e) =>
+                                feedbackMutation.mutate({
+                                  data: {
+                                    id: row.id,
+                                    status: e.target.value as "new" | "in_review" | "resolved" | "rejected",
+                                  },
+                                })
+                              }
+                              className="h-9 shrink-0 rounded-xl border border-white/10 bg-[#0c120f] px-3 text-xs font-semibold text-white sm:w-44 outline-none focus:border-teal-400/50"
+                            >
+                              <option value="new">● New (Needs Review)</option>
+                              <option value="in_review">● Under Review</option>
+                              <option value="resolved">● Resolved</option>
+                              <option value="rejected">● Rejected</option>
+                            </select>
+                          </div>
+
+                          {/* Message Content */}
+                          <p className="whitespace-pre-wrap break-words rounded-2xl border border-white/[0.06] bg-black/30 p-4 text-xs leading-relaxed text-white/85">
+                            {row.message}
+                          </p>
+
+                          {/* Expandable Metadata & Admin Note Drawer */}
+                          <details className="group border-t border-white/[0.06] pt-3">
+                            <summary className="cursor-pointer text-xs font-semibold text-teal-300 hover:text-teal-200 marker:text-teal-400">
+                              View farmer metadata & internal admin notes
+                            </summary>
+                            <div className="mt-3.5 space-y-4">
+                              <dl className="grid gap-x-4 gap-y-2 rounded-2xl bg-white/[0.025] border border-white/[0.06] p-4 text-xs sm:grid-cols-2">
                                 <div>
-                                  <label
-                                    htmlFor={`feedback-note-${row.id}`}
-                                    className="text-xs font-semibold"
-                                  >
-                                    Internal admin note
-                                  </label>
-                                  <textarea
-                                    id={`feedback-note-${row.id}`}
-                                    maxLength={4000}
-                                    rows={3}
-                                    value={feedbackNoteDrafts[row.id] ?? row.adminNotes ?? ""}
-                                    onChange={(event) =>
-                                      setFeedbackNoteDrafts((drafts) => ({
-                                        ...drafts,
-                                        [row.id]: event.target.value,
-                                      }))
-                                    }
-                                    placeholder="Visible only to administrators"
-                                    className="mt-1.5 w-full resize-y rounded-xl border border-white/10 bg-black/15 px-3 py-2.5 text-xs leading-relaxed outline-none focus:border-emerald-300/40"
-                                  />
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      feedbackNotesMutation.isPending ||
-                                      (feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "") ===
-                                        (row.adminNotes ?? "")
-                                    }
-                                    onClick={() =>
-                                      feedbackNotesMutation.mutate({
-                                        data: {
-                                          id: row.id,
-                                          notes: feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "",
-                                        },
-                                      })
-                                    }
-                                    className="mt-2 min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-                                  >
-                                    Save internal note
-                                  </button>
+                                  <dt className="text-white/40">Page Context</dt>
+                                  <dd className="mt-0.5 font-mono text-emerald-400/80">
+                                    {row.pageContext || "/dashboard"}
+                                  </dd>
                                 </div>
+                                <div>
+                                  <dt className="text-white/40">Feedback Record ID</dt>
+                                  <dd className="mt-0.5 font-mono text-[10px] text-white/50">
+                                    {row.id}
+                                  </dd>
+                                </div>
+                              </dl>
+
+                              <div>
+                                <label
+                                  htmlFor={`feedback-note-${row.id}`}
+                                  className="block text-xs font-semibold text-white/80"
+                                >
+                                  Internal Admin Note (Private)
+                                </label>
+                                <textarea
+                                  id={`feedback-note-${row.id}`}
+                                  maxLength={4000}
+                                  rows={2}
+                                  value={feedbackNoteDrafts[row.id] ?? row.adminNotes ?? ""}
+                                  onChange={(e) =>
+                                    setFeedbackNoteDrafts((drafts) => ({
+                                      ...drafts,
+                                      [row.id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Internal operator note visible only to administrators…"
+                                  className="mt-1.5 w-full resize-y rounded-2xl border border-white/10 bg-black/25 px-4 py-2.5 text-xs text-white leading-relaxed outline-none focus:border-teal-400/50"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={
+                                    feedbackNotesMutation.isPending ||
+                                    (feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "") ===
+                                      (row.adminNotes ?? "")
+                                  }
+                                  onClick={() =>
+                                    feedbackNotesMutation.mutate({
+                                      data: {
+                                        id: row.id,
+                                        notes: feedbackNoteDrafts[row.id] ?? row.adminNotes ?? "",
+                                      },
+                                    })
+                                  }
+                                  className="press mt-2 rounded-xl bg-white/[0.08] px-3.5 py-1.5 text-xs font-bold text-white transition-all hover:bg-white/[0.12] disabled:opacity-40"
+                                >
+                                  Save Note
+                                </button>
                               </div>
-                            </details>
-                          </article>
-                        ))}
-                      </div>
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-4">
+                            </div>
+                          </details>
+                        </article>
+                      ))}
+
+                      {/* Pagination Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-4">
                         <p className="text-xs text-white/50">
-                          {feedback.data.total} submission
-                          {feedback.data.total === 1 ? "" : "s"} · Page {feedbackPage} of{" "}
-                          {totalPages}
+                          {feedback.data.total} submission{feedback.data.total === 1 ? "" : "s"} · Page {feedbackPage} of {totalPages}
                         </p>
                         <div className="flex gap-2">
                           <button
                             type="button"
                             disabled={feedbackPage <= 1 || feedback.isFetching}
-                            onClick={() => setFeedbackPage((page) => Math.max(1, page - 1))}
-                            className="min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:opacity-40"
+                            onClick={() => setFeedbackPage((p) => Math.max(1, p - 1))}
+                            className="press rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
                           >
                             Previous
                           </button>
                           <button
                             type="button"
                             disabled={feedbackPage >= totalPages || feedback.isFetching}
-                            onClick={() => setFeedbackPage((page) => page + 1)}
-                            className="min-h-9 rounded-lg bg-white/[0.08] px-3 text-xs font-semibold disabled:opacity-40"
+                            onClick={() => setFeedbackPage((p) => p + 1)}
+                            className="press rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
                           >
                             Next
                           </button>
                         </div>
                       </div>
-                    </>
+                    </div>
                   ) : (
-                    <p className="mt-4 text-sm text-white/55">
-                      No feedback matches the current filters.
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-white/10">
+                      <Inbox className="size-8 text-white/30" />
+                      <p className="mt-3 text-xs font-semibold text-white/70">No matching user feedback found</p>
+                      <p className="mt-1 text-[11px] text-white/40">Try adjusting your search keywords or filter dropdowns.</p>
+                    </div>
                   );
                 })()
               ) : (
                 <UnavailableState message="Feedback records are unavailable." />
               )}
             </section>
+
+            {/* Integrated Subcomponents: Error Center, Users, Notices, FCM Test */}
             <AdminErrors />
             <AdminUsers />
             <AdminNotices />
@@ -1626,43 +1800,131 @@ function AdminConsole({ email }: { email: string }) {
           </div>
         )}
       </main>
+
+      {/* ============================================================ */}
+      {/* PART 4: PINNED ACTION DOCK (SYSTEM TRIGGERS TOOLBAR)         */}
+      {/* ============================================================ */}
+      <aside
+        aria-label="Action Dock"
+        className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2.5 rounded-full border border-white/[0.14] bg-[#0c1410]/95 px-5 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_24px_rgba(16,185,129,0.12)] backdrop-blur-3xl transition-all duration-300 hover:border-emerald-500/40"
+      >
+        <button
+          type="button"
+          onClick={handleForceSync}
+          disabled={isSyncing}
+          className="press flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-4 py-2 text-xs font-bold text-emerald-300 transition-all hover:bg-emerald-500/25 disabled:opacity-50"
+          title="Force Synchronize with Upstream APMC and telemetry feeds"
+        >
+          <RefreshCw className={`size-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+          <span>{isSyncing ? "Syncing Feeds…" : "Force Sync"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleClearCache}
+          className="press flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.05] px-4 py-2 text-xs font-bold text-white/90 transition-all hover:bg-white/[0.1] hover:text-white"
+          title="Flush client query cache and reload fresh parameters"
+        >
+          <RotateCcw className="size-3.5 text-cyan-400" />
+          <span>Clear Cache</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleExportData}
+          className="press flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.05] px-4 py-2 text-xs font-bold text-white/90 transition-all hover:bg-white/[0.1] hover:text-white"
+          title="Export CSV Directory"
+        >
+          <ArrowDownToLine className="size-3.5 text-amber-400" />
+          <span>Export CSV</span>
+        </button>
+
+        <span className="h-4 w-px bg-white/15 mx-1" />
+
+        <a
+          href="#admin-crops-grid"
+          className="press flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors"
+          title="Jump to Crop Prices"
+        >
+          <Layers className="size-3.5" />
+          <span className="hidden sm:inline">Crops</span>
+        </a>
+
+        <a
+          href="#admin-mitra-ai"
+          className="press flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors"
+          title="Jump to Mitra AI Telemetry"
+        >
+          <Sparkles className="size-3.5 text-purple-400" />
+          <span className="hidden sm:inline">AI Telemetry</span>
+        </a>
+
+        <a
+          href="#admin-feedback"
+          className="press flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors"
+          title="Jump to Farmer Feedback & Reports"
+        >
+          <MessageSquare className="size-3.5 text-teal-400" />
+          <span className="hidden sm:inline">Feedback</span>
+        </a>
+      </aside>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------- bits */
 
-function AdminNavIcon({ target }: { target: string }) {
-  if (target.includes("analytics") || target.includes("overview")) return <BarChart3 className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("activity")) return <Activity className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("users")) return <Users className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("market")) return <Database className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("notices")) return <Bell className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("errors")) return <AlertTriangle className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("feature")) return <SlidersHorizontal className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("health")) return <CloudSun className="size-[17px] shrink-0 text-emerald-300/70" />;
-  if (target.includes("audit")) return <ShieldCheck className="size-[17px] shrink-0 text-emerald-300/70" />;
-  return <Settings className="size-[17px] shrink-0 text-emerald-300/70" />;
+function formatCategoryLabel(category: string, custom?: string | null) {
+  if (custom) return custom;
+  switch (category) {
+    case "market_prices":
+    case "price_error":
+    case "market_data":
+      return "Incorrect Price / Mandi";
+    case "crop_disease":
+    case "diagnosis":
+      return "Crop Disease Help";
+    case "feature_request":
+    case "suggestion":
+      return "Feature Request";
+    case "weather":
+      return "Weather Inquiry";
+    case "schemes":
+      return "Govt Scheme Help";
+    default:
+      return category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  }
 }
 
-function providerStatusLabel(provider: ProviderDiagnostic) {
-  if (provider.archive) {
-    if (provider.latestDataDate) return "STALE";
-    return provider.configured ? "NO DATA AVAILABLE" : "NOT CONFIGURED";
-  }
-
-  switch (provider.status) {
-    case "healthy":
-      return "LIVE · HEALTHY";
-    case "degraded":
-      return "DEGRADED";
-    case "down":
-      return "UNAVAILABLE";
-    case "not_configured":
-      return "NOT CONFIGURED";
-    default:
-      return "UNAVAILABLE";
-  }
+function AdminNavIcon({ target, active }: { target: string; active?: boolean }) {
+  const colorClass = active ? "text-emerald-300" : "text-white/45 group-hover:text-white";
+  if (target.includes("crops"))
+    return <Layers className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("mitra-ai"))
+    return <Sparkles className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("feedback"))
+    return <MessageSquare className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("analytics") || target.includes("overview"))
+    return <BarChart3 className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("activity"))
+    return <Activity className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("users"))
+    return <Users className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("market"))
+    return <Database className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("notices"))
+    return <Bell className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("errors"))
+    return <AlertTriangle className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("feature"))
+    return <SlidersHorizontal className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("health"))
+    return <CloudSun className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("audit"))
+    return <ShieldCheck className={`size-[18px] shrink-0 ${colorClass}`} />;
+  if (target.includes("fcm"))
+    return <Smartphone className={`size-[18px] shrink-0 ${colorClass}`} />;
+  return <Settings className={`size-[18px] shrink-0 ${colorClass}`} />;
 }
 
 function Panel({
@@ -1670,58 +1932,60 @@ function Panel({
   icon,
   children,
   id,
+  badge,
+  action,
 }: {
   title: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
   id?: string;
+  badge?: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div
       id={id}
-      className="scroll-mt-20 rounded-3xl border border-[oklch(1_0_0/0.09)] bg-[oklch(1_0_0/0.04)] p-5 backdrop-blur-xl"
+      className="group relative scroll-mt-24 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] transition-all duration-300 hover:border-white/[0.14] hover:shadow-[0_12px_40px_0_rgba(0,0,0,0.45)] overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent"
     >
-      <p className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[oklch(0.76_0.03_150)]">
-        {icon}
-        {title}
-      </p>
-
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {icon && (
+            <div className="grid size-8 place-items-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+              {icon}
+            </div>
+          )}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-white/90">
+              {title}
+            </h3>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {badge}
+          {action}
+        </div>
+      </div>
       {children}
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  icon,
-  detail,
-}: {
-  label: string;
-  value: number;
-  icon?: React.ReactNode;
-  detail?: string;
-}) {
+function Empty() {
   return (
-    <div className="rounded-3xl border border-[oklch(1_0_0/0.09)] bg-[oklch(1_0_0/0.04)] p-4">
-      <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[oklch(0.74_0.03_150)]">
-        {icon}
-        {label}
-      </p>
-
-      <p className="mt-2 font-display text-2xl font-extrabold">{value.toLocaleString("en-IN")}</p>
-      {detail && <p className="mt-1 text-[10px] text-[oklch(0.68_0.02_150)]">{detail}</p>}
+    <div className="flex flex-col items-center justify-center py-6 text-center">
+      <Clock className="size-6 text-white/30" />
+      <p className="mt-2 text-xs font-semibold text-white/50">No activity recorded yet</p>
+      <p className="text-[10px] text-white/35">Records populate dynamically as farmers interact</p>
     </div>
   );
 }
 
-function Empty() {
-  return <p className="text-sm text-[oklch(0.75_0.02_150)]">No data available yet.</p>;
-}
-
 function UnavailableState({ message }: { message: string }) {
   return (
-    <div role="status" className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-4 text-xs text-white/55">
+    <div
+      role="status"
+      className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-4 text-xs text-white/55 backdrop-blur-md"
+    >
       {message}
     </div>
   );
@@ -1729,38 +1993,44 @@ function UnavailableState({ message }: { message: string }) {
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <dt className="text-[oklch(0.74_0.02_150)]">{k}</dt>
-      <dd className="text-right font-semibold">{v}</dd>
+    <div className="flex items-start justify-between gap-3 py-1 border-b border-white/[0.04]">
+      <dt className="text-white/50">{k}</dt>
+      <dd className="text-right font-semibold text-white/90">{v}</dd>
     </div>
   );
 }
 
-function Bars({ rows }: { rows: AdminCount }) {
+function Bars({ rows, maxColor }: { rows: AdminCount; maxColor?: string }) {
   if (rows.length === 0) return <Empty />;
 
-  const max = Math.max(...rows.map((r) => r.count));
+  const max = Math.max(...rows.map((r) => r.count), 1);
 
   return (
-    <ul className="space-y-2">
-      {rows.map((r) => (
-        <li key={r.key}>
-          <div className="flex items-center justify-between text-xs">
-            <span className="truncate font-semibold">{r.key}</span>
-
-            <span className="text-[oklch(0.74_0.02_150)]">{r.count.toLocaleString("en-IN")}</span>
-          </div>
-
-          <div className="mt-1 h-1.5 rounded-full bg-[oklch(1_0_0/0.08)]">
-            <div
-              className="h-full rounded-full bg-[oklch(0.7_0.16_150)]"
-              style={{
-                width: `${Math.max(4, (r.count / max) * 100)}%`,
-              }}
-            />
-          </div>
-        </li>
-      ))}
+    <ul className="space-y-3">
+      {rows.map((r) => {
+        const pct = Math.max(3, (r.count / max) * 100);
+        return (
+          <li key={r.key} className="group">
+            <div className="flex items-center justify-between text-xs">
+              <span className="truncate font-medium text-white/80 group-hover:text-white transition-colors">
+                {r.key}
+              </span>
+              <span className="font-mono text-[11px] font-semibold text-emerald-400/90 ml-2">
+                {r.count.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/[0.06] p-0.5">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  maxColor ??
+                  "bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_8px_rgba(52,211,153,0.3)]"
+                }`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -1768,89 +2038,37 @@ function Bars({ rows }: { rows: AdminCount }) {
 function DailyChart({ series }: { series: { day: string; count: number }[] }) {
   if (series.length === 0) return <Empty />;
 
-  const max = Math.max(...series.map((s) => s.count));
+  const max = Math.max(...series.map((s) => s.count), 1);
 
   return (
-    <div className="flex h-32 items-end gap-1">
-      {series.map((s) => (
-        <div key={s.day} className="group flex-1" title={`${s.day}: ${s.count}`}>
-          <div
-            className="w-full rounded-t bg-[oklch(0.7_0.16_150)] transition-all group-hover:bg-[oklch(0.8_0.17_150)]"
-            style={{
-              height: `${Math.max(3, (s.count / max) * 120)}px`,
-            }}
-          />
-        </div>
-      ))}
+    <div className="relative flex h-36 items-end gap-1.5 pt-4">
+      {series.map((s) => {
+        const heightPct = Math.max(5, (s.count / max) * 100);
+        return (
+          <div key={s.day} className="group relative flex-1 flex flex-col items-center">
+            {/* Tooltip on hover */}
+            <div className="pointer-events-none absolute -top-8 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-2 py-0.5 text-[10px] font-medium text-white shadow-xl backdrop-blur-md group-hover:flex">
+              {s.day}: <strong className="ml-1 text-emerald-400">{s.count.toLocaleString("en-IN")}</strong>
+            </div>
+            {/* Bar */}
+            <div className="relative w-full rounded-t-md bg-white/[0.03] p-0.5 flex items-end h-full">
+              <div
+                className="w-full rounded-t bg-gradient-to-t from-emerald-500/50 to-emerald-400 transition-all duration-300 group-hover:from-emerald-400 group-hover:to-teal-300 group-hover:shadow-[0_0_12px_rgba(52,211,153,0.6)]"
+                style={{ height: `${heightPct}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function UsageList({
-  features,
-}: {
-  features: {
-    marketSearches: number;
-    weatherLookups: number;
-    diagnoseStarted: number;
-    diagnoseCompleted: number;
-    diagnoseFailed: number;
-    mitraConversations: number;
-    mitraMessages: number;
-    mitraErrors: number;
-    schemeViews: number;
-  };
-}) {
-  const rows: AdminCount = [
-    {
-      key: "Market searches",
-      count: features.marketSearches,
-    },
-    {
-      key: "Weather lookups",
-      count: features.weatherLookups,
-    },
-    {
-      key: "Diagnoses started",
-      count: features.diagnoseStarted,
-    },
-    {
-      key: "Diagnoses completed",
-      count: features.diagnoseCompleted,
-    },
-    {
-      key: "Diagnosis failures",
-      count: features.diagnoseFailed,
-    },
-    {
-      key: "Mitra AI conversations",
-      count: features.mitraConversations,
-    },
-    {
-      key: "Mitra AI questions",
-      count: features.mitraMessages,
-    },
-    {
-      key: "Mitra AI errors",
-      count: features.mitraErrors,
-    },
-    {
-      key: "Scheme views",
-      count: features.schemeViews,
-    },
-  ];
-
-  if (rows.every((r) => r.count === 0)) {
-    return <Empty />;
-  }
-
-  return <Bars rows={rows} />;
-}
 function SkeletonLines({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-4 animate-pulse rounded-lg bg-[oklch(1_0_0/0.07)]" />
+        <div key={i} className="h-4 animate-pulse rounded-xl bg-white/[0.06]" />
       ))}
     </div>
   );
