@@ -52,8 +52,8 @@ export const BottomNav = memo(function BottomNav() {
   const isActive = useActive();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
-      <div className="bottom-nav-shell relative mx-auto flex h-[68px] items-center overflow-hidden rounded-[26px] border border-border/80 bg-card/95 px-1.5 shadow-lg backdrop-blur-md">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] px-2.5 xs:px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden touch-manipulation">
+      <div className="bottom-nav-shell relative mx-auto flex h-[66px] xs:h-[68px] items-center overflow-hidden rounded-[26px] border border-border/80 bg-card/95 px-1 xs:px-1.5 shadow-lg backdrop-blur-md">
         {nav.map(({ to, icon: Icon, key }) => {
           const active = isActive(to);
 
@@ -61,20 +61,20 @@ export const BottomNav = memo(function BottomNav() {
             <Link
               key={to}
               to={to}
-              className={`press group relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-center px-0.5 ${
+              className={`press group relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-center px-0.5 touch-manipulation ${
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {active && (
-                <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[52px] w-[48px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] bg-primary/10 shadow-xs" />
+                <span className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[50px] xs:h-[52px] w-[44px] xs:w-[48px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] bg-primary/10 shadow-xs" />
               )}
 
               <span
-                className={`relative grid size-8 place-items-center rounded-full transition-transform duration-200 ${
+                className={`relative grid size-7 xs:size-8 place-items-center rounded-full transition-transform duration-200 ${
                   active ? "scale-105" : "group-hover:scale-105"
                 }`}
               >
-                <Icon className="size-[19px]" strokeWidth={active ? 2.4 : 1.8} />
+                <Icon className="size-[18px] xs:size-[19px]" strokeWidth={active ? 2.4 : 1.8} />
 
                 {active && (
                   <span className="absolute -bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-primary" />
@@ -82,7 +82,7 @@ export const BottomNav = memo(function BottomNav() {
               </span>
 
               <span
-                className={`relative mt-0.5 w-full truncate px-0.5 text-center text-[9px] font-bold leading-none ${
+                className={`relative mt-0.5 w-full truncate px-0.5 text-center text-[8px] xs:text-[9px] font-bold leading-tight ${
                   active ? "text-primary" : ""
                 }`}
               >
@@ -172,7 +172,7 @@ export function Screen({
   const content = (
     <div
       data-route={pathname}
-      className={`app-page mx-auto w-full max-w-[440px] md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-4 sm:px-6 lg:px-4 ${
+      className={`app-page mx-auto w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-6xl xl:max-w-7xl px-3.5 sm:px-6 lg:px-4 ${
         withNav ? "pb-28 lg:pb-0" : ""
       } ${className}`}
     >
@@ -224,7 +224,7 @@ export function TopBar({
 }) {
   return (
     <header
-      className={`app-topbar mobile-glass sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 px-4 py-3 backdrop-blur-[20px] backdrop-saturate-[180%] lg:px-0 lg:py-6 ${className}`}
+      className={`app-topbar mobile-glass sticky top-0 z-30 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 sm:gap-3 border-b border-border/70 px-3.5 sm:px-4 py-2 sm:py-3 backdrop-blur-md sm:backdrop-blur-[20px] backdrop-saturate-[160%] lg:px-0 lg:py-6 ${className}`}
     >
       {back ? (
         <Link

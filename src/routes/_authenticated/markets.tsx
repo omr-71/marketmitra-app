@@ -441,12 +441,12 @@ function MarketsPage() {
           }
         />
 
-        <div className="relative px-4 pt-4 sm:px-6 lg:px-0 lg:pt-6">
+        <div className="relative px-3 sm:px-6 lg:px-0 lg:pt-6">
           {/* =====================================================
               SAAS INTELLIGENCE HEADER BANNER
           ===================================================== */}
           <motion.div
-            className="relative mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-5 sm:p-6 shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
+            className="relative mb-5 sm:mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-4 sm:p-6 shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:backdrop-blur-xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -454,34 +454,34 @@ function MarketsPage() {
             {/* Top ambient highlight line */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white dark:via-white/20 to-transparent" />
 
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
               {/* Left Column: Crop identity & District Info */}
-              <div className="flex items-start gap-4">
-                <div className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/8 to-transparent border border-primary/25 shadow-inner">
-                  <span className="text-3xl leading-none select-none">{crop.emoji || "🌾"}</span>
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                <div className="relative grid size-12 sm:size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/8 to-transparent border border-primary/25 shadow-inner">
+                  <span className="text-2xl sm:text-3xl leading-none select-none">{crop.emoji || "🌾"}</span>
                   <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-card">
                     <span className="size-1.5 animate-ping rounded-full bg-white" />
                   </span>
                 </div>
 
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary border border-primary/20">
                       <TrendingUp className="size-3" />
                       Live Mandi Intelligence
                     </span>
-                    <span className="text-xs font-semibold text-muted-foreground">
+                    <span className="text-xs font-semibold text-muted-foreground truncate">
                       {crop.commodity} · APMC Network
                     </span>
                   </div>
 
-                  <h1 className="mt-1 font-display text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+                  <h1 className="mt-1 font-display text-xl sm:text-3xl font-black tracking-tight text-foreground truncate">
                     {crop.name[lang]} Comparison
                   </h1>
 
-                  <p className="mt-0.5 text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                  <p className="mt-0.5 text-xs sm:text-sm font-medium text-muted-foreground flex flex-wrap items-center gap-1">
                     <MapPin className="size-3.5 text-primary shrink-0" />
-                    <span>
+                    <span className="break-words">
                       District: <strong className="text-foreground">{currentDistrict}</strong>, {currentState} · Batch:{" "}
                       <strong className="text-foreground">{qty} {crop.unit}</strong>
                     </span>
@@ -490,31 +490,31 @@ function MarketsPage() {
               </div>
 
               {/* Right Column: Key Metrics Strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
-                <div className="rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-3 backdrop-blur-md">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 shrink-0">
+                <div className="rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-2.5 sm:p-3 backdrop-blur-md min-w-0">
+                  <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                     Peak Modal Rate
                   </p>
-                  <p className="mt-0.5 font-display text-lg sm:text-xl font-black text-foreground tabular-nums">
+                  <p className="mt-0.5 font-display text-base sm:text-xl font-black text-foreground tabular-nums truncate">
                     {bestPrice ? inr(bestPrice.record.modalPrice) : "—"}
-                    <span className="text-[11px] font-semibold text-muted-foreground">/Q</span>
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground">/Q</span>
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-3 backdrop-blur-md">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                <div className="rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-2.5 sm:p-3 backdrop-blur-md min-w-0">
+                  <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                     Estimated Gross
                   </p>
-                  <p className="mt-0.5 font-display text-lg sm:text-xl font-black text-foreground tabular-nums">
+                  <p className="mt-0.5 font-display text-base sm:text-xl font-black text-foreground tabular-nums truncate">
                     {bestPrice ? inr(bestPrice.gross) : "—"}
                   </p>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 p-3 backdrop-blur-md">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                <div className="col-span-2 sm:col-span-1 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 p-2.5 sm:p-3 backdrop-blur-md min-w-0">
+                  <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 truncate">
                     Top Net in Hand
                   </p>
-                  <p className="mt-0.5 font-display text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+                  <p className="mt-0.5 font-display text-base sm:text-xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums truncate">
                     {bestPractical ? inr(bestPractical.net) : bestPrice ? inr(bestPrice.net) : "—"}
                   </p>
                 </div>
@@ -525,27 +525,27 @@ function MarketsPage() {
           {/* =====================================================
               SEARCH, SORT & FILTERS BAR
           ===================================================== */}
-          <div className="mb-4 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center justify-between">
             {/* Search Input */}
-            <div className="relative flex-1">
-              <label className="relative flex h-11 w-full items-center gap-2.5 rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-card/70 px-3.5 shadow-sm backdrop-blur-xl transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="relative flex-1 min-w-0">
+              <label className="relative flex h-10 sm:h-11 w-full items-center gap-2 rounded-2xl border border-white/60 dark:border-white/10 bg-white/70 dark:bg-card/70 px-3 shadow-sm backdrop-blur-md sm:backdrop-blur-xl transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
                 <Search className="size-4 shrink-0 text-muted-foreground" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t("searchMarket") || "Search mandi by name or sub-district..."}
                   maxLength={60}
-                  className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-muted-foreground/70"
+                  className="w-full bg-transparent text-xs sm:text-sm font-semibold outline-none placeholder:text-muted-foreground/70"
                 />
               </label>
             </div>
 
             {/* Sort Controls & Filter Button */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center rounded-2xl border border-border/60 bg-muted/40 p-0.5 text-xs font-bold backdrop-blur-md">
+            <div className="flex items-center gap-2 shrink-0 justify-between sm:justify-start">
+              <div className="flex flex-1 sm:flex-none items-center rounded-2xl border border-border/60 bg-muted/40 p-0.5 text-[11px] sm:text-xs font-bold backdrop-blur-md">
                 <button
                   onClick={() => setSortBy("profit")}
-                  className={`press rounded-xl px-2.5 py-1.5 transition-all ${
+                  className={`press flex-1 sm:flex-none rounded-xl px-2 sm:px-2.5 py-1.5 transition-all text-center ${
                     sortBy === "profit"
                       ? "bg-primary text-primary-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -555,7 +555,7 @@ function MarketsPage() {
                 </button>
                 <button
                   onClick={() => setSortBy("price")}
-                  className={`press rounded-xl px-2.5 py-1.5 transition-all ${
+                  className={`press flex-1 sm:flex-none rounded-xl px-2 sm:px-2.5 py-1.5 transition-all text-center ${
                     sortBy === "price"
                       ? "bg-primary text-primary-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -565,7 +565,7 @@ function MarketsPage() {
                 </button>
                 <button
                   onClick={() => setSortBy("distance")}
-                  className={`press rounded-xl px-2.5 py-1.5 transition-all ${
+                  className={`press flex-1 sm:flex-none rounded-xl px-2 sm:px-2.5 py-1.5 transition-all text-center ${
                     sortBy === "distance"
                       ? "bg-primary text-primary-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -577,15 +577,15 @@ function MarketsPage() {
 
               <button
                 onClick={() => setShowFilters((s) => !s)}
-                className={`press flex h-11 items-center gap-1.5 rounded-2xl px-3.5 text-xs font-bold transition-all ${
+                className={`press flex h-10 sm:h-11 items-center gap-1.5 rounded-2xl px-3 text-xs font-bold transition-all shrink-0 ${
                   showFilters
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "border border-white/60 dark:border-white/10 bg-white/70 dark:bg-card/70 text-muted-foreground hover:text-foreground shadow-sm backdrop-blur-xl"
+                    : "border border-white/60 dark:border-white/10 bg-white/70 dark:bg-card/70 text-muted-foreground hover:text-foreground shadow-sm backdrop-blur-md sm:backdrop-blur-xl"
                 }`}
                 aria-label="Transport & Commission Filters"
               >
                 <SlidersHorizontal className="size-3.5" />
-                <span className="hidden sm:inline">Settings</span>
+                <span className="inline sm:inline">Settings</span>
               </button>
             </div>
           </div>
@@ -594,7 +594,7 @@ function MarketsPage() {
           <AnimatePresence>
             {showFilters && (
               <motion.div
-                className="mb-5 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-5 shadow-lg backdrop-blur-2xl"
+                className="mb-5 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-4 sm:p-5 shadow-lg backdrop-blur-md sm:backdrop-blur-xl"
                 initial={{ opacity: 0, height: 0, y: -8 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -8 }}
@@ -688,32 +688,32 @@ function MarketsPage() {
               {/* Highlight Hero Spotlight for Top Mandi */}
               {bestPrice && (
                 <motion.section
-                  className="relative mb-5 overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 shadow-xl backdrop-blur-2xl"
+                  className="relative mb-4 sm:mb-5 overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-4 sm:p-6 shadow-xl backdrop-blur-md sm:backdrop-blur-xl"
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-amber-500/10 blur-3xl" />
 
-                  <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
                         <Award className="size-3.5 text-amber-500" />
                         Top Recommended APMC · Highest Rate
                       </div>
 
-                      <h2 className="mt-2 font-display text-xl sm:text-2xl font-black text-foreground">
+                      <h2 className="mt-2 font-display text-lg sm:text-2xl font-black text-foreground break-words">
                         {bestPrice.record.market}
                       </h2>
 
-                      <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                      <p className="mt-0.5 text-xs font-semibold text-muted-foreground truncate">
                         {bestPrice.record.district}, {bestPrice.record.state}
                         {bestPrice.record.variety ? ` · ${bestPrice.record.variety}` : ""}
                         {bestPrice.record.grade ? ` · ${bestPrice.record.grade}` : ""}
                       </p>
 
                       {bestPractical && bestPractical.record.market !== bestPrice.record.market && (
-                        <p className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-semibold text-foreground">
+                        <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-primary/10 border border-primary/20 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-foreground">
                           <Sparkles className="size-3.5 text-primary shrink-0" />
                           <span>
                             Best practical profit: <strong>{bestPractical.record.market}</strong> yields{" "}
@@ -723,23 +723,25 @@ function MarketsPage() {
                       )}
                     </div>
 
-                    <div className="flex md:flex-col items-baseline md:items-end justify-between md:justify-center border-t md:border-t-0 border-border/50 pt-3 md:pt-0 shrink-0">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <div className="flex items-baseline justify-between md:flex-col md:items-end md:justify-center border-t md:border-t-0 border-border/50 pt-2.5 md:pt-0 shrink-0">
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                         Modal Mandi Rate
                       </span>
-                      <span className="font-display text-3xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
-                        {inr(bestPrice.record.modalPrice)}
-                      </span>
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        per {crop.unit}
-                      </span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-display text-2xl sm:text-4xl font-black tracking-tight text-foreground tabular-nums">
+                          {inr(bestPrice.record.modalPrice)}
+                        </span>
+                        <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground">
+                          /{crop.unit}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </motion.section>
               )}
 
               {/* Staggered Floating Frosted-Glass Market Cards */}
-              <StaggerContainer className="space-y-3.5" delay={0.03} staggerDelay={0.045}>
+              <StaggerContainer className="space-y-3 sm:space-y-3.5" delay={0.03} staggerDelay={0.045}>
                 {sortedRows.map((row) => {
                   const isBestModal = row.record.market === bestPrice?.record.market;
                   const isBestPractical = row.record.market === bestPractical?.record.market;
@@ -756,25 +758,25 @@ function MarketsPage() {
                           state: row.record.state,
                           district: row.record.district,
                         }}
-                        className={`group relative block min-w-0 overflow-hidden rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                        className={`group relative block min-w-0 overflow-hidden rounded-3xl border transition-all duration-200 active:scale-[0.99] hover:-translate-y-1 hover:shadow-2xl ${
                           isBestPractical || isBestModal
                             ? "border-emerald-500/40 bg-white/85 dark:bg-card/85 shadow-lg shadow-emerald-500/5 ring-1 ring-emerald-500/20"
                             : "border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
-                        } p-5 sm:p-6 backdrop-blur-2xl`}
+                        } p-4 sm:p-6 backdrop-blur-md sm:backdrop-blur-xl`}
                       >
                         {/* Top specular reflection line */}
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 dark:via-white/20 to-transparent" />
 
                         {/* Card Header: Market Name & Badges */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="truncate font-display text-base sm:text-lg font-black text-foreground group-hover:text-primary transition-colors">
+                        <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-2 sm:gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                              <h3 className="font-display text-base sm:text-lg font-black text-foreground group-hover:text-primary transition-colors leading-tight break-words">
                                 {row.record.market}
                               </h3>
 
                               {row.record.variety && (
-                                <span className="inline-flex items-center rounded-lg bg-muted/60 px-2 py-0.5 text-[10px] font-bold text-muted-foreground border border-border/40">
+                                <span className="inline-flex items-center rounded-lg bg-muted/60 px-1.5 sm:px-2 py-0.5 text-[9.5px] sm:text-[10px] font-bold text-muted-foreground border border-border/40">
                                   {row.record.variety}
                                   {row.record.grade ? ` · ${row.record.grade}` : ""}
                                 </span>
@@ -783,107 +785,107 @@ function MarketsPage() {
 
                             <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                               <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
-                              <span>{row.record.district}, {row.record.state}</span>
+                              <span className="truncate">{row.record.district}, {row.record.state}</span>
                             </p>
                           </div>
 
                           {/* Distinct Glowing Badges */}
                           {isBestPractical ? (
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1 text-[11px] font-black text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30 animate-pulse">
-                              <Award className="size-3.5" />
+                            <span className="inline-flex self-start xs:self-auto shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black text-white shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30">
+                              <Award className="size-3 sm:size-3.5" />
                               Best Net Profit
                             </span>
                           ) : isBestModal ? (
-                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-600 px-3 py-1 text-[11px] font-black text-white shadow-md shadow-amber-500/20 ring-2 ring-amber-500/30">
-                              <Award className="size-3.5" />
+                            <span className="inline-flex self-start xs:self-auto shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-600 px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-black text-white shadow-md shadow-amber-500/20 ring-2 ring-amber-500/30">
+                              <Award className="size-3 sm:size-3.5" />
                               Top Rate
                             </span>
                           ) : null}
                         </div>
 
                         {/* Tabular Price Breakdown: Min, Modal, Max */}
-                        <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-muted/40 dark:bg-muted/20 p-3 text-center border border-border/40 backdrop-blur-sm">
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                        <div className="mt-3.5 grid grid-cols-3 gap-1.5 sm:gap-2 rounded-2xl bg-muted/40 dark:bg-muted/20 p-2.5 sm:p-3 text-center border border-border/40 backdrop-blur-sm">
+                          <div className="min-w-0">
+                            <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                               {t("minPrice") || "Min Rate"}
                             </p>
-                            <p className="mt-0.5 font-display text-sm sm:text-base font-extrabold text-foreground tabular-nums">
+                            <p className="mt-0.5 font-display text-xs sm:text-base font-extrabold text-foreground tabular-nums truncate">
                               {inr(row.record.minPrice)}
                             </p>
                           </div>
 
-                          <div className="border-x border-border/50 px-1">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-primary">
+                          <div className="min-w-0 border-x border-border/50 px-1">
+                            <p className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-primary truncate">
                               {t("modalPrice") || "Modal (Hero)"}
                             </p>
-                            <p className="mt-0.5 font-display text-base sm:text-lg font-black text-primary tabular-nums">
+                            <p className="mt-0.5 font-display text-sm sm:text-lg font-black text-primary tabular-nums truncate">
                               {inr(row.record.modalPrice)}
                             </p>
                           </div>
 
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                               {t("maxPrice") || "Max Rate"}
                             </p>
-                            <p className="mt-0.5 font-display text-sm sm:text-base font-extrabold text-foreground tabular-nums">
+                            <p className="mt-0.5 font-display text-xs sm:text-base font-extrabold text-foreground tabular-nums truncate">
                               {inr(row.record.maxPrice)}
                             </p>
                           </div>
                         </div>
 
                         {/* Revenue & Net Profit Highlight Row */}
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3.5">
+                        <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-border/60 pt-3">
                           {/* Financial Deductions Summary */}
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                          <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-xs">
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Gross: </span>
-                              <strong className="font-extrabold text-foreground">{inr(row.gross)}</strong>
+                              <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Gross: </span>
+                              <strong className="font-extrabold text-foreground tabular-nums">{inr(row.gross)}</strong>
                             </div>
 
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Freight: </span>
-                              <strong className="font-extrabold text-amber-600 dark:text-amber-400">
+                              <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Freight: </span>
+                              <strong className="font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">
                                 {row.transport ? `- ${inr(row.transport.totalCost)}` : "—"}
                               </strong>
                             </div>
 
                             <div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Comm: </span>
-                              <strong className="font-extrabold text-muted-foreground">
+                              <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Comm: </span>
+                              <strong className="font-extrabold text-muted-foreground tabular-nums">
                                 - {inr(row.commissionCost)}
                               </strong>
                             </div>
                           </div>
 
                           {/* Hero Net Profit Chip */}
-                          <div className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/25 px-3.5 py-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                          <div className="inline-flex self-start sm:self-auto items-center gap-2 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/25 px-3 py-1.5 shadow-2xs">
+                            <span className="text-[9.5px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                               Net in Hand:
                             </span>
-                            <span className="font-display text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+                            <span className="font-display text-sm sm:text-lg font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
                               {inr(row.net)}
                             </span>
                           </div>
                         </div>
 
                         {/* Route & Transport Distance Details */}
-                        <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
+                        <div className="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-[11px] font-semibold text-muted-foreground">
                           {row.transport ? (
                             <p className="flex items-center gap-1.5 truncate">
                               <Truck className="size-3.5 text-primary shrink-0" />
-                              <span>
+                              <span className="truncate">
                                 ~{row.transport.distanceKm} km route · {inr(row.transport.ratePerKm)}/km ·{" "}
                                 {inr(row.transport.perQuintal)}/{crop.unit} freight
                               </span>
                             </p>
                           ) : (
-                            <p className="flex items-center gap-1.5">
-                              <MapPin className="size-3 text-muted-foreground/60" />
-                              <span>Local mandi · Freight calculated on selection</span>
+                            <p className="flex items-center gap-1.5 truncate">
+                              <MapPin className="size-3 text-muted-foreground/60 shrink-0" />
+                              <span className="truncate">Local mandi · Freight calculated on selection</span>
                             </p>
                           )}
 
-                          <span className="inline-flex items-center gap-1 font-bold text-primary group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">
+                          <span className="inline-flex items-center gap-1 font-bold text-primary group-hover:translate-x-0.5 transition-transform shrink-0 self-end sm:self-auto">
                             Mandi Details <ChevronRight className="size-3.5" />
                           </span>
                         </div>

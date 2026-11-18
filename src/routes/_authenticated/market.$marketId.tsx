@@ -350,12 +350,12 @@ function MarketDetailPage() {
           }
         />
 
-        <div className="relative px-4 pt-4 sm:px-6 lg:px-0 lg:pt-6 pb-12">
+        <div className="relative px-3 sm:px-6 lg:px-0 lg:pt-6 pb-12">
           {/* =====================================================
               GLASSMORPHIC HERO BANNER & STAT CHIPS
           ===================================================== */}
           <motion.section
-            className="relative mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-5 sm:p-7 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-2xl"
+            className="relative mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-4 sm:p-7 shadow-[0_12px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-md sm:backdrop-blur-xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -363,7 +363,7 @@ function MarketDetailPage() {
             {/* Specular top reflection line */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white dark:via-white/20 to-transparent" />
 
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
               {/* Left Column: APMC Metadata & Location tags */}
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -378,12 +378,12 @@ function MarketDetailPage() {
                   </span>
                 </div>
 
-                <h1 className="mt-2.5 font-display text-2xl sm:text-4xl font-black tracking-tight text-foreground truncate">
+                <h1 className="mt-2.5 font-display text-xl sm:text-4xl font-black tracking-tight text-foreground break-words">
                   {marketId}
                 </h1>
 
                 {/* Location Tags & Trading Specifications */}
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted-foreground">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2.5 sm:gap-x-3 gap-y-1 text-xs font-semibold text-muted-foreground">
                   <span className="flex items-center gap-1 text-foreground">
                     <MapPin className="size-3.5 text-primary shrink-0" />
                     {effectiveDistrict}, {effectiveState}
@@ -407,7 +407,7 @@ function MarketDetailPage() {
                   <button
                     type="button"
                     onClick={handleShareWhatsApp}
-                    className="press group inline-flex items-center gap-2 rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/15 hover:from-emerald-500/25 hover:to-teal-500/25 px-4 py-2 text-xs font-black text-emerald-800 dark:text-emerald-300 shadow-xs backdrop-blur-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-emerald-500/20"
+                    className="press group inline-flex items-center gap-2 rounded-2xl border border-emerald-500/35 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-teal-500/15 hover:from-emerald-500/25 hover:to-teal-500/25 px-3.5 sm:px-4 py-2 text-xs font-black text-emerald-800 dark:text-emerald-300 shadow-xs backdrop-blur-md sm:backdrop-blur-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-emerald-500/20"
                   >
                     <span className="grid size-5 place-items-center rounded-full bg-emerald-500 text-white shadow-2xs">
                       <WhatsAppIcon className="size-3 fill-current" />
@@ -419,13 +419,13 @@ function MarketDetailPage() {
               </div>
 
               {/* Right Column: Hero Modal Price & 24h Trend Readout */}
-              <div className="flex flex-col sm:items-end justify-center rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-4 sm:p-5 backdrop-blur-md shrink-0">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary">
+              <div className="flex flex-col sm:items-end justify-center rounded-2xl border border-border/60 bg-muted/30 dark:bg-muted/15 p-3.5 sm:p-5 backdrop-blur-md shrink-0">
+                <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-primary">
                   {t("modalPrice") || "Current Modal Rate"}
                 </span>
 
                 <div className="mt-1 flex items-baseline gap-1.5">
-                  <span className="font-display text-3xl sm:text-4xl font-black text-foreground tabular-nums">
+                  <span className="font-display text-2xl sm:text-4xl font-black text-foreground tabular-nums">
                     {inr(activeRecord.modalPrice)}
                   </span>
                   <span className="text-xs font-semibold text-muted-foreground">
@@ -453,51 +453,51 @@ function MarketDetailPage() {
             </div>
 
             {/* Quick-Glance 4-Stat Strip */}
-            <div className="mt-6 pt-5 border-t border-border/50 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3.5 backdrop-blur-sm">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+            <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-border/50 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3 sm:p-3.5 backdrop-blur-sm min-w-0">
+                <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                   {t("modalPrice") || "Modal Price"}
                 </p>
-                <p className="mt-1 font-display text-lg sm:text-xl font-black text-primary tabular-nums">
+                <p className="mt-0.5 sm:mt-1 font-display text-base sm:text-xl font-black text-primary tabular-nums truncate">
                   {inr(activeRecord.modalPrice)}
                 </p>
-                <p className="text-[10px] font-medium text-muted-foreground/80">
+                <p className="text-[9.5px] sm:text-[10px] font-medium text-muted-foreground/80 truncate">
                   Most frequent auction rate
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3.5 backdrop-blur-sm">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3 sm:p-3.5 backdrop-blur-sm min-w-0">
+                <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                   {t("minPrice") || "Min Price (Floor)"}
                 </p>
-                <p className="mt-1 font-display text-lg sm:text-xl font-black text-foreground tabular-nums">
+                <p className="mt-0.5 sm:mt-1 font-display text-base sm:text-xl font-black text-foreground tabular-nums truncate">
                   {inr(activeRecord.minPrice)}
                 </p>
-                <p className="text-[10px] font-medium text-muted-foreground/80">
+                <p className="text-[9.5px] sm:text-[10px] font-medium text-muted-foreground/80 truncate">
                   Base lot bidding realization
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3.5 backdrop-blur-sm">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3 sm:p-3.5 backdrop-blur-sm min-w-0">
+                <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                   {t("maxPrice") || "Max Price (Peak)"}
                 </p>
-                <p className="mt-1 font-display text-lg sm:text-xl font-black text-foreground tabular-nums">
+                <p className="mt-0.5 sm:mt-1 font-display text-base sm:text-xl font-black text-foreground tabular-nums truncate">
                   {inr(activeRecord.maxPrice)}
                 </p>
-                <p className="text-[10px] font-medium text-muted-foreground/80">
+                <p className="text-[9.5px] sm:text-[10px] font-medium text-muted-foreground/80 truncate">
                   Top grade premium quality
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3.5 backdrop-blur-sm">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-2xl border border-border/50 bg-background/50 dark:bg-background/30 p-3 sm:p-3.5 backdrop-blur-sm min-w-0">
+                <p className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground truncate">
                   Trading Spread
                 </p>
-                <p className="mt-1 font-display text-lg sm:text-xl font-black text-foreground tabular-nums">
+                <p className="mt-0.5 sm:mt-1 font-display text-base sm:text-xl font-black text-foreground tabular-nums truncate">
                   {inr(spread)}
                 </p>
-                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <p className="text-[9.5px] sm:text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
                   {spreadPct}% spread range
                 </p>
               </div>
@@ -508,7 +508,7 @@ function MarketDetailPage() {
               PRICE MOMENTUM & 14-DAY HISTORY CHART
           ===================================================== */}
           <motion.section
-            className="relative mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-5 sm:p-6 shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
+            className="relative mb-6 overflow-hidden rounded-3xl border border-white/70 dark:border-white/10 bg-white/80 dark:bg-card/80 p-4 sm:p-6 shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.25)] backdrop-blur-md sm:backdrop-blur-xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
@@ -578,10 +578,10 @@ function MarketDetailPage() {
           {/* =====================================================
               MARKET INTELLIGENCE TERMINAL: 2-COLUMN CARDS
           ===================================================== */}
-          <div className="grid gap-5 md:grid-cols-2 mb-6">
+          <div className="grid gap-4 sm:gap-5 md:grid-cols-2 mb-6">
             {/* Card 1: Trading Volatility & Spread Insight */}
             <motion.div
-              className="rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-5 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
+              className="rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-4 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-md sm:backdrop-blur-xl"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
@@ -618,7 +618,7 @@ function MarketDetailPage() {
 
             {/* Card 2: Mandi Operating Schedule & Verification */}
             <motion.div
-              className="rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-5 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-2xl"
+              className="rounded-3xl border border-white/70 dark:border-white/10 bg-white/75 dark:bg-card/75 p-4 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-md sm:backdrop-blur-xl"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
